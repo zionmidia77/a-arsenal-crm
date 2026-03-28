@@ -668,6 +668,96 @@ async function executeTool(
         });
       }
 
+      case "check_documents": {
+        const { data: client } = await supabase
+          .from("clients")
+          .select("financing_docs, name, cpf, salary, employer, reference_name, reference_phone, marital_status")
+          .eq("id", args.client_id)
+          .single();
+
+        if (!client) return JSON.stringify({ error: "Client not found" });
+
+        const docs = (client.financing_docs as Record<string, boolean>) || {};
+        const checklist = {
+          cnh: { label: "CNH / RG + CPF", done: !!docs.cnh },
+          pay_stub: { label: "Comprovante de Renda (holerite)", done: !!docs.pay_stub },
+          proof_of_residence: { label: "Comprovante de Residência", done: !!docs.proof_of_residence },
+          reference: { label: "Referência Pessoal", done: !!(client.reference_name && client.reference_phone) },
+          cpf_info: { label: "CPF informado", done: !!client.cpf },
+          income_info: { label: "Renda informada", done: !!client.salary },
+          employer_info: { label: "Empresa/Empregador", done: !!client.employer },
+          marital_info: { label: "Estado civil", done: !!client.marital_status },
+        };
+
+        const total = Object.keys(checklist).length;
+        const done = Object.values(checklist).filter(c => c.done).length;
+        const percent = Math.round((done / total) * 100);
+
+        return JSON.stringify({
+          success: true,
+          checklist,
+          progress: { done, total, percent },
+          display_hint: `Mostre o checklist assim em markdown:
+
+📋 **Checklist de Financiamento** (${percent}%)
+${"▓".repeat(Math.round(percent / 10))}${"░".repeat(10 - Math.round(percent / 10))} ${percent}%
+
+${Object.values(checklist).map(c => `${c.done ? "✅" : "⬜"} ${c.label}`).join("\n")}
+
+Se faltam itens, pergunte o próximo dado pendente de forma natural.`,
+        });
+      }
+
+      case "detect_urgency": {
+        const urgencyMap: Record<string, { temperature: string; priority: number; pipeline: string }> = {
+          critical: { temperature: "hot", priority: 10, pipeline: "interested" },
+          high: { temperature: "hot", priority: 8, pipeline: "interested" },
+          medium: { temperature: "warm", priority: 5, pipeline: "contacted" },
+          low: { temperature: "cold", priority: 3, pipeline: "contacted" },
+        };
+
+        const config = urgencyMap[args.urgency_level as string] || urgencyMap.medium;
+
+        await supabase
+          .from("clients")
+          .update({
+            temperature: config.temperature,
+            last_contact_at: new Date().toISOString(),
+          })
+          .eq("id", args.client_id);
+
+        // Create urgency task for critical/high
+        if (args.urgency_level === "critical" || args.urgency_level === "high") {
+          await supabase.from("tasks").insert({
+            client_id: args.client_id as string,
+            type: "follow_up",
+            reason: `🚨 Lead URGENTE: ${args.reason}`,
+            due_date: new Date().toISOString().split("T")[0],
+            priority: config.priority,
+            source: "ai-chat",
+            status: "pending",
+          });
+        }
+
+        await supabase.from("interactions").insert({
+          client_id: args.client_id as string,
+          type: "system",
+          content: `Urgência detectada: ${args.urgency_level} — ${args.reason}. Temperatura: ${config.temperature}`,
+          created_by: "ai-consultant",
+        });
+
+        return JSON.stringify({
+          success: true,
+          urgency: args.urgency_level,
+          temperature: config.temperature,
+          message: args.urgency_level === "critical"
+            ? "Lead URGENTE! Priorize atendimento máximo, ofereça opções prontas para retirada imediata."
+            : args.urgency_level === "low"
+            ? "Lead apenas olhando. Mantenha engajamento sem pressionar."
+            : "Urgência registrada.",
+        });
+      }
+
       case "log_interaction": {
         const { error } = await supabase.from("interactions").insert({
           client_id: args.client_id as string,
