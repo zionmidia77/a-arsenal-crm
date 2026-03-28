@@ -280,9 +280,9 @@ const AdminMessages = () => {
       </div>
 
       <motion.div variants={fadeUp} className="flex gap-2 overflow-x-auto">
-        {["all", "lead", "relacionamento", "oportunidade"].map((f) => (
+        {["all", "lead", "relacionamento", "oportunidade", "aniversario"].map((f) => (
           <Button key={f} variant={filter === f ? "default" : "outline"} size="sm" onClick={() => setFilter(f)} className="rounded-full shrink-0 text-xs capitalize">
-            {f === "all" ? "Todas" : f}
+            {f === "all" ? "Todas" : f === "aniversario" ? "🎂 Aniversário" : f}
           </Button>
         ))}
       </motion.div>
