@@ -149,19 +149,52 @@ const PhotoLeadCapture = () => {
       } = await supabase.auth.getSession();
       if (!session) throw new Error("Não autorizado");
 
+      // Smart deduplication: search by phone, email, OR name
       let existingClient = null;
       const cleanedPhone = editData.phone?.replace(/\D/g, "") || "";
+      const cleanedName = (editData.name || "").trim().toLowerCase();
+      const cleanedEmail = (editData.email || "").trim().toLowerCase();
 
-      if (editData.phone || cleanedPhone.length >= 8) {
-        const rawPhone = (editData.phone || "").replace(/,/g, " ");
+      // Build OR conditions for matching
+      const orConditions: string[] = [];
+
+      if (cleanedPhone.length >= 8) {
+        orConditions.push(`phone.ilike.%${cleanedPhone.slice(-8)}%`);
+      }
+      if (cleanedEmail) {
+        orConditions.push(`email.ilike.${cleanedEmail}`);
+      }
+
+      if (orConditions.length > 0) {
         const { data, error } = await supabase
           .from("clients")
           .select("*")
-          .or(`phone.eq.${rawPhone},phone.eq.${cleanedPhone}`)
-          .limit(1);
+          .or(orConditions.join(","))
+          .limit(5);
 
         if (error) throw error;
         if (data && data.length > 0) existingClient = data[0];
+      }
+
+      // Fallback: fuzzy name match if no phone/email match found
+      if (!existingClient && cleanedName.length >= 3) {
+        const nameParts = cleanedName.split(/\s+/);
+        const firstName = nameParts[0];
+        const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : null;
+
+        if (lastName && lastName.length >= 2) {
+          const { data, error } = await supabase
+            .from("clients")
+            .select("*")
+            .ilike("name", `%${firstName}%${lastName}%`)
+            .limit(3);
+
+          if (error) throw error;
+          if (data && data.length === 1) {
+            // Only auto-match if exactly one result (high confidence)
+            existingClient = data[0];
+          }
+        }
       }
 
       let data: { action: string; client: any };
