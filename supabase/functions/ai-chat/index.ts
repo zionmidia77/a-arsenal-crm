@@ -785,6 +785,14 @@ serve(async (req) => {
         const toolResult = await executeTool(tc.function.name, args);
         console.log(`Tool result: ${toolResult}`);
 
+        // Track client_id from create_lead
+        if (tc.function.name === "create_lead") {
+          try {
+            const parsed = JSON.parse(toolResult);
+            if (parsed.client_id) createdClientId = parsed.client_id;
+          } catch {}
+        }
+
         aiMessages.push({
           role: "tool",
           tool_call_id: tc.id,
