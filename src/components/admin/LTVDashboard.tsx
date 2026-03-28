@@ -1,10 +1,11 @@
 import { motion } from "framer-motion";
-import { Cake, PhoneCall, ArrowUpCircle, Sparkles, ChevronRight } from "lucide-react";
+import { Cake, PhoneCall, ArrowUpCircle, Sparkles, ChevronRight, TrendingUp } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
 
 const useLTVStats = () =>
   useQuery({
@@ -58,12 +59,50 @@ const useLTVStats = () =>
         .eq("type", "birthday")
         .eq("status", "pending");
 
+      // NPS trend - last 6 months
+      const sixMonthsAgo = new Date();
+      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+      const { data: npsData } = await supabase
+        .from("nps_responses")
+        .select("score, created_at")
+        .gte("created_at", sixMonthsAgo.toISOString())
+        .order("created_at", { ascending: true });
+
+      // Group NPS by month
+      const npsMonthly: Record<string, { total: number; count: number }> = {};
+      (npsData || []).forEach((r) => {
+        const d = new Date(r.created_at);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+        if (!npsMonthly[key]) npsMonthly[key] = { total: 0, count: 0 };
+        npsMonthly[key].total += r.score;
+        npsMonthly[key].count += 1;
+      });
+
+      const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+      const npsTrend = Object.entries(npsMonthly)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([key, val]) => {
+          const [, m] = key.split("-");
+          return {
+            month: monthNames[parseInt(m) - 1],
+            avg: Math.round((val.total / val.count) * 10) / 10,
+            count: val.count,
+          };
+        });
+
+      // Overall NPS average
+      const allScores = (npsData || []).map((r) => r.score);
+      const npsAvg = allScores.length > 0 ? Math.round((allScores.reduce((a, b) => a + b, 0) / allScores.length) * 10) / 10 : null;
+
       return {
         birthdaysToday,
         birthdaysThisMonth,
         checkinTasks: checkinTasks || [],
         upgrades: upgrades || [],
         pendingBdayOpps: bdayOpps?.length || 0,
+        npsTrend,
+        npsAvg,
+        npsTotal: allScores.length,
       };
     },
   });
@@ -254,7 +293,56 @@ const LTVDashboard = () => {
         </div>
       )}
 
-      {!hasItems && (
+      {/* NPS Trend Chart */}
+      <div className="rounded-xl p-3 border border-border/50 bg-secondary/20">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 text-emerald-400" />
+            <span className="text-xs font-medium">Tendência NPS</span>
+          </div>
+          {data.npsAvg !== null && (
+            <div className="flex items-center gap-2">
+              <span className={`text-lg font-display font-bold ${
+                data.npsAvg >= 9 ? "text-emerald-400" : data.npsAvg >= 7 ? "text-amber-400" : "text-red-400"
+              }`}>
+                {data.npsAvg}
+              </span>
+              <span className="text-[9px] text-muted-foreground">
+                média ({data.npsTotal} respostas)
+              </span>
+            </div>
+          )}
+        </div>
+
+        {data.npsTrend.length > 0 ? (
+          <ResponsiveContainer width="100%" height={120}>
+            <LineChart data={data.npsTrend} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+              <XAxis dataKey="month" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+              <YAxis domain={[0, 10]} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+              <Tooltip
+                contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, fontSize: 11 }}
+                formatter={(value: number) => [`${value}`, "NPS médio"]}
+                labelFormatter={(label) => `${label}`}
+              />
+              <ReferenceLine y={7} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" strokeOpacity={0.3} />
+              <Line
+                type="monotone"
+                dataKey="avg"
+                stroke="hsl(var(--primary))"
+                strokeWidth={2.5}
+                dot={{ r: 4, fill: "hsl(var(--primary))", strokeWidth: 0 }}
+                activeDot={{ r: 6, fill: "hsl(var(--primary))" }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        ) : (
+          <p className="text-[10px] text-muted-foreground text-center py-6">
+            Nenhuma resposta NPS registrada ainda
+          </p>
+        )}
+      </div>
+
+      {!hasItems && data.npsTrend.length === 0 && (
         <p className="text-xs text-muted-foreground text-center py-3">
           ✅ Nenhuma automação LTV pendente. Tudo em dia!
         </p>
