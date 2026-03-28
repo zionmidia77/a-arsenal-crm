@@ -19,6 +19,7 @@ const AdminLayout = () => {
   const [open, setOpen] = useState(false);
   const location = useLocation();
   const isClientDetail = location.pathname.includes("/admin/client/");
+  const { signOut, user } = useAuth();
   useRealtimeLeads();
 
   return (
