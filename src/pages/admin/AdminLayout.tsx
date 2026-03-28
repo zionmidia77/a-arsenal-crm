@@ -6,6 +6,9 @@ import { useState } from "react";
 import BottomTabBar from "@/components/BottomTabBar";
 import { useRealtimeLeads } from "@/hooks/useRealtimeLeads";
 import { useAuth } from "@/hooks/useAuth";
+import NotificationCenter from "@/components/admin/NotificationCenter";
+import GlobalSearch from "@/components/admin/GlobalSearch";
+import AddLeadDialog from "@/components/admin/AddLeadDialog";
 
 const navItems = [
   { to: "/admin", icon: LayoutDashboard, label: "Dashboard" },
@@ -79,14 +82,20 @@ const AdminLayout = () => {
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="flex items-center gap-3 px-4 py-3 border-b border-border/50 md:hidden backdrop-blur-xl bg-background/80 sticky top-0 z-20">
-          <Button variant="ghost" size="icon" onClick={() => setOpen(!open)} className="rounded-full">
+        <header className="flex items-center gap-2 px-4 py-3 border-b border-border/50 backdrop-blur-xl bg-background/80 sticky top-0 z-20">
+          <Button variant="ghost" size="icon" onClick={() => setOpen(!open)} className="rounded-full md:hidden">
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 md:hidden">
             <Bike className="w-4 h-4 text-primary" />
             <span className="font-display font-bold text-sm">Arsenal <span className="text-primary">CRM</span></span>
           </div>
+          
+          <div className="flex-1" />
+          
+          <GlobalSearch />
+          <AddLeadDialog />
+          <NotificationCenter />
         </header>
         <main className={`flex-1 overflow-y-auto ${!isClientDetail ? "pb-20 md:pb-0" : ""}`}>
           <Outlet />

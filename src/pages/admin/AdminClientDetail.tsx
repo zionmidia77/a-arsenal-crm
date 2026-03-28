@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { useClient, useClientInteractions, useClientVehicles, useCreateInteraction, useUpdateClient, useCreateTask } from "@/hooks/useSupabase";
 import {
   ArrowLeft, MessageCircle, Phone, Mail, MapPin, Calendar, Bike,
-  TrendingUp, Clock, Plus, Star, CalendarPlus, Check, AlertTriangle
+  TrendingUp, Clock, Plus, Star, CalendarPlus, Check, AlertTriangle,
+  Copy, Send
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -45,6 +46,10 @@ const stageBadge: Record<string, string> = {
   closed_lost: "bg-destructive/15 text-destructive",
 };
 
+const interactionIcons: Record<string, string> = {
+  whatsapp: "💬", call: "📞", visit: "🏪", system: "⚙️", email: "📧", sms: "📱",
+};
+
 const stagger = { animate: { transition: { staggerChildren: 0.06 } } };
 const fadeUp = { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0, transition: { duration: 0.4 } } };
 
@@ -58,6 +63,7 @@ const AdminClientDetail = () => {
   const updateClient = useUpdateClient();
   const createTask = useCreateTask();
   const [note, setNote] = useState("");
+  const [noteType, setNoteType] = useState<string>("system");
   const [showSchedule, setShowSchedule] = useState(false);
   const [scheduleDate, setScheduleDate] = useState(new Date().toISOString().split("T")[0]);
   const [scheduleReason, setScheduleReason] = useState("");
@@ -81,20 +87,54 @@ const AdminClientDetail = () => {
     );
   }
 
+  const firstName = client.name.split(" ")[0];
+
+  const quickMessages = [
+    { label: "1° Contato", msg: `Fala ${firstName}! Aqui é da Arsenal Motors 🏍️ Vi que você tem interesse em ${(client.interest || "motos").toLowerCase()}. Posso te ajudar?` },
+    { label: "Follow-up", msg: `E aí ${firstName}! Passando pra ver se você teve tempo de pensar na nossa proposta. Tem alguma dúvida?` },
+    { label: "Proposta", msg: `${firstName}, consegui uma condição especial pra você! Quer que eu te mande os detalhes?` },
+    { label: "Reativação", msg: `Fala ${firstName}! Faz um tempo que a gente conversou. Surgiu algo novo que pode te interessar 🔥` },
+  ];
+
+  const sendWhatsApp = (msg: string) => {
+    if (!client.phone) { toast.error("Cliente sem telefone"); return; }
+    const phone = client.phone.replace(/\D/g, "");
+    window.open(`https://wa.me/55${phone}?text=${encodeURIComponent(msg)}`);
+    // Log the interaction
+    createInteraction.mutate({
+      client_id: client.id,
+      type: "whatsapp",
+      content: `Mensagem enviada via WhatsApp: "${msg.slice(0, 100)}..."`,
+      created_by: "admin",
+    });
+    updateClient.mutate({ id: client.id, last_contact_at: new Date().toISOString() } as any);
+  };
+
+  const copyMsg = (msg: string) => {
+    navigator.clipboard.writeText(msg);
+    toast.success("Mensagem copiada!");
+  };
+
   const addNote = () => {
     if (!note.trim()) return;
     createInteraction.mutate({
       client_id: client.id,
-      type: "system",
+      type: noteType as any,
       content: note,
       created_by: "admin",
     });
+    updateClient.mutate({ id: client.id, last_contact_at: new Date().toISOString() } as any);
     setNote("");
-    toast.success("Nota adicionada!");
+    toast.success("Interação registrada!");
   };
 
   const changeStage = (stage: string) => {
     updateClient.mutate({ id: client.id, pipeline_stage: stage as any });
+    createInteraction.mutate({
+      client_id: client.id, type: "system",
+      content: `Pipeline alterado para: ${STAGES.find(s => s.key === stage)?.label}`,
+      created_by: "admin",
+    });
     toast.success(`Status atualizado para ${STAGES.find(s => s.key === stage)?.label}`);
   };
 
@@ -106,8 +146,7 @@ const AdminClientDetail = () => {
   const markAttended = () => {
     updateClient.mutate({ id: client.id, pipeline_stage: "contacted" as any, last_contact_at: new Date().toISOString() } as any);
     createInteraction.mutate({
-      client_id: client.id,
-      type: "system",
+      client_id: client.id, type: "system",
       content: "Marcado como atendido",
       created_by: "admin",
     });
@@ -115,27 +154,25 @@ const AdminClientDetail = () => {
   };
 
   const scheduleFollowUp = () => {
-    if (!scheduleReason.trim()) {
-      toast.error("Adicione um motivo");
-      return;
-    }
+    if (!scheduleReason.trim()) { toast.error("Adicione um motivo"); return; }
     createTask.mutate({
-      client_id: client.id,
-      type: "follow_up",
-      reason: scheduleReason,
-      due_date: scheduleDate,
-      status: "pending",
+      client_id: client.id, type: "follow_up",
+      reason: scheduleReason, due_date: scheduleDate, status: "pending",
     });
     createInteraction.mutate({
-      client_id: client.id,
-      type: "system",
-      content: `Follow-up agendado para ${new Date(scheduleDate).toLocaleDateString("pt-BR")}: ${scheduleReason}`,
+      client_id: client.id, type: "system",
+      content: `Follow-up agendado para ${new Date(scheduleDate + "T12:00:00").toLocaleDateString("pt-BR")}: ${scheduleReason}`,
       created_by: "admin",
     });
     setShowSchedule(false);
     setScheduleReason("");
     toast.success("Follow-up agendado!");
   };
+
+  const daysAgo = Math.floor((Date.now() - new Date(client.created_at).getTime()) / 86400000);
+  const lastContactDays = client.last_contact_at
+    ? Math.floor((Date.now() - new Date(client.last_contact_at).getTime()) / 86400000)
+    : null;
 
   return (
     <motion.div variants={stagger} initial="initial" animate="animate" className="p-5 md:p-6 space-y-5 max-w-4xl">
@@ -153,6 +190,7 @@ const AdminClientDetail = () => {
             <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${stageBadge[client.pipeline_stage] || ''}`}>
               {STAGES.find(s => s.key === client.pipeline_stage)?.label}
             </span>
+            <span className="text-[10px] text-muted-foreground">· {daysAgo === 0 ? "hoje" : `${daysAgo}d atrás`}</span>
           </div>
         </div>
         <div className="text-right">
@@ -161,10 +199,18 @@ const AdminClientDetail = () => {
         </div>
       </motion.div>
 
+      {/* Last contact warning */}
+      {lastContactDays !== null && lastContactDays > 2 && (
+        <motion.div variants={fadeUp} className="bg-destructive/10 rounded-xl p-3 border border-destructive/20 flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />
+          <p className="text-xs text-destructive">Último contato há {lastContactDays} dias! Faça o follow-up.</p>
+        </motion.div>
+      )}
+
       {/* ⚡ Quick Actions Bar */}
       <motion.div variants={fadeUp} className="grid grid-cols-4 gap-2">
         {client.phone && (
-          <Button className="h-14 rounded-xl flex flex-col gap-1 text-xs glow-red" onClick={() => window.open(`https://wa.me/55${client.phone?.replace(/\D/g, "")}`)}>
+          <Button className="h-14 rounded-xl flex flex-col gap-1 text-xs glow-red" onClick={() => sendWhatsApp(quickMessages[0].msg)}>
             <MessageCircle className="w-5 h-5" />
             WhatsApp
           </Button>
@@ -185,35 +231,42 @@ const AdminClientDetail = () => {
         )}
       </motion.div>
 
+      {/* 📝 Quick Messages */}
+      <motion.div variants={fadeUp} className="glass-card p-4">
+        <p className="text-sm font-medium mb-3 flex items-center gap-2">
+          <Send className="w-4 h-4 text-primary" /> Mensagens rápidas
+        </p>
+        <div className="grid grid-cols-2 gap-2">
+          {quickMessages.map((qm, i) => (
+            <div key={i} className="bg-secondary/50 rounded-xl p-3 space-y-2">
+              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">{qm.label}</p>
+              <p className="text-xs text-foreground/70 line-clamp-2">{qm.msg}</p>
+              <div className="flex gap-1.5">
+                <Button size="sm" className="h-7 rounded-full text-[10px] gap-1 flex-1" onClick={() => sendWhatsApp(qm.msg)}>
+                  <MessageCircle className="w-2.5 h-2.5" /> Enviar
+                </Button>
+                <Button size="sm" variant="outline" className="h-7 rounded-full text-[10px] gap-1" onClick={() => copyMsg(qm.msg)}>
+                  <Copy className="w-2.5 h-2.5" />
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </motion.div>
+
       {/* Schedule Follow-up */}
       {showSchedule && (
-        <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: "auto" }}
-          className="glass-card p-4 space-y-3"
-        >
+        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="glass-card p-4 space-y-3">
           <p className="text-sm font-medium flex items-center gap-2">
             <CalendarPlus className="w-4 h-4 text-primary" /> Agendar retorno
           </p>
-          <Input
-            type="date"
-            value={scheduleDate}
-            onChange={(e) => setScheduleDate(e.target.value)}
-            className="rounded-xl bg-secondary border-border/50 h-10"
-          />
-          <Input
-            value={scheduleReason}
-            onChange={(e) => setScheduleReason(e.target.value)}
-            placeholder="Ex: Ligar às 18h sobre CB 500..."
-            className="rounded-xl bg-secondary border-border/50 h-10"
-          />
+          <Input type="date" value={scheduleDate} onChange={(e) => setScheduleDate(e.target.value)} className="rounded-xl bg-secondary border-border/50 h-10" />
+          <Input value={scheduleReason} onChange={(e) => setScheduleReason(e.target.value)} placeholder="Ex: Ligar às 18h sobre CB 500..." className="rounded-xl bg-secondary border-border/50 h-10" />
           <div className="flex gap-2">
             <Button onClick={scheduleFollowUp} className="flex-1 rounded-xl h-10">
               <CalendarPlus className="w-4 h-4 mr-2" /> Agendar
             </Button>
-            <Button variant="outline" onClick={() => setShowSchedule(false)} className="rounded-xl h-10">
-              Cancelar
-            </Button>
+            <Button variant="outline" onClick={() => setShowSchedule(false)} className="rounded-xl h-10">Cancelar</Button>
           </div>
         </motion.div>
       )}
@@ -248,6 +301,12 @@ const AdminClientDetail = () => {
           <div className="flex items-center gap-3">
             <TrendingUp className="w-4 h-4 text-muted-foreground" />
             <span className="text-sm">Orçamento: {client.budget_range}</span>
+          </div>
+        )}
+        {client.source && (
+          <div className="flex items-center gap-3">
+            <Calendar className="w-4 h-4 text-muted-foreground" />
+            <span className="text-sm">Origem: {client.source}</span>
           </div>
         )}
       </motion.div>
@@ -306,9 +365,27 @@ const AdminClientDetail = () => {
         </motion.div>
       )}
 
-      {/* Add Note */}
+      {/* Add Interaction */}
       <motion.div variants={fadeUp} className="glass-card p-4">
-        <p className="text-sm font-medium mb-3">Adicionar nota</p>
+        <p className="text-sm font-medium mb-3">Registrar interação</p>
+        <div className="flex gap-1.5 mb-3 overflow-x-auto">
+          {[
+            { key: "whatsapp", label: "💬 WhatsApp" },
+            { key: "call", label: "📞 Ligação" },
+            { key: "visit", label: "🏪 Visita" },
+            { key: "system", label: "📝 Nota" },
+          ].map(t => (
+            <Button
+              key={t.key}
+              size="sm"
+              variant={noteType === t.key ? "default" : "outline"}
+              className="rounded-full text-[10px] shrink-0 h-7"
+              onClick={() => setNoteType(t.key)}
+            >
+              {t.label}
+            </Button>
+          ))}
+        </div>
         <div className="flex gap-2">
           <Input value={note} onChange={(e) => setNote(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addNote()} placeholder="Ex: Cliente interessado em CB 500..." className="rounded-xl bg-secondary border-border/50 h-10" />
           <Button size="icon" className="rounded-xl h-10 w-10 shrink-0" onClick={addNote}>
@@ -325,7 +402,9 @@ const AdminClientDetail = () => {
             {interactions.map((int) => (
               <div key={int.id} className="glass-card p-3 border-l-2 border-primary/30">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-[10px] text-muted-foreground capitalize bg-secondary px-2 py-0.5 rounded-full">{int.type}</span>
+                  <span className="text-[10px] text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">
+                    {interactionIcons[int.type] || "⚙️"} {int.type}
+                  </span>
                   <span className="text-[10px] text-muted-foreground">{new Date(int.created_at).toLocaleString("pt-BR")}</span>
                 </div>
                 <p className="text-sm text-foreground/80">{int.content}</p>
