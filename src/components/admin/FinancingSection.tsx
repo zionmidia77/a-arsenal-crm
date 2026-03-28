@@ -185,7 +185,14 @@ const FinancingSection = ({ client }: FinancingSectionProps) => {
       if (data?.verification) {
         setVerification(data.verification);
         setShowVerification(true);
-        toast.success("Empresa verificada com IA!");
+        toast.success("Empresa verificada com sucesso!");
+        // Reload history
+        const { data: histData } = await supabase
+          .from("employer_verifications")
+          .select("*")
+          .eq("client_id", client.id)
+          .order("created_at", { ascending: false });
+        if (histData) setVerificationHistory(histData);
       }
     } catch (err: any) {
       console.error("Verify error:", err);
