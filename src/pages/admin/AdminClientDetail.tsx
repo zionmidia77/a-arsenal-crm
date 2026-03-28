@@ -479,6 +479,21 @@ const AdminClientDetail = () => {
         <ReferralSection client={client} />
       </motion.div>
 
+      {/* 💬 NPS / Satisfação */}
+      <motion.div variants={fadeUp}>
+        <NPSSection client={client} />
+      </motion.div>
+
+      {/* 📊 Relatório do Cliente */}
+      <motion.div variants={fadeUp}>
+        <ClientReportSection client={client} vehicles={vehicles} />
+      </motion.div>
+
+      {/* 🎁 Ofertas Exclusivas */}
+      <motion.div variants={fadeUp}>
+        <ExclusiveOffersSection client={client} />
+      </motion.div>
+
       {/* Vehicles */}
       {vehicles && vehicles.length > 0 && (
         <motion.div variants={fadeUp}>
