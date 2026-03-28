@@ -287,12 +287,78 @@ const AdminMetrics = () => {
         </ResponsiveContainer>
       </motion.div>
 
-      {/* Funnel de Conversão */}
+      {/* Conversion Rate Cards */}
+      <motion.div variants={fadeUp}>
+        <p className="text-sm font-medium mb-3 flex items-center gap-2">
+          <Target className="w-4 h-4 text-green-400" /> Taxas de Conversão por Etapa
+        </p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          {metrics.funnelData.filter((_, i) => i > 0).map((stage, i) => {
+            const prev = metrics.funnelData[i];
+            const rateColor = stage.conversionRate >= 50 ? 'text-green-400' : stage.conversionRate >= 25 ? 'text-amber-400' : 'text-red-400';
+            const rateBg = stage.conversionRate >= 50 ? 'bg-green-500/10' : stage.conversionRate >= 25 ? 'bg-amber-500/10' : 'bg-red-500/10';
+            return (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: i * 0.05 }}
+                className="glass-card p-3 text-center"
+              >
+                <p className="text-[9px] text-muted-foreground truncate mb-1">
+                  {prev.name} → {stage.name}
+                </p>
+                <p className={`text-xl font-display font-bold tabular-nums ${rateColor}`}>
+                  {stage.conversionRate}%
+                </p>
+                <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full mt-1 ${rateBg}`}>
+                  <span className="text-[9px] tabular-nums font-medium">{prev.value} → {stage.value}</span>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      </motion.div>
+
+      {/* Funnel de Conversão Visual */}
       <motion.div variants={fadeUp} className="glass-card p-5">
         <p className="text-sm font-medium mb-4 flex items-center gap-2">
-          <Target className="w-4 h-4 text-green-400" /> Funil de conversão
+          <TrendingUp className="w-4 h-4 text-primary" /> Funil Visual
         </p>
-        <div className="space-y-1.5">
+
+        {/* Bar chart representation of funnel */}
+        <ResponsiveContainer width="100%" height={220}>
+          <BarChart data={metrics.funnelData} margin={{ left: 10, right: 10 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(0 0% 15%)" vertical={false} />
+            <XAxis
+              dataKey="name"
+              axisLine={false}
+              tickLine={false}
+              tick={{ fontSize: 9, fill: 'hsl(0 0% 50%)' }}
+              interval={0}
+              angle={-35}
+              textAnchor="end"
+              height={50}
+            />
+            <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: 'hsl(0 0% 50%)' }} width={30} allowDecimals={false} />
+            <Tooltip
+              contentStyle={{ background: 'hsl(0 0% 9%)', border: '1px solid hsl(0 0% 15%)', borderRadius: '12px', fontSize: '12px' }}
+              formatter={(value: number, _name: string, props: any) => {
+                const idx = metrics.funnelData.findIndex(s => s.name === props.payload.name);
+                const rate = idx > 0 ? ` (${metrics.funnelData[idx].conversionRate}% conv.)` : '';
+                return [`${value} leads${rate}`, 'Quantidade'];
+              }}
+            />
+            <Bar dataKey="value" radius={[6, 6, 0, 0]} barSize={28}>
+              {metrics.funnelData.map((_, i) => (
+                <Cell key={i} fill={FUNNEL_COLORS[i % FUNNEL_COLORS.length]} fillOpacity={0.75} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+
+        {/* Horizontal funnel bars */}
+        <div className="mt-4 space-y-1.5">
           {metrics.funnelData.map((stage, i) => {
             const maxVal = Math.max(...metrics.funnelData.map(s => s.value), 1);
             const width = Math.max((stage.value / maxVal) * 100, 6);
@@ -300,13 +366,13 @@ const AdminMetrics = () => {
               <div key={i} className="group">
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] text-muted-foreground w-24 text-right shrink-0 truncate">{stage.name}</span>
-                  <div className="flex-1 h-8 bg-secondary/30 rounded-lg overflow-hidden relative">
+                  <div className="flex-1 h-7 bg-secondary/30 rounded-lg overflow-hidden relative">
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${width}%` }}
                       transition={{ duration: 0.5, delay: i * 0.06 }}
-                      className="h-full rounded-lg flex items-center justify-between px-2.5"
-                      style={{ backgroundColor: FUNNEL_COLORS[i % FUNNEL_COLORS.length] + "35" }}
+                      className="h-full rounded-lg flex items-center px-2.5"
+                      style={{ backgroundColor: FUNNEL_COLORS[i % FUNNEL_COLORS.length] + "40" }}
                     >
                       <span className="text-[11px] font-bold tabular-nums">{stage.value}</span>
                     </motion.div>
@@ -320,11 +386,6 @@ const AdminMetrics = () => {
                   )}
                   {i === 0 && <span className="w-10 shrink-0" />}
                 </div>
-                {i > 0 && i < metrics.funnelData.length && (
-                  <div className="ml-[104px] h-1.5 flex items-center">
-                    <div className="w-px h-full bg-border/30" />
-                  </div>
-                )}
               </div>
             );
           })}
