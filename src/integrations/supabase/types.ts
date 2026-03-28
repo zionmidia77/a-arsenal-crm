@@ -555,6 +555,7 @@ export type Database = {
     }
     Functions: {
       auto_cool_leads: { Args: never; Returns: undefined }
+      auto_escalate_stale_leads: { Args: never; Returns: undefined }
       calculate_lead_score: {
         Args: { client_id_param: string }
         Returns: number
