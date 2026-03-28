@@ -57,6 +57,7 @@ const App = () => (
               <Route path="tasks" element={<AdminTasks />} />
               <Route path="messages" element={<AdminMessages />} />
               <Route path="metrics" element={<AdminMetrics />} />
+              <Route path="calendar" element={<AdminCalendar />} />
               <Route path="client/:id" element={<AdminClientDetail />} />
             </Route>
             <Route path="*" element={<NotFound />} />
