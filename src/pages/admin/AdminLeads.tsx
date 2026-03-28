@@ -158,10 +158,42 @@ const AdminLeads = () => {
 
   return (
     <motion.div variants={stagger} initial="initial" animate="animate" className="p-5 md:p-6 space-y-5 max-w-4xl">
-      <motion.div variants={fadeUp}>
-        <h1 className="text-2xl font-display font-bold">Leads</h1>
-        <p className="text-sm text-muted-foreground">{clients?.length || 0} leads capturados</p>
+      <motion.div variants={fadeUp} className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-display font-bold">Leads</h1>
+          <p className="text-sm text-muted-foreground">{clients?.length || 0} leads capturados</p>
+        </div>
+        <Button
+          variant={selectMode ? "default" : "outline"}
+          size="sm"
+          className="rounded-full text-xs gap-1.5 h-9"
+          onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)}
+        >
+          <CheckSquare className="w-3.5 h-3.5" />
+          {selectMode ? "Cancelar" : "Selecionar"}
+        </Button>
       </motion.div>
+
+      {/* Merge action bar */}
+      {selectMode && selectedIds.size >= 2 && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center gap-3 p-3 rounded-xl bg-primary/10 border border-primary/30"
+        >
+          <GitMerge className="w-4 h-4 text-primary shrink-0" />
+          <span className="text-sm font-medium flex-1">
+            {selectedIds.size} leads selecionados
+          </span>
+          <Button
+            size="sm"
+            className="rounded-full text-xs gap-1.5 h-8 glow-red"
+            onClick={() => setMergeOpen(true)}
+          >
+            <GitMerge className="w-3.5 h-3.5" /> Mesclar
+          </Button>
+        </motion.div>
+      )}
 
       <motion.div variants={fadeUp} className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
