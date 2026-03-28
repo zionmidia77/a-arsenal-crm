@@ -95,27 +95,75 @@ Se algum dado não for visível, use null.`,
       extracted = {};
     }
 
-    // Step 2: If we got an employer name, verify it with AI knowledge
+    // Step 2: If CNPJ was extracted, query BrasilAPI for real company data
     let verification: any = null;
-    if (extracted.employer_name) {
-      const verifyPrompt = `Pesquise e verifique a empresa "${extracted.employer_name}"${extracted.employer_cnpj ? ` (CNPJ: ${extracted.employer_cnpj})` : ""}${extracted.employer_address ? ` localizada em ${extracted.employer_address}` : ""}.
+    let cnpjData: any = null;
 
+    if (extracted.employer_cnpj) {
+      const cleanCnpj = extracted.employer_cnpj.replace(/[^\d]/g, "");
+      if (cleanCnpj.length === 14) {
+        try {
+          const cnpjResponse = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cleanCnpj}`, {
+            headers: { "User-Agent": "ArsenalCRM/1.0" },
+          });
+          if (cnpjResponse.ok) {
+            cnpjData = await cnpjResponse.json();
+            verification = {
+              company_name: cnpjData.razao_social || null,
+              trading_name: cnpjData.nome_fantasia || null,
+              sector: cnpjData.cnae_fiscal_descricao || null,
+              size: cnpjData.porte || null,
+              status: cnpjData.descricao_situacao_cadastral?.toLowerCase() || null,
+              founded_year: cnpjData.data_inicio_atividade ? cnpjData.data_inicio_atividade.substring(0, 4) : null,
+              location: cnpjData.municipio ? `${cnpjData.municipio}/${cnpjData.uf}` : null,
+              address: cnpjData.logradouro ? `${cnpjData.descricao_tipo_de_logradouro || ""} ${cnpjData.logradouro}, ${cnpjData.numero || "S/N"} - ${cnpjData.bairro || ""}, ${cnpjData.municipio || ""}/${cnpjData.uf || ""} - CEP ${cnpjData.cep || ""}`.trim() : null,
+              description: cnpjData.cnae_fiscal_descricao || null,
+              cnpj_validated: true,
+              verified: cnpjData.descricao_situacao_cadastral === "ATIVA",
+              legal_nature: cnpjData.natureza_juridica || null,
+              share_capital: cnpjData.capital_social || null,
+              source: "Receita Federal via BrasilAPI",
+              risk_flags: cnpjData.descricao_situacao_cadastral !== "ATIVA"
+                ? [`Situação cadastral: ${cnpjData.descricao_situacao_cadastral}`]
+                : [],
+              positive_flags: [
+                ...(cnpjData.descricao_situacao_cadastral === "ATIVA" ? ["Empresa ativa na Receita Federal"] : []),
+                ...(cnpjData.capital_social > 100000 ? ["Capital social acima de R$100k"] : []),
+              ],
+              reliability_score: cnpjData.descricao_situacao_cadastral === "ATIVA"
+                ? (cnpjData.capital_social > 100000 ? 9 : 7)
+                : 3,
+            };
+          } else {
+            console.error("BrasilAPI CNPJ error:", cnpjResponse.status);
+            verification = { cnpj_validated: false, error: "CNPJ não encontrado na Receita Federal", verified: false };
+          }
+        } catch (err) {
+          console.error("BrasilAPI fetch error:", err);
+          verification = { cnpj_validated: false, error: "Erro ao consultar Receita Federal", verified: false };
+        }
+      } else {
+        verification = { cnpj_validated: false, error: "CNPJ extraído é inválido (não tem 14 dígitos)", verified: false };
+      }
+    } else if (extracted.employer_name) {
+      // Fallback: no CNPJ found, use AI to verify by name
+      const verifyPrompt = `Pesquise e verifique a empresa "${extracted.employer_name}"${extracted.employer_address ? ` localizada em ${extracted.employer_address}` : ""}.
 Responda APENAS com JSON:
 {
-  "company_name": "nome oficial da empresa",
-  "trading_name": "nome fantasia se diferente",
-  "sector": "setor de atuação",
-  "size": "porte (MEI/ME/EPP/Média/Grande)",
+  "company_name": "nome oficial",
+  "trading_name": "nome fantasia",
+  "sector": "setor",
+  "size": "porte",
   "status": "ativa/inativa/não encontrada",
-  "founded_year": "ano de fundação se conhecido",
-  "location": "cidade/estado principal",
-  "description": "breve descrição da empresa (1-2 frases)",
-  "reliability_score": "1 a 10 - quão confiável parece para fins de financiamento",
-  "risk_flags": ["lista de alertas se houver"],
-  "positive_flags": ["lista de pontos positivos"],
-  "verified": true/false
-}
-Se não conhecer a empresa, retorne verified: false e preencha o que puder.`;
+  "location": "cidade/estado",
+  "description": "breve descrição",
+  "reliability_score": "1-10",
+  "risk_flags": [],
+  "positive_flags": [],
+  "verified": true/false,
+  "cnpj_validated": false,
+  "source": "Análise por IA (CNPJ não disponível no holerite)"
+}`;
 
       const verifyResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
@@ -126,10 +174,7 @@ Se não conhecer a empresa, retorne verified: false e preencha o que puder.`;
         body: JSON.stringify({
           model: "google/gemini-2.5-flash",
           messages: [
-            {
-              role: "system",
-              content: "Você é um analista de crédito brasileiro. Verifique empresas para fins de aprovação de financiamento. Use seu conhecimento para fornecer informações sobre a empresa. Seja honesto quando não tiver informações suficientes.",
-            },
+            { role: "system", content: "Você é um analista de crédito brasileiro. Verifique empresas para fins de aprovação de financiamento." },
             { role: "user", content: verifyPrompt },
           ],
           response_format: { type: "json_object" },
