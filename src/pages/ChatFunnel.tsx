@@ -67,6 +67,7 @@ const getFlow = (interest?: string): Omit<Message, "id" | "sender">[] => {
     ...base,
     ...specific,
     { text: "Perfeito! Me diz seu nome pra eu te chamar direito 😄", inputType: "text", field: "name" },
+    { text: "Qual sua data de nascimento? 🎂 (dd/mm/aaaa)", inputType: "text", field: "birthdate" },
     { text: "E qual seu WhatsApp? Prometo que não vou lotar sua caixa 😅", inputType: "phone", field: "phone" },
     { text: "Pronto! Vou preparar as melhores opções pra você. Um especialista Arsenal vai te chamar em breve 🔥" },
   ];
