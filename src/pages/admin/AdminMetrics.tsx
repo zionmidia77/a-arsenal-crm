@@ -1,8 +1,10 @@
 import { motion } from "framer-motion";
 import {
   BarChart3, TrendingUp, Clock, Users, Target, Flame,
-  ArrowDownRight, ArrowUpRight, Zap, CalendarDays, Award, Filter
+  ArrowDownRight, ArrowUpRight, Zap, CalendarDays, Award, Filter, FileDown
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { generatePDFReport } from "@/lib/generateReport";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, AreaChart, Area, CartesianGrid, Legend
@@ -174,13 +176,23 @@ const AdminMetrics = () => {
           <h1 className="text-2xl font-display font-bold">Métricas Avançadas</h1>
           <p className="text-sm text-muted-foreground">Análise completa de desempenho e conversão</p>
         </div>
-        <Tabs value={period} onValueChange={v => setPeriod(v as any)}>
-          <TabsList className="h-8">
-            <TabsTrigger value="7" className="text-xs h-6 px-2">7d</TabsTrigger>
-            <TabsTrigger value="14" className="text-xs h-6 px-2">14d</TabsTrigger>
-            <TabsTrigger value="30" className="text-xs h-6 px-2">30d</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8 rounded-xl text-xs gap-1.5"
+            onClick={() => generatePDFReport(metrics)}
+          >
+            <FileDown className="w-3.5 h-3.5" /> Exportar PDF
+          </Button>
+          <Tabs value={period} onValueChange={v => setPeriod(v as any)}>
+            <TabsList className="h-8">
+              <TabsTrigger value="7" className="text-xs h-6 px-2">7d</TabsTrigger>
+              <TabsTrigger value="14" className="text-xs h-6 px-2">14d</TabsTrigger>
+              <TabsTrigger value="30" className="text-xs h-6 px-2">30d</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
       </motion.div>
 
       {/* Stat Cards */}
