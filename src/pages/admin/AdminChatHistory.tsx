@@ -1,15 +1,17 @@
-import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useMemo, useRef, useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { MessageSquare, User, Clock, UserCheck, X, Search, CalendarIcon, Filter } from "lucide-react";
+import { MessageSquare, User, Clock, UserCheck, X, Search, CalendarIcon, Filter, Send } from "lucide-react";
+import { toast } from "sonner";
 import { format, isAfter, isBefore, startOfDay, endOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -38,6 +40,10 @@ const AdminChatHistory = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
   const [dateTo, setDateTo] = useState<Date | undefined>();
+  const [replyText, setReplyText] = useState("");
+  const [isSending, setIsSending] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const queryClient = useQueryClient();
 
   const { data: conversations = [], isLoading } = useQuery({
     queryKey: ["chat-conversations"],
@@ -88,7 +94,17 @@ const AdminChatHistory = () => {
     switch (s) {
       case "active": return "bg-emerald-500/20 text-emerald-400";
       case "transferred": return "bg-amber-500/20 text-amber-400";
+      case "attended": return "bg-blue-500/20 text-blue-400";
       default: return "bg-muted text-muted-foreground";
+    }
+  };
+
+  const statusLabel = (s: string) => {
+    switch (s) {
+      case "active": return "Ativo";
+      case "transferred": return "Transferido";
+      case "attended": return "Atendido";
+      default: return s;
     }
   };
 
@@ -128,6 +144,7 @@ const AdminChatHistory = () => {
                 <SelectItem value="all">Todos</SelectItem>
                 <SelectItem value="active">Ativo</SelectItem>
                 <SelectItem value="transferred">Transferido</SelectItem>
+                <SelectItem value="attended">Atendido</SelectItem>
               </SelectContent>
             </Select>
 
@@ -194,7 +211,7 @@ const AdminChatHistory = () => {
                             <span className="text-sm font-medium truncate max-w-[140px]">{clientName}</span>
                           </div>
                           <Badge className={`text-[10px] ${statusColor(convo.status)}`}>
-                            {convo.status === "transferred" ? "Transferido" : convo.status === "active" ? "Ativo" : convo.status}
+                            {statusLabel(convo.status)}
                           </Badge>
                         </div>
                         {lastMsg && (
@@ -236,9 +253,9 @@ const AdminChatHistory = () => {
                     )}
                   </CardTitle>
                   <div className="flex items-center gap-2">
-                    {selectedConvo.status === "transferred" && (
-                      <Badge className="bg-amber-500/20 text-amber-400 gap-1">
-                        <UserCheck className="w-3 h-3" /> Transferido
+                    {(selectedConvo.status === "transferred" || selectedConvo.status === "attended") && (
+                      <Badge className={`gap-1 ${statusColor(selectedConvo.status)}`}>
+                        <UserCheck className="w-3 h-3" /> {statusLabel(selectedConvo.status)}
                       </Badge>
                     )}
                     <Button variant="ghost" size="icon" onClick={() => setSelectedConvo(null)}>
@@ -251,7 +268,7 @@ const AdminChatHistory = () => {
                 </p>
               </CardHeader>
               <CardContent>
-                <ScrollArea className="h-[500px]">
+                <ScrollArea className="h-[440px]" ref={scrollRef}>
                   <div className="space-y-3 pr-4">
                     {Array.isArray(selectedConvo.messages) && selectedConvo.messages.map((msg, i) => (
                       <div
@@ -274,6 +291,82 @@ const AdminChatHistory = () => {
                     ))}
                   </div>
                 </ScrollArea>
+
+                {/* Manual reply input for transferred conversations */}
+                {(selectedConvo.status === "transferred" || selectedConvo.status === "attended") && (
+                  <div className="mt-3 pt-3 border-t border-border/50">
+                    <form
+                      onSubmit={async (e) => {
+                        e.preventDefault();
+                        if (!replyText.trim() || isSending) return;
+                        setIsSending(true);
+                        try {
+                          const newMsg = {
+                            role: "assistant" as const,
+                            content: `[Vendedor] ${replyText.trim()}`,
+                            timestamp: new Date().toISOString(),
+                          };
+                          const currentMsgs = Array.isArray(selectedConvo.messages) ? selectedConvo.messages : [];
+                          const updatedMsgs = [...currentMsgs, newMsg];
+
+                          const { error } = await supabase
+                            .from("chat_conversations")
+                            .update({
+                              messages: updatedMsgs as any,
+                              status: "attended",
+                              updated_at: new Date().toISOString(),
+                            })
+                            .eq("id", selectedConvo.id);
+
+                          if (error) throw error;
+
+                          // Log interaction if linked to client
+                          if (selectedConvo.client_id) {
+                            await supabase.from("interactions").insert({
+                              client_id: selectedConvo.client_id,
+                              type: "system" as const,
+                              content: `Resposta do vendedor no chat: ${replyText.trim().slice(0, 100)}`,
+                              created_by: "vendedor",
+                            });
+                          }
+
+                          setSelectedConvo({ ...selectedConvo, messages: updatedMsgs, status: "attended" });
+                          setReplyText("");
+                          queryClient.invalidateQueries({ queryKey: ["chat-conversations"] });
+                          toast.success("Mensagem enviada!");
+                          setTimeout(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" }), 100);
+                        } catch (err) {
+                          console.error(err);
+                          toast.error("Erro ao enviar mensagem");
+                        } finally {
+                          setIsSending(false);
+                        }
+                      }}
+                      className="flex gap-2 items-end"
+                    >
+                      <Textarea
+                        value={replyText}
+                        onChange={(e) => setReplyText(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && !e.shiftKey) {
+                            e.preventDefault();
+                            e.currentTarget.form?.requestSubmit();
+                          }
+                        }}
+                        placeholder="Responder ao cliente..."
+                        rows={1}
+                        disabled={isSending}
+                        className="flex-1 resize-none text-sm min-h-[40px] max-h-[100px]"
+                      />
+                      <Button type="submit" size="icon" disabled={!replyText.trim() || isSending} className="shrink-0 h-10 w-10">
+                        <Send className="w-4 h-4" />
+                      </Button>
+                    </form>
+                    <p className="text-[10px] text-muted-foreground mt-1.5">
+                      A resposta será salva no histórico da conversa
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           ) : (
