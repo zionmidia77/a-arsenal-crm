@@ -543,14 +543,24 @@ const ChatFunnel = () => {
         setIsLoading(false);
         inputRef.current?.focus();
 
-        // Save conversation after each exchange
+        // Attach pending vehicles to the last assistant message
         setMessages(prev => {
+          if (pendingVehicles && pendingVehicles.length > 0) {
+            const updated = prev.map((m, i) =>
+              i === prev.length - 1 && m.role === "assistant"
+                ? { ...m, vehicles: pendingVehicles }
+                : m
+            );
+            setPendingVehicles(null);
+            saveConversation(updated);
+            return updated;
+          }
           saveConversation(prev);
           return prev;
         });
       }
     },
-    [messages, isLoading, isTransferred, clientId, scrollToBottom, saveConversation]
+    [messages, isLoading, isTransferred, clientId, scrollToBottom, saveConversation, pendingVehicles]
   );
 
   const handleSubmit = (e?: React.FormEvent) => {
