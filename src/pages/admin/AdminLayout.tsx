@@ -4,6 +4,7 @@ import { LayoutDashboard, Users, ListChecks, MessageSquare, Menu, X, Bike, Chevr
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import BottomTabBar from "@/components/BottomTabBar";
+import { useRealtimeLeads } from "@/hooks/useRealtimeLeads";
 
 const navItems = [
   { to: "/admin", icon: LayoutDashboard, label: "Dashboard" },
@@ -17,6 +18,7 @@ const AdminLayout = () => {
   const [open, setOpen] = useState(false);
   const location = useLocation();
   const isClientDetail = location.pathname.includes("/admin/client/");
+  useRealtimeLeads();
 
   return (
     <div className="min-h-screen bg-background flex">
