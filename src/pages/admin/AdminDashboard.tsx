@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { Users, Flame, UserCheck, TrendingUp, ArrowUpRight, ArrowDownRight, BarChart3, Eye } from "lucide-react";
+import EmptyState from "@/components/EmptyState";
 import { AreaChart, Area, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import { useDashboardStats, useClients } from "@/hooks/useSupabase";
 import { useNavigate } from "react-router-dom";
@@ -114,9 +115,16 @@ const AdminDashboard = () => {
             ))}
           </div>
         ) : (
-          <div className="glass-card p-8 text-center">
-            <p className="text-muted-foreground text-sm">Nenhum lead ainda. Compartilhe o funil para começar! 🚀</p>
-          </div>
+          <EmptyState
+            icon={Users}
+            title="Nenhum lead ainda"
+            description="Compartilhe o funil de captura para começar a receber leads automaticamente!"
+            actionLabel="Copiar link do funil"
+            onAction={() => {
+              navigator.clipboard.writeText(`${window.location.origin}/chat`);
+              import("sonner").then(({ toast }) => toast.success("Link copiado!"));
+            }}
+          />
         )}
       </motion.div>
     </motion.div>

@@ -4,17 +4,19 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Send, ArrowLeft, Bike } from "lucide-react";
+import { Send, ArrowLeft, Bike, Camera, Image as ImageIcon, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+// ── Types ──
 interface Message {
   id: number;
   text: string;
   sender: "bot" | "user";
   options?: string[];
-  inputType?: "text" | "phone";
+  inputType?: "text" | "phone" | "photo";
   field?: string;
+  imageUrl?: string;
 }
 
 interface FunnelAnswers {
@@ -23,9 +25,11 @@ interface FunnelAnswers {
   hasTradeIn?: boolean;
   name?: string;
   phone?: string;
+  photoUrl?: string;
+  [key: string]: any;
 }
 
-// Adaptive flow based on interest
+// ── Flow builder ──
 const getFlow = (interest?: string): Omit<Message, "id" | "sender">[] => {
   const base: Omit<Message, "id" | "sender">[] = [
     { text: "Fala! 👊 Eu sou o Consultor Arsenal. Bora ver o que a gente pode fazer por você?" },
@@ -38,14 +42,17 @@ const getFlow = (interest?: string): Omit<Message, "id" | "sender">[] => {
     "Quero comprar uma moto": [
       { text: "Boa! Comprar moto é com a gente mesmo 🏍️ Qual faixa de valor você tá pensando?", options: ["Até R$ 15 mil", "R$ 15 a 30 mil", "R$ 30 a 50 mil", "Acima de R$ 50 mil"], field: "budget" },
       { text: "Show! E você tem moto pra dar na troca?", options: ["Sim, tenho", "Não tenho"], field: "tradeIn" },
+      { text: "Se tiver, manda uma foto da sua moto! Isso ajuda a gente avaliar melhor 📸", inputType: "photo", field: "photo" },
     ],
     "Quero trocar minha moto": [
       { text: "Troca é nosso forte! 💪 Qual sua moto atual?", inputType: "text", field: "currentBike" },
+      { text: "Manda uma foto dela pra gente avaliar! 📸", inputType: "photo", field: "photo" },
       { text: "E tá financiada?", options: ["Sim, financiada", "Não, tá quitada"], field: "financed" },
       { text: "Beleza! E qual faixa de valor da nova?", options: ["Até R$ 15 mil", "R$ 15 a 30 mil", "R$ 30 a 50 mil", "Acima de R$ 50 mil"], field: "budget" },
     ],
     "Quero vender minha moto": [
       { text: "Vamos ver! Qual é a moto?", inputType: "text", field: "currentBike" },
+      { text: "Manda uma foto pra gente avaliar melhor 📸", inputType: "photo", field: "photo" },
       { text: "E tá quitada?", options: ["Sim, quitada", "Não, financiada"], field: "financed" },
       { text: "Quanto você espera receber?", options: ["Até R$ 10 mil", "R$ 10 a 20 mil", "R$ 20 a 40 mil", "Acima de R$ 40 mil"], field: "budget" },
     ],
@@ -56,7 +63,6 @@ const getFlow = (interest?: string): Omit<Message, "id" | "sender">[] => {
   };
 
   const specific = flows[interest] || flows["Quero comprar uma moto"];
-
   return [
     ...base,
     ...specific,
@@ -66,6 +72,7 @@ const getFlow = (interest?: string): Omit<Message, "id" | "sender">[] => {
   ];
 };
 
+// ── Typing Indicator ──
 const TypingIndicator = () => (
   <motion.div
     initial={{ opacity: 0, y: 8 }}
@@ -84,6 +91,30 @@ const TypingIndicator = () => (
   </motion.div>
 );
 
+// ── Chat Bubble ──
+const ChatBubble = ({ msg }: { msg: Message }) => (
+  <motion.div
+    key={msg.id}
+    initial={{ opacity: 0, y: 12, scale: 0.97 }}
+    animate={{ opacity: 1, y: 0, scale: 1 }}
+    transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+    className={`flex mb-3 ${msg.sender === "user" ? "justify-end" : "items-end gap-2.5"}`}
+  >
+    {msg.sender === "bot" && (
+      <Avatar className="h-8 w-8 border border-primary/30 shrink-0">
+        <AvatarFallback className="bg-primary/20 text-primary text-xs font-bold">A</AvatarFallback>
+      </Avatar>
+    )}
+    <div className={`max-w-[80%] ${msg.sender === "user" ? "bg-primary text-primary-foreground rounded-2xl rounded-br-sm px-4 py-2.5" : "glass-card px-4 py-3"}`}>
+      <p className="text-sm leading-relaxed">{msg.text}</p>
+      {msg.imageUrl && (
+        <img src={msg.imageUrl} alt="Foto enviada" className="mt-2 rounded-xl max-h-48 object-cover w-full" />
+      )}
+    </div>
+  </motion.div>
+);
+
+// ── Main Component ──
 const ChatFunnel = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [step, setStep] = useState(0);
@@ -91,7 +122,10 @@ const ChatFunnel = () => {
   const [inputValue, setInputValue] = useState("");
   const [answers, setAnswers] = useState<FunnelAnswers>({});
   const [flow, setFlow] = useState(getFlow());
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
   const scrollToBottom = useCallback(() => {
@@ -112,6 +146,7 @@ const ChatFunnel = () => {
 
   useEffect(() => {
     sendBotMessage(0, flow);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const saveLeadToDatabase = async (finalAnswers: FunnelAnswers) => {
@@ -131,7 +166,6 @@ const ChatFunnel = () => {
 
       if (error) throw error;
 
-      // Create interaction
       if (data) {
         await supabase.from("interactions").insert({
           client_id: data.id,
@@ -149,16 +183,41 @@ const ChatFunnel = () => {
     }
   };
 
-  const handleAnswer = async (answer: string) => {
-    setMessages((prev) => [...prev, { id: Date.now(), sender: "user", text: answer }]);
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Imagem muito grande (máx 5MB)");
+      return;
+    }
+    setSelectedFile(file);
+    const url = URL.createObjectURL(file);
+    setPreviewImage(url);
+  };
+
+  const sendPhoto = () => {
+    if (!previewImage) return;
+    handleAnswer("📸 Foto enviada", previewImage);
+    setPreviewImage(null);
+    setSelectedFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const cancelPhoto = () => {
+    setPreviewImage(null);
+    setSelectedFile(null);
+    if (previewImage) URL.revokeObjectURL(previewImage);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleAnswer = async (answer: string, imageUrl?: string) => {
+    setMessages((prev) => [...prev, { id: Date.now(), sender: "user", text: answer, imageUrl }]);
 
     const currentFlowItem = flow[step];
     const newAnswers = { ...answers };
 
-    // Map field to answers
     if (currentFlowItem?.field === "interest") {
       newAnswers.interest = answer;
-      // Rebuild flow based on interest
       const newFlow = getFlow(answer);
       setFlow(newFlow);
       const nextStep = step + 1;
@@ -175,6 +234,8 @@ const ChatFunnel = () => {
       newAnswers.name = answer;
     } else if (currentFlowItem?.field === "phone") {
       newAnswers.phone = answer;
+    } else if (currentFlowItem?.field === "photo") {
+      newAnswers.photoUrl = imageUrl || "sent";
     }
 
     setAnswers(newAnswers);
@@ -183,7 +244,6 @@ const ChatFunnel = () => {
     scrollToBottom();
 
     if (nextStep >= flow.length) {
-      // Save to database
       await saveLeadToDatabase(newAnswers);
       setTimeout(() => navigate("/dashboard"), 2500);
     } else {
@@ -197,8 +257,14 @@ const ChatFunnel = () => {
     setInputValue("");
   };
 
+  const skipPhoto = () => {
+    handleAnswer("Pular por agora");
+  };
+
   const currentBotMsg = messages.filter((m) => m.sender === "bot").slice(-1)[0];
   const progress = Math.min(((step) / (flow.length - 1)) * 100, 100);
+  const isPhotoStep = currentBotMsg?.inputType === "photo" && step < flow.length;
+  const isTextStep = currentBotMsg?.inputType && currentBotMsg.inputType !== "photo" && step < flow.length;
 
   return (
     <div className="flex flex-col h-screen bg-background">
@@ -214,8 +280,8 @@ const ChatFunnel = () => {
         </Avatar>
         <div className="flex-1 min-w-0">
           <p className="font-display font-semibold text-foreground text-sm">Consultor Arsenal</p>
-          <p className="text-xs text-success flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-success inline-block animate-pulse" />
+          <p className="text-xs text-muted-foreground flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
             online agora
           </p>
         </div>
@@ -230,16 +296,7 @@ const ChatFunnel = () => {
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-6 space-y-1">
         <AnimatePresence mode="popLayout">
           {messages.map((msg) => (
-            <motion.div key={msg.id} initial={{ opacity: 0, y: 12, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }} className={`flex mb-3 ${msg.sender === "user" ? "justify-end" : "items-end gap-2.5"}`}>
-              {msg.sender === "bot" && (
-                <Avatar className="h-8 w-8 border border-primary/30 shrink-0">
-                  <AvatarFallback className="bg-primary/20 text-primary text-xs font-bold">A</AvatarFallback>
-                </Avatar>
-              )}
-              <div className={`max-w-[80%] ${msg.sender === "user" ? "bg-primary text-primary-foreground rounded-2xl rounded-br-sm px-4 py-2.5" : "glass-card px-4 py-3"}`}>
-                <p className="text-sm leading-relaxed">{msg.text}</p>
-              </div>
-            </motion.div>
+            <ChatBubble key={msg.id} msg={msg} />
           ))}
         </AnimatePresence>
 
@@ -261,12 +318,76 @@ const ChatFunnel = () => {
         </AnimatePresence>
       </div>
 
-      {/* Input */}
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={handlePhotoSelect}
+      />
+
+      {/* Photo preview */}
       <AnimatePresence>
-        {!typing && currentBotMsg?.inputType && step < flow.length && (
+        {previewImage && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 16 }}
+            className="px-4 py-3 border-t border-border/50 bg-background/80 backdrop-blur-xl"
+          >
+            <div className="relative inline-block">
+              <img src={previewImage} alt="Preview" className="h-32 rounded-xl object-cover" />
+              <button onClick={cancelPhoto} className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center">
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+            <div className="flex gap-2 mt-2">
+              <Button onClick={sendPhoto} className="rounded-full glow-red flex-1 h-10">
+                <Send className="w-4 h-4 mr-2" /> Enviar foto
+              </Button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Photo input step */}
+      <AnimatePresence>
+        {!typing && isPhotoStep && !previewImage && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 16 }}
+            className="px-4 py-3 border-t border-border/50 bg-background/80 backdrop-blur-xl"
+          >
+            <div className="flex gap-2">
+              <Button onClick={() => fileInputRef.current?.click()} className="flex-1 rounded-full h-11 gap-2 glow-red">
+                <Camera className="w-4 h-4" /> Tirar foto
+              </Button>
+              <Button variant="outline" onClick={() => {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*';
+                input.onchange = (e) => handlePhotoSelect(e as any);
+                input.click();
+              }} className="flex-1 rounded-full h-11 gap-2 border-primary/30">
+                <ImageIcon className="w-4 h-4" /> Galeria
+              </Button>
+            </div>
+            <Button variant="ghost" onClick={skipPhoto} className="w-full mt-2 text-xs text-muted-foreground h-8">
+              Pular esta etapa
+            </Button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Text input */}
+      <AnimatePresence>
+        {!typing && isTextStep && (
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 16 }} className="px-4 py-3 border-t border-border/50 bg-background/80 backdrop-blur-xl">
             <div className="flex gap-2">
-              <Input value={inputValue} onChange={(e) => setInputValue(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSubmitInput()} placeholder={currentBotMsg.inputType === "phone" ? "(00) 00000-0000" : "Digite aqui..."} className="rounded-full bg-secondary border-border/50 h-11" autoFocus />
+              <Input value={inputValue} onChange={(e) => setInputValue(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSubmitInput()} placeholder={currentBotMsg?.inputType === "phone" ? "(00) 00000-0000" : "Digite aqui..."} className="rounded-full bg-secondary border-border/50 h-11" autoFocus />
               <Button size="icon" onClick={handleSubmitInput} className="rounded-full shrink-0 h-11 w-11 glow-red">
                 <Send className="h-4 w-4" />
               </Button>

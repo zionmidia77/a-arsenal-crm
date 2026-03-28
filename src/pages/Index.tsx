@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Bike, ArrowRight, Shield, Zap, Users, Star, ChevronRight } from "lucide-react";
+import FloatingChatButton from "@/components/FloatingChatButton";
 
 const stagger = {
   animate: { transition: { staggerChildren: 0.1 } },
@@ -173,6 +174,8 @@ const Index = () => {
           </Button>
         </div>
       </motion.div>
+
+      <FloatingChatButton />
     </div>
   );
 };
