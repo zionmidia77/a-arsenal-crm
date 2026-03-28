@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { image_base64 } = await req.json();
+    const { image_base64, client_id } = await req.json();
 
     if (!image_base64 || typeof image_base64 !== "string") {
       return new Response(
