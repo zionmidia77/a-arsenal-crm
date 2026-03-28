@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Users, Kanban, ListChecks, MessageSquare } from "lucide-react";
+import { LayoutDashboard, Users, Kanban, ListChecks, BarChart3 } from "lucide-react";
 import { motion } from "framer-motion";
 
 const tabs = [
@@ -7,7 +7,7 @@ const tabs = [
   { to: "/admin/leads", icon: Users, label: "Leads" },
   { to: "/admin/pipeline", icon: Kanban, label: "Pipeline" },
   { to: "/admin/tasks", icon: ListChecks, label: "Tarefas" },
-  { to: "/admin/messages", icon: MessageSquare, label: "Msgs" },
+  { to: "/admin/metrics", icon: BarChart3, label: "Métricas" },
 ];
 
 const BottomTabBar = () => {
