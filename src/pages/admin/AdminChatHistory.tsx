@@ -293,7 +293,7 @@ const AdminChatHistory = () => {
                 </ScrollArea>
 
                 {/* Manual reply input for transferred conversations */}
-                {selectedConvo.status === "transferred" && (
+                {(selectedConvo.status === "transferred" || selectedConvo.status === "attended") && (
                   <div className="mt-3 pt-3 border-t border-border/50">
                     <form
                       onSubmit={async (e) => {
