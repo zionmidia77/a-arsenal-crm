@@ -74,12 +74,20 @@ export type Database = {
       clients: {
         Row: {
           arsenal_score: number
+          birth_city: string | null
           birthdate: string | null
           budget_range: string | null
           city: string | null
           created_at: string
+          down_payment_amount: number | null
           email: string | null
+          employer: string | null
+          employment_time: string | null
+          financing_docs: Json | null
+          financing_status: string | null
           funnel_data: Json | null
+          has_clean_credit: boolean | null
+          has_down_payment: boolean | null
           has_trade_in: boolean | null
           id: string
           interest: string | null
@@ -87,10 +95,15 @@ export type Database = {
           lead_score: number
           name: string
           notes: string | null
+          payment_type: string | null
           phone: string | null
           pipeline_stage: Database["public"]["Enums"]["pipeline_stage"]
+          position: string | null
+          reference_name: string | null
+          reference_phone: string | null
           referred_by: string | null
           response_time_hours: number | null
+          salary: number | null
           source: string | null
           status: Database["public"]["Enums"]["client_status"]
           temperature: Database["public"]["Enums"]["lead_temperature"]
@@ -98,12 +111,20 @@ export type Database = {
         }
         Insert: {
           arsenal_score?: number
+          birth_city?: string | null
           birthdate?: string | null
           budget_range?: string | null
           city?: string | null
           created_at?: string
+          down_payment_amount?: number | null
           email?: string | null
+          employer?: string | null
+          employment_time?: string | null
+          financing_docs?: Json | null
+          financing_status?: string | null
           funnel_data?: Json | null
+          has_clean_credit?: boolean | null
+          has_down_payment?: boolean | null
           has_trade_in?: boolean | null
           id?: string
           interest?: string | null
@@ -111,10 +132,15 @@ export type Database = {
           lead_score?: number
           name: string
           notes?: string | null
+          payment_type?: string | null
           phone?: string | null
           pipeline_stage?: Database["public"]["Enums"]["pipeline_stage"]
+          position?: string | null
+          reference_name?: string | null
+          reference_phone?: string | null
           referred_by?: string | null
           response_time_hours?: number | null
+          salary?: number | null
           source?: string | null
           status?: Database["public"]["Enums"]["client_status"]
           temperature?: Database["public"]["Enums"]["lead_temperature"]
@@ -122,12 +148,20 @@ export type Database = {
         }
         Update: {
           arsenal_score?: number
+          birth_city?: string | null
           birthdate?: string | null
           budget_range?: string | null
           city?: string | null
           created_at?: string
+          down_payment_amount?: number | null
           email?: string | null
+          employer?: string | null
+          employment_time?: string | null
+          financing_docs?: Json | null
+          financing_status?: string | null
           funnel_data?: Json | null
+          has_clean_credit?: boolean | null
+          has_down_payment?: boolean | null
           has_trade_in?: boolean | null
           id?: string
           interest?: string | null
@@ -135,10 +169,15 @@ export type Database = {
           lead_score?: number
           name?: string
           notes?: string | null
+          payment_type?: string | null
           phone?: string | null
           pipeline_stage?: Database["public"]["Enums"]["pipeline_stage"]
+          position?: string | null
+          reference_name?: string | null
+          reference_phone?: string | null
           referred_by?: string | null
           response_time_hours?: number | null
+          salary?: number | null
           source?: string | null
           status?: Database["public"]["Enums"]["client_status"]
           temperature?: Database["public"]["Enums"]["lead_temperature"]

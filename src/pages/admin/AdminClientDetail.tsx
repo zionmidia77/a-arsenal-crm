@@ -7,11 +7,12 @@ import { useClient, useClientInteractions, useClientVehicles, useCreateInteracti
 import {
   ArrowLeft, MessageCircle, Phone, Mail, MapPin, Calendar, Bike,
   TrendingUp, Clock, Plus, Star, CalendarPlus, Check, AlertTriangle,
-  Copy, Send, Bot, Tag
+  Copy, Send, Bot, Tag, FileCheck
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import TagManager from "@/components/admin/TagManager";
+import FinancingSection from "@/components/admin/FinancingSection";
 import { useAIChat } from "@/hooks/useAIChat";
 
 const tempBadge: Record<string, string> = {
@@ -453,6 +454,14 @@ const AdminClientDetail = () => {
             </Button>
           ))}
         </div>
+      </motion.div>
+
+      {/* 📋 Financing Qualification */}
+      <motion.div variants={fadeUp}>
+        <h2 className="font-display font-semibold text-sm mb-3 flex items-center gap-2">
+          <FileCheck className="w-4 h-4 text-primary" /> Qualificação para Financiamento
+        </h2>
+        <FinancingSection client={client} />
       </motion.div>
 
       {/* Vehicles */}
