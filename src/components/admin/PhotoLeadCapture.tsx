@@ -152,12 +152,12 @@ const PhotoLeadCapture = () => {
       let existingClient = null;
       const cleanedPhone = editData.phone?.replace(/\D/g, "") || "";
 
-      if (cleanedPhone.length >= 8) {
+      if (editData.phone || cleanedPhone.length >= 8) {
+        const rawPhone = (editData.phone || "").replace(/,/g, " ");
         const { data, error } = await supabase
           .from("clients")
           .select("*")
-          .not("phone", "is", null)
-          .ilike("phone", `%${cleanedPhone}%`)
+          .or(`phone.eq.${rawPhone},phone.eq.${cleanedPhone}`)
           .limit(1);
 
         if (error) throw error;
