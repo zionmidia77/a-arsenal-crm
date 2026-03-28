@@ -261,7 +261,7 @@ const AdminChatHistory = () => {
         </div>
 
         {/* Conversation detail */}
-        <div className="lg:col-span-2">
+        <div className={`${selectedConvo?.client_id ? "lg:col-span-6" : "lg:col-span-9"}`}>
           {selectedConvo ? (
             <Card>
               <CardHeader className="pb-3">
@@ -343,7 +343,6 @@ const AdminChatHistory = () => {
 
                           if (error) throw error;
 
-                          // Log interaction if linked to client
                           if (selectedConvo.client_id) {
                             await supabase.from("interactions").insert({
                               client_id: selectedConvo.client_id,
@@ -401,6 +400,163 @@ const AdminChatHistory = () => {
             </Card>
           )}
         </div>
+
+        {/* Lead Profile Sidebar */}
+        {selectedConvo?.client_id && selectedConvo.clients && (
+          <div className="lg:col-span-3">
+            <Card className="border-border/50 sticky top-20">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm flex items-center gap-1.5">
+                    <User className="w-3.5 h-3.5 text-primary" />
+                    Perfil do Lead
+                  </CardTitle>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-[10px] gap-1"
+                    onClick={() => navigate(`/admin/client/${selectedConvo.client_id}`)}
+                  >
+                    <ExternalLink className="w-3 h-3" /> Abrir ficha
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {/* Name & Score */}
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-sm">{selectedConvo.clients.name}</span>
+                  <Badge variant="outline" className="text-[10px]">
+                    Score: {selectedConvo.clients.lead_score}
+                  </Badge>
+                </div>
+
+                {/* Temperature */}
+                <div className="flex items-center gap-1.5">
+                  <Thermometer className="w-3.5 h-3.5 text-muted-foreground" />
+                  <Badge className={`text-[10px] ${
+                    selectedConvo.clients.temperature === "hot" ? "bg-destructive/20 text-destructive" :
+                    selectedConvo.clients.temperature === "warm" ? "bg-warning/20 text-warning" :
+                    selectedConvo.clients.temperature === "cold" ? "bg-info/20 text-info" :
+                    "bg-muted text-muted-foreground"
+                  }`}>
+                    {selectedConvo.clients.temperature === "hot" ? "🔥 Quente" :
+                     selectedConvo.clients.temperature === "warm" ? "☀️ Morno" :
+                     selectedConvo.clients.temperature === "cold" ? "❄️ Frio" : "🧊 Congelado"}
+                  </Badge>
+                  <Badge variant="outline" className="text-[10px] capitalize">
+                    {selectedConvo.clients.pipeline_stage?.replace("_", " ")}
+                  </Badge>
+                </div>
+
+                <div className="h-px bg-border/50" />
+
+                {/* Contact Info */}
+                <div className="space-y-1.5">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Contato</p>
+                  {selectedConvo.clients.phone && (
+                    <div className="flex items-center gap-1.5 text-xs">
+                      <Phone className="w-3 h-3 text-muted-foreground" />
+                      <span>{selectedConvo.clients.phone}</span>
+                    </div>
+                  )}
+                  {selectedConvo.clients.email && (
+                    <div className="flex items-center gap-1.5 text-xs">
+                      <Mail className="w-3 h-3 text-muted-foreground" />
+                      <span className="truncate">{selectedConvo.clients.email}</span>
+                    </div>
+                  )}
+                  {selectedConvo.clients.city && (
+                    <div className="flex items-center gap-1.5 text-xs">
+                      <MapPin className="w-3 h-3 text-muted-foreground" />
+                      <span>{selectedConvo.clients.city}</span>
+                    </div>
+                  )}
+                  {selectedConvo.clients.birthdate && (
+                    <div className="flex items-center gap-1.5 text-xs">
+                      <CalendarIcon className="w-3 h-3 text-muted-foreground" />
+                      <span>{format(new Date(selectedConvo.clients.birthdate + "T12:00:00"), "dd/MM/yyyy")}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Interest & Budget */}
+                {(selectedConvo.clients.interest || selectedConvo.clients.budget_range) && (
+                  <>
+                    <div className="h-px bg-border/50" />
+                    <div className="space-y-1.5">
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Interesse</p>
+                      {selectedConvo.clients.interest && (
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <Bike className="w-3 h-3 text-muted-foreground" />
+                          <span>{selectedConvo.clients.interest}</span>
+                        </div>
+                      )}
+                      {selectedConvo.clients.budget_range && (
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <DollarSign className="w-3 h-3 text-muted-foreground" />
+                          <span>{selectedConvo.clients.budget_range}</span>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+
+                {/* Financing Info */}
+                <div className="h-px bg-border/50" />
+                <div className="space-y-1.5">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Financiamento</p>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <div className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg border ${selectedConvo.clients.has_trade_in ? "bg-success/10 border-success/30 text-success" : "bg-muted/50 border-border/50 text-muted-foreground"}`}>
+                      {selectedConvo.clients.has_trade_in ? "✅" : "—"} Troca
+                    </div>
+                    <div className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg border ${selectedConvo.clients.has_clean_credit ? "bg-success/10 border-success/30 text-success" : "bg-muted/50 border-border/50 text-muted-foreground"}`}>
+                      {selectedConvo.clients.has_clean_credit ? "✅" : "—"} Nome limpo
+                    </div>
+                    <div className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg border ${selectedConvo.clients.has_down_payment ? "bg-success/10 border-success/30 text-success" : "bg-muted/50 border-border/50 text-muted-foreground"}`}>
+                      {selectedConvo.clients.has_down_payment ? "✅" : "—"} Entrada
+                    </div>
+                    <div className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg border ${selectedConvo.clients.financing_status === "complete" ? "bg-success/10 border-success/30 text-success" : "bg-muted/50 border-border/50 text-muted-foreground"}`}>
+                      <FileText className="w-2.5 h-2.5" /> {selectedConvo.clients.financing_status === "complete" ? "Docs OK" : "Docs"}
+                    </div>
+                  </div>
+                  {selectedConvo.clients.down_payment_amount && (
+                    <p className="text-xs text-muted-foreground">
+                      Entrada: R$ {Number(selectedConvo.clients.down_payment_amount).toLocaleString("pt-BR")}
+                    </p>
+                  )}
+                  {selectedConvo.clients.salary && (
+                    <p className="text-xs text-muted-foreground">
+                      Renda: R$ {Number(selectedConvo.clients.salary).toLocaleString("pt-BR")}
+                    </p>
+                  )}
+                  {selectedConvo.clients.employer && (
+                    <p className="text-xs text-muted-foreground">
+                      Trabalha: {selectedConvo.clients.employer}
+                    </p>
+                  )}
+                </div>
+
+                {/* Notes */}
+                {selectedConvo.clients.notes && (
+                  <>
+                    <div className="h-px bg-border/50" />
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-1">Observações</p>
+                      <p className="text-xs text-muted-foreground line-clamp-4">{selectedConvo.clients.notes}</p>
+                    </div>
+                  </>
+                )}
+
+                {/* Source */}
+                {selectedConvo.clients.source && (
+                  <p className="text-[10px] text-muted-foreground">
+                    Origem: <span className="capitalize">{selectedConvo.clients.source}</span>
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
     </div>
   );
