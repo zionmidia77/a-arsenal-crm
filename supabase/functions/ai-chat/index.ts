@@ -256,6 +256,44 @@ const tools = [
   {
     type: "function",
     function: {
+      name: "check_documents",
+      description:
+        "Check the financing document checklist for a client. Returns which documents have been submitted and which are still pending. Use this to show the client a visual checklist of what's needed.",
+      parameters: {
+        type: "object",
+        properties: {
+          client_id: { type: "string", description: "Client UUID" },
+        },
+        required: ["client_id"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "detect_urgency",
+      description:
+        "Detect and update lead urgency/temperature based on buying signals. Call this when the client expresses urgency like 'preciso pra essa semana', 'é urgente', 'quero fechar hoje', 'tenho pressa', 'minha moto quebrou', 'preciso trabalhar'. Also call when client shows cold signals like 'só estou olhando', 'vou pensar', 'depois eu vejo'.",
+      parameters: {
+        type: "object",
+        properties: {
+          client_id: { type: "string", description: "Client UUID" },
+          urgency_level: {
+            type: "string",
+            enum: ["critical", "high", "medium", "low"],
+            description: "critical=needs NOW, high=this week, medium=interested, low=just browsing",
+          },
+          reason: { type: "string", description: "Why this urgency level was detected" },
+        },
+        required: ["client_id", "urgency_level", "reason"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "log_interaction",
       description: "Log an important interaction/event in the client timeline",
       parameters: {
@@ -630,6 +668,96 @@ async function executeTool(
         });
       }
 
+      case "check_documents": {
+        const { data: client } = await supabase
+          .from("clients")
+          .select("financing_docs, name, cpf, salary, employer, reference_name, reference_phone, marital_status")
+          .eq("id", args.client_id)
+          .single();
+
+        if (!client) return JSON.stringify({ error: "Client not found" });
+
+        const docs = (client.financing_docs as Record<string, boolean>) || {};
+        const checklist = {
+          cnh: { label: "CNH / RG + CPF", done: !!docs.cnh },
+          pay_stub: { label: "Comprovante de Renda (holerite)", done: !!docs.pay_stub },
+          proof_of_residence: { label: "Comprovante de Residência", done: !!docs.proof_of_residence },
+          reference: { label: "Referência Pessoal", done: !!(client.reference_name && client.reference_phone) },
+          cpf_info: { label: "CPF informado", done: !!client.cpf },
+          income_info: { label: "Renda informada", done: !!client.salary },
+          employer_info: { label: "Empresa/Empregador", done: !!client.employer },
+          marital_info: { label: "Estado civil", done: !!client.marital_status },
+        };
+
+        const total = Object.keys(checklist).length;
+        const done = Object.values(checklist).filter(c => c.done).length;
+        const percent = Math.round((done / total) * 100);
+
+        return JSON.stringify({
+          success: true,
+          checklist,
+          progress: { done, total, percent },
+          display_hint: `Mostre o checklist assim em markdown:
+
+📋 **Checklist de Financiamento** (${percent}%)
+${"▓".repeat(Math.round(percent / 10))}${"░".repeat(10 - Math.round(percent / 10))} ${percent}%
+
+${Object.values(checklist).map(c => `${c.done ? "✅" : "⬜"} ${c.label}`).join("\n")}
+
+Se faltam itens, pergunte o próximo dado pendente de forma natural.`,
+        });
+      }
+
+      case "detect_urgency": {
+        const urgencyMap: Record<string, { temperature: string; priority: number; pipeline: string }> = {
+          critical: { temperature: "hot", priority: 10, pipeline: "interested" },
+          high: { temperature: "hot", priority: 8, pipeline: "interested" },
+          medium: { temperature: "warm", priority: 5, pipeline: "contacted" },
+          low: { temperature: "cold", priority: 3, pipeline: "contacted" },
+        };
+
+        const config = urgencyMap[args.urgency_level as string] || urgencyMap.medium;
+
+        await supabase
+          .from("clients")
+          .update({
+            temperature: config.temperature,
+            last_contact_at: new Date().toISOString(),
+          })
+          .eq("id", args.client_id);
+
+        // Create urgency task for critical/high
+        if (args.urgency_level === "critical" || args.urgency_level === "high") {
+          await supabase.from("tasks").insert({
+            client_id: args.client_id as string,
+            type: "follow_up",
+            reason: `🚨 Lead URGENTE: ${args.reason}`,
+            due_date: new Date().toISOString().split("T")[0],
+            priority: config.priority,
+            source: "ai-chat",
+            status: "pending",
+          });
+        }
+
+        await supabase.from("interactions").insert({
+          client_id: args.client_id as string,
+          type: "system",
+          content: `Urgência detectada: ${args.urgency_level} — ${args.reason}. Temperatura: ${config.temperature}`,
+          created_by: "ai-consultant",
+        });
+
+        return JSON.stringify({
+          success: true,
+          urgency: args.urgency_level,
+          temperature: config.temperature,
+          message: args.urgency_level === "critical"
+            ? "Lead URGENTE! Priorize atendimento máximo, ofereça opções prontas para retirada imediata."
+            : args.urgency_level === "low"
+            ? "Lead apenas olhando. Mantenha engajamento sem pressionar."
+            : "Urgência registrada.",
+        });
+      }
+
       case "log_interaction": {
         const { error } = await supabase.from("interactions").insert({
           client_id: args.client_id as string,
@@ -726,14 +854,29 @@ Quando tiver perfil suficiente (pelo menos orçamento ou interesse em moto espec
 - Use schedule_visit quando o cliente topar
 
 ### Fase 5 — Checklist de documentos
-Quando o cliente decidir financiar, informe:
-📋 **Documentos necessários:**
-✅ CNH ou RG + CPF
-✅ Comprovante de renda (holerite/contracheque)
-✅ Comprovante de residência
-✅ Referência pessoal (nome + telefone)
+Quando o cliente decidir financiar ou após coletar dados suficientes:
+1. Use check_documents para verificar o progresso
+2. Mostre o checklist visual retornado pela ferramenta
+3. Pergunte pelo próximo item pendente
+4. Diga: "Você pode enviar a foto dos documentos aqui mesmo que eu analiso na hora! 📸"
 
-Diga: "Você pode enviar a foto dos documentos aqui mesmo que eu analiso na hora! 📸"
+## DETECÇÃO AUTOMÁTICA DE URGÊNCIA
+SEMPRE use detect_urgency quando detectar sinais de compra:
+
+**Sinais CRÍTICOS (urgency=critical):**
+- "preciso pra hoje", "é urgente", "minha moto quebrou", "preciso trabalhar", "não tenho como ir trabalhar", "acidente", "roubaram minha moto"
+
+**Sinais ALTOS (urgency=high):**
+- "quero fechar essa semana", "já tenho a entrada pronta", "vim decidido", "quero resolver logo", "preciso pra semana que vem"
+
+**Sinais MÉDIOS (urgency=medium):**
+- "tô interessado", "gostei dessa", "quanto fica", "me manda proposta"
+
+**Sinais BAIXOS (urgency=low):**
+- "só estou olhando", "vou pensar", "depois eu vejo", "tô pesquisando ainda", "não tenho pressa"
+
+Para leads CRÍTICOS: priorize motos pronta-entrega, ofereça atendimento expresso, sugira retirada no mesmo dia.
+Para leads ALTOS: crie senso de oportunidade, mostre condições especiais.
 
 ## REGRAS DE OURO
 1. NUNCA faça mais de UMA pergunta por mensagem
@@ -749,6 +892,8 @@ Diga: "Você pode enviar a foto dos documentos aqui mesmo que eu analiso na hora
 11. Apresente veículos em formato visual com emojis e tabelas markdown
 12. Sempre calcule % da renda quando souber o salário: "A parcela representa X% da sua renda"
 13. Colete CPF, estado civil e referência pessoal — são OBRIGATÓRIOS para financiamento
+14. Use detect_urgency SEMPRE que detectar sinais de urgência ou desinteresse
+15. Use check_documents quando discutir financiamento para mostrar progresso visual
 
 ## QUANDO O CLIENTE DIZ "SÓ ESTOU OLHANDO"
 - Não desista! "Tranquilo! Me conta o que você curte, posso te mostrar umas opções legais que chegaram"
