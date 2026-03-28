@@ -280,6 +280,82 @@ const AdminChatHistory = () => {
                     ))}
                   </div>
                 </ScrollArea>
+
+                {/* Manual reply input for transferred conversations */}
+                {selectedConvo.status === "transferred" && (
+                  <div className="mt-3 pt-3 border-t border-border/50">
+                    <form
+                      onSubmit={async (e) => {
+                        e.preventDefault();
+                        if (!replyText.trim() || isSending) return;
+                        setIsSending(true);
+                        try {
+                          const newMsg = {
+                            role: "assistant" as const,
+                            content: `[Vendedor] ${replyText.trim()}`,
+                            timestamp: new Date().toISOString(),
+                          };
+                          const currentMsgs = Array.isArray(selectedConvo.messages) ? selectedConvo.messages : [];
+                          const updatedMsgs = [...currentMsgs, newMsg];
+
+                          const { error } = await supabase
+                            .from("chat_conversations")
+                            .update({
+                              messages: updatedMsgs as any,
+                              status: "attended",
+                              updated_at: new Date().toISOString(),
+                            })
+                            .eq("id", selectedConvo.id);
+
+                          if (error) throw error;
+
+                          // Log interaction if linked to client
+                          if (selectedConvo.client_id) {
+                            await supabase.from("interactions").insert({
+                              client_id: selectedConvo.client_id,
+                              type: "system" as const,
+                              content: `Resposta do vendedor no chat: ${replyText.trim().slice(0, 100)}`,
+                              created_by: "vendedor",
+                            });
+                          }
+
+                          setSelectedConvo({ ...selectedConvo, messages: updatedMsgs, status: "attended" });
+                          setReplyText("");
+                          queryClient.invalidateQueries({ queryKey: ["chat-conversations"] });
+                          toast.success("Mensagem enviada!");
+                          setTimeout(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" }), 100);
+                        } catch (err) {
+                          console.error(err);
+                          toast.error("Erro ao enviar mensagem");
+                        } finally {
+                          setIsSending(false);
+                        }
+                      }}
+                      className="flex gap-2 items-end"
+                    >
+                      <Textarea
+                        value={replyText}
+                        onChange={(e) => setReplyText(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && !e.shiftKey) {
+                            e.preventDefault();
+                            e.currentTarget.form?.requestSubmit();
+                          }
+                        }}
+                        placeholder="Responder ao cliente..."
+                        rows={1}
+                        disabled={isSending}
+                        className="flex-1 resize-none text-sm min-h-[40px] max-h-[100px]"
+                      />
+                      <Button type="submit" size="icon" disabled={!replyText.trim() || isSending} className="shrink-0 h-10 w-10">
+                        <Send className="w-4 h-4" />
+                      </Button>
+                    </form>
+                    <p className="text-[10px] text-muted-foreground mt-1.5">
+                      A resposta será salva no histórico da conversa
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           ) : (
