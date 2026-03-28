@@ -43,6 +43,28 @@ const AdminLayout = () => {
 
   // Real-time notification for transferred conversations
   useEffect(() => {
+    // Create notification sound using Web Audio API
+    const playNotificationSound = () => {
+      try {
+        const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const playTone = (freq: number, start: number, duration: number) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.frequency.value = freq;
+          osc.type = "sine";
+          gain.gain.setValueAtTime(0.3, ctx.currentTime + start);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + start + duration);
+          osc.start(ctx.currentTime + start);
+          osc.stop(ctx.currentTime + start + duration);
+        };
+        playTone(880, 0, 0.15);
+        playTone(1100, 0.18, 0.15);
+        playTone(1320, 0.36, 0.25);
+      } catch {}
+    };
+
     const channel = supabase
       .channel('chat-transfers')
       .on(
@@ -54,13 +76,15 @@ const AdminLayout = () => {
           filter: 'status=eq.transferred',
         },
         (payload) => {
+          playNotificationSound();
+
           toast.info("🔔 Nova conversa transferida do chat IA!", {
             description: "Um lead qualificado foi transferido para atendimento humano.",
             action: {
               label: "Ver",
               onClick: () => window.location.href = "/admin/chat-history",
             },
-            duration: 10000,
+            duration: 15000,
           });
 
           if ("Notification" in window && Notification.permission === "granted") {
