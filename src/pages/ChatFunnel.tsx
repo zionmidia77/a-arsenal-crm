@@ -229,11 +229,9 @@ const ChatFunnel = () => {
       newAnswers.interest = answer;
       const newFlow = getFlow(answer);
       setFlow(newFlow);
-      const nextStep = step + 1;
-      setStep(nextStep);
       setAnswers(newAnswers);
       scrollToBottom();
-      sendBotMessage(nextStep, newFlow);
+      sendBotMessage(step + 1, newFlow);
       return;
     } else if (currentFlowItem?.field === "budget") {
       newAnswers.budget = answer;
@@ -249,10 +247,11 @@ const ChatFunnel = () => {
 
     setAnswers(newAnswers);
     const nextStep = step + 1;
-    setStep(nextStep);
     scrollToBottom();
 
     if (nextStep >= flow.length) {
+      // Last message - save lead
+      setStep(nextStep);
       await saveLeadToDatabase(newAnswers);
       setTimeout(() => navigate("/dashboard"), 2500);
     } else {
