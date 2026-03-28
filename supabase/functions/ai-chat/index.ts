@@ -376,23 +376,21 @@ async function executeTool(
 
       case "search_vehicles": {
         let query = supabase
-          .from("vehicles")
-          .select(
-            "id, brand, model, year, km, estimated_value, is_financed, status"
-          )
-          .eq("status", "current");
+          .from("stock_vehicles")
+          .select("id, brand, model, year, km, color, price, condition, status, description, features")
+          .eq("status", "available");
 
         if (args.brand) {
           query = query.ilike("brand", `%${args.brand}%`);
         }
         if (args.max_value) {
-          query = query.lte("estimated_value", args.max_value as number);
+          query = query.lte("price", args.max_value as number);
         }
         if (args.min_value) {
-          query = query.gte("estimated_value", args.min_value as number);
+          query = query.gte("price", args.min_value as number);
         }
 
-        const { data, error } = await query.limit(10);
+        const { data, error } = await query.order("price", { ascending: true }).limit(10);
         if (error) throw error;
 
         if (!data || data.length === 0) {
@@ -410,8 +408,11 @@ async function executeTool(
             model: v.model,
             year: v.year,
             km: v.km,
-            estimated_value: v.estimated_value,
-            is_financed: v.is_financed,
+            color: v.color,
+            price: v.price,
+            condition: v.condition === "new" ? "0km" : "Seminova",
+            description: v.description,
+            features: v.features,
           })),
           total: data.length,
         });
