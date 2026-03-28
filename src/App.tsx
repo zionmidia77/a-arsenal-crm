@@ -17,6 +17,8 @@ import AdminMessages from "./pages/admin/AdminMessages";
 import AdminPipeline from "./pages/admin/AdminPipeline";
 import AdminMetrics from "./pages/admin/AdminMetrics";
 import AdminClientDetail from "./pages/admin/AdminClientDetail";
+import AdminCalendar from "./pages/admin/AdminCalendar";
+import MemberArea from "./pages/MemberArea";
 import Login from "./pages/auth/Login";
 import Signup from "./pages/auth/Signup";
 import ForgotPassword from "./pages/auth/ForgotPassword";
@@ -55,8 +57,17 @@ const App = () => (
               <Route path="tasks" element={<AdminTasks />} />
               <Route path="messages" element={<AdminMessages />} />
               <Route path="metrics" element={<AdminMetrics />} />
+              <Route path="calendar" element={<AdminCalendar />} />
               <Route path="client/:id" element={<AdminClientDetail />} />
             </Route>
+            <Route
+              path="/member"
+              element={
+                <ProtectedRoute>
+                  <MemberArea />
+                </ProtectedRoute>
+              }
+            />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

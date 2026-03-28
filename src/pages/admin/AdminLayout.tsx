@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { NavLink } from "@/components/NavLink";
-import { LayoutDashboard, Users, ListChecks, MessageSquare, Menu, X, Bike, ChevronLeft, Kanban, LogOut, BarChart3 } from "lucide-react";
+import { LayoutDashboard, Users, ListChecks, MessageSquare, Menu, X, Bike, ChevronLeft, Kanban, LogOut, BarChart3, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import BottomTabBar from "@/components/BottomTabBar";
@@ -16,6 +16,7 @@ const navItems = [
   { to: "/admin/leads", icon: Users, label: "Leads" },
   { to: "/admin/pipeline", icon: Kanban, label: "Pipeline" },
   { to: "/admin/tasks", icon: ListChecks, label: "Tarefas" },
+  { to: "/admin/calendar", icon: CalendarDays, label: "Agenda" },
   { to: "/admin/messages", icon: MessageSquare, label: "Mensagens" },
   { to: "/admin/metrics", icon: BarChart3, label: "Métricas" },
 ];
