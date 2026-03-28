@@ -430,6 +430,43 @@ const AdminClientDetail = () => {
             <span className="text-sm">Origem: {client.source}</span>
           </div>
         )}
+
+        {/* Birthdate - editable */}
+        <div className="flex items-center gap-3">
+          <Cake className="w-4 h-4 text-muted-foreground" />
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="ghost"
+                className={cn(
+                  "h-auto p-0 text-sm font-normal hover:bg-transparent hover:underline",
+                  !client.birthdate && "text-muted-foreground"
+                )}
+              >
+                {client.birthdate
+                  ? `🎂 ${format(new Date(client.birthdate + "T12:00:00"), "dd/MM/yyyy")}`
+                  : "Adicionar data de nascimento"}
+                <Edit2 className="w-3 h-3 ml-1.5 text-muted-foreground" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <CalendarComponent
+                mode="single"
+                selected={client.birthdate ? new Date(client.birthdate + "T12:00:00") : undefined}
+                onSelect={(date) => {
+                  if (date) {
+                    const formatted = format(date, "yyyy-MM-dd");
+                    updateClient.mutate({ id: client.id, birthdate: formatted } as any);
+                    toast.success("Data de nascimento atualizada!");
+                  }
+                }}
+                disabled={(date) => date > new Date() || date < new Date("1920-01-01")}
+                initialFocus
+                className={cn("p-3 pointer-events-auto")}
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
       </motion.div>
 
       {/* Temperature */}
