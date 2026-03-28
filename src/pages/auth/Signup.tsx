@@ -40,7 +40,14 @@ const Signup = () => {
     if (error) {
       toast.error(error.message || "Erro ao criar conta");
     } else {
-      setSuccess(true);
+      // Check if user was auto-confirmed (session exists)
+      const { data: { session } } = await (await import("@/integrations/supabase/client")).supabase.auth.getSession();
+      if (session) {
+        toast.success("Conta criada! Bem-vindo!");
+        navigate("/admin");
+      } else {
+        setSuccess(true);
+      }
     }
   };
 
