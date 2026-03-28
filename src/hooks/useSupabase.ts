@@ -218,6 +218,29 @@ export const useMessageTemplates = (category?: string) => {
   });
 };
 
+export const useCreateMessageTemplate = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (template: TablesInsert<"message_templates">) => {
+      const { data, error } = await supabase.from("message_templates").insert(template).select().single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["message_templates"] }),
+  });
+};
+
+export const useDeleteMessageTemplate = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("message_templates").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["message_templates"] }),
+  });
+};
+
 // ============ STATS ============
 export const useDashboardStats = () => {
   return useQuery({
