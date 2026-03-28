@@ -102,13 +102,49 @@ const PhotoLeadCapture = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Não autorizado");
 
-      const response = await supabase.functions.invoke("extract-lead-from-image", {
-        body: { image_base64: preview, action: "create" },
-      });
+      // Insert directly using the reviewed/edited data instead of re-processing the image
+      const { data: existingClients } = editData.phone 
+        ? await supabase.from("clients").select("*").or(`phone.eq.${editData.phone},phone.eq.${editData.phone.replace(/\D/g, "")}`).limit(1)
+        : { data: [] };
 
-      if (response.error) throw new Error(response.error.message);
-      const data = response.data;
-      if (data.error) throw new Error(data.error);
+      let data: { action: string; client: any };
+
+      if (existingClients && existingClients.length > 0) {
+        const existing = existingClients[0];
+        const updates: Record<string, any> = {};
+        if (editData.city && !existing.city) updates.city = editData.city;
+        if (editData.email && !existing.email) updates.email = editData.email;
+        if (editData.interest && !existing.interest) updates.interest = editData.interest;
+        if (editData.budget_range && !existing.budget_range) updates.budget_range = editData.budget_range;
+        if (editData.notes) {
+          updates.notes = (existing.notes ? existing.notes + '\n---\n' : '') + 
+            `[Foto ${new Date().toLocaleDateString('pt-BR')}] ${editData.notes}`;
+        }
+
+        if (Object.keys(updates).length > 0) {
+          const { data: updated, error } = await supabase.from("clients").update(updates).eq("id", existing.id).select().single();
+          if (error) throw error;
+          data = { action: "updated", client: updated };
+        } else {
+          data = { action: "already_exists", client: existing };
+        }
+      } else {
+        const { data: newClient, error } = await supabase.from("clients").insert({
+          name: editData.name!,
+          phone: editData.phone || null,
+          email: editData.email || null,
+          city: editData.city || null,
+          interest: editData.interest || null,
+          budget_range: editData.budget_range || null,
+          notes: editData.notes || null,
+          source: editData.source || "facebook",
+          status: "lead" as const,
+          temperature: "warm" as const,
+          pipeline_stage: "new" as const,
+        }).select().single();
+        if (error) throw error;
+        data = { action: "created", client: newClient };
+      }
 
       setResult(data);
       setStep("done");
