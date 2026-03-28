@@ -204,6 +204,14 @@ const AdminClientDetail = () => {
         </div>
       </motion.div>
 
+      {/* Tags */}
+      <motion.div variants={fadeUp} className="glass-card p-3">
+        <p className="text-xs font-medium mb-2 flex items-center gap-1.5">
+          <Tag className="w-3.5 h-3.5 text-primary" /> Tags
+        </p>
+        <TagManager clientId={client.id} />
+      </motion.div>
+
       {/* Last contact warning */}
       {lastContactDays !== null && lastContactDays > 2 && (
         <motion.div variants={fadeUp} className="bg-destructive/10 rounded-xl p-3 border border-destructive/20 flex items-center gap-2">
