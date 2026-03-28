@@ -80,7 +80,7 @@ const Index = () => {
           </Button>
           <div className="flex gap-3">
             <Button
-              onClick={() => navigate("/dashboard")}
+              onClick={() => navigate("/member")}
               variant="outline"
               className="flex-1 h-12 rounded-xl border-border/50 hover:border-primary/30 transition-colors"
             >
