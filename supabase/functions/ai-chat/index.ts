@@ -256,6 +256,44 @@ const tools = [
   {
     type: "function",
     function: {
+      name: "check_documents",
+      description:
+        "Check the financing document checklist for a client. Returns which documents have been submitted and which are still pending. Use this to show the client a visual checklist of what's needed.",
+      parameters: {
+        type: "object",
+        properties: {
+          client_id: { type: "string", description: "Client UUID" },
+        },
+        required: ["client_id"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "detect_urgency",
+      description:
+        "Detect and update lead urgency/temperature based on buying signals. Call this when the client expresses urgency like 'preciso pra essa semana', 'é urgente', 'quero fechar hoje', 'tenho pressa', 'minha moto quebrou', 'preciso trabalhar'. Also call when client shows cold signals like 'só estou olhando', 'vou pensar', 'depois eu vejo'.",
+      parameters: {
+        type: "object",
+        properties: {
+          client_id: { type: "string", description: "Client UUID" },
+          urgency_level: {
+            type: "string",
+            enum: ["critical", "high", "medium", "low"],
+            description: "critical=needs NOW, high=this week, medium=interested, low=just browsing",
+          },
+          reason: { type: "string", description: "Why this urgency level was detected" },
+        },
+        required: ["client_id", "urgency_level", "reason"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "log_interaction",
       description: "Log an important interaction/event in the client timeline",
       parameters: {
