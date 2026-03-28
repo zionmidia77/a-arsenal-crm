@@ -66,6 +66,8 @@ const AdminChatHistory = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
 
+  const navigate = useNavigate();
+
   const { data: conversations = [], isLoading } = useQuery({
     queryKey: ["chat-conversations"],
     queryFn: async () => {
