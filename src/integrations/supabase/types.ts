@@ -193,6 +193,89 @@ export type Database = {
           },
         ]
       }
+      employer_verifications: {
+        Row: {
+          address: string | null
+          client_id: string
+          cnpj: string | null
+          cnpj_validated: boolean | null
+          company_name: string | null
+          created_at: string
+          employer_name: string | null
+          extracted_data: Json | null
+          founded_year: string | null
+          id: string
+          legal_nature: string | null
+          location: string | null
+          positive_flags: Json | null
+          reliability_score: number | null
+          risk_flags: Json | null
+          sector: string | null
+          share_capital: number | null
+          size: string | null
+          source: string | null
+          status: string | null
+          trading_name: string | null
+          verified: boolean | null
+        }
+        Insert: {
+          address?: string | null
+          client_id: string
+          cnpj?: string | null
+          cnpj_validated?: boolean | null
+          company_name?: string | null
+          created_at?: string
+          employer_name?: string | null
+          extracted_data?: Json | null
+          founded_year?: string | null
+          id?: string
+          legal_nature?: string | null
+          location?: string | null
+          positive_flags?: Json | null
+          reliability_score?: number | null
+          risk_flags?: Json | null
+          sector?: string | null
+          share_capital?: number | null
+          size?: string | null
+          source?: string | null
+          status?: string | null
+          trading_name?: string | null
+          verified?: boolean | null
+        }
+        Update: {
+          address?: string | null
+          client_id?: string
+          cnpj?: string | null
+          cnpj_validated?: boolean | null
+          company_name?: string | null
+          created_at?: string
+          employer_name?: string | null
+          extracted_data?: Json | null
+          founded_year?: string | null
+          id?: string
+          legal_nature?: string | null
+          location?: string | null
+          positive_flags?: Json | null
+          reliability_score?: number | null
+          risk_flags?: Json | null
+          sector?: string | null
+          share_capital?: number | null
+          size?: string | null
+          source?: string | null
+          status?: string | null
+          trading_name?: string | null
+          verified?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employer_verifications_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exclusive_offers: {
         Row: {
           created_at: string
