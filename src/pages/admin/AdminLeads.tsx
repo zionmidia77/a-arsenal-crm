@@ -65,6 +65,9 @@ const AdminLeads = () => {
   const [sortField, setSortField] = useState<SortField>("created_at");
   const [sortAsc, setSortAsc] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [mergeOpen, setMergeOpen] = useState(false);
   const navigate = useNavigate();
 
   const { data: clients, isLoading } = useClients(
