@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { generatePDFReport } from "@/lib/generateReport";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, AreaChart, Area, CartesianGrid, Legend
+  PieChart, Pie, Cell, AreaChart, Area, CartesianGrid, Legend,
+  FunnelChart, Funnel, LabelList
 } from "recharts";
 import { useAllClients } from "@/hooks/useSupabase";
 import { Skeleton } from "@/components/ui/skeleton";
