@@ -173,6 +173,7 @@ const AdminMessages = () => {
                   <SelectItem value="lead">Lead</SelectItem>
                   <SelectItem value="relacionamento">Relacionamento</SelectItem>
                   <SelectItem value="oportunidade">Oportunidade</SelectItem>
+                  <SelectItem value="aniversario">🎂 Aniversário</SelectItem>
                 </SelectContent>
               </Select>
 
