@@ -827,6 +827,27 @@ serve(async (req) => {
       throw new Error("Failed to stream response");
     }
 
+    // If a lead was created, prepend a metadata SSE event with client_id
+    if (createdClientId) {
+      const metaEvent = `data: ${JSON.stringify({ metadata: { client_id: createdClientId } })}\n\n`;
+      const encoder = new TextEncoder();
+      const metaStream = new ReadableStream({
+        async start(controller) {
+          controller.enqueue(encoder.encode(metaEvent));
+          const reader = streamResponse.body!.getReader();
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            controller.enqueue(value);
+          }
+          controller.close();
+        },
+      });
+      return new Response(metaStream, {
+        headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+      });
+    }
+
     return new Response(streamResponse.body, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
