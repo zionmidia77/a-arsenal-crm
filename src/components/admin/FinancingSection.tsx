@@ -70,6 +70,8 @@ const FinancingSection = ({ client }: FinancingSectionProps) => {
   const [verification, setVerification] = useState<any>(null);
   const [extractedPayStub, setExtractedPayStub] = useState<any>(null);
   const [showVerification, setShowVerification] = useState(true);
+  const [verificationHistory, setVerificationHistory] = useState<any[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
   const [editFields, setEditFields] = useState({
     phone: client.phone || "",
     employer: client.employer || "",
