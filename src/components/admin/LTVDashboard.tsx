@@ -61,6 +61,16 @@ const useLTVStats = () =>
         .eq("type", "birthday")
         .eq("status", "pending");
 
+      // Check who was already congratulated today
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      const { data: congratulated } = await supabase
+        .from("interactions")
+        .select("client_id")
+        .eq("type", "system")
+        .ilike("content", "%parabéns enviado%")
+        .gte("created_at", todayStart.toISOString());
+
       // NPS trend - last 6 months
       const sixMonthsAgo = new Date();
       sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
