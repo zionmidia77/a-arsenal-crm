@@ -13,7 +13,7 @@ const BUDGETS = ["Até R$ 15 mil", "R$ 15 a 30 mil", "R$ 30 a 50 mil", "Acima de
 
 const AddLeadDialog = () => {
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ name: "", phone: "", interest: "", budget_range: "", source: "", notes: "" });
+  const [form, setForm] = useState({ name: "", phone: "", interest: "", budget_range: "", source: "", notes: "", birthdate: "" });
   const createClient = useCreateClient();
 
   const handleSubmit = () => {
@@ -29,11 +29,12 @@ const AddLeadDialog = () => {
         temperature: "warm",
         pipeline_stage: "new",
         notes: form.notes || null,
+        birthdate: form.birthdate || null,
       },
       {
         onSuccess: () => {
           toast.success("Lead adicionado!");
-          setForm({ name: "", phone: "", interest: "", budget_range: "", source: "", notes: "" });
+          setForm({ name: "", phone: "", interest: "", budget_range: "", source: "", notes: "", birthdate: "" });
           setOpen(false);
         },
         onError: () => toast.error("Erro ao adicionar lead"),
@@ -58,6 +59,10 @@ const AddLeadDialog = () => {
           <Input placeholder="Nome do cliente *" value={form.name} onChange={e => update("name", e.target.value)} className="rounded-xl bg-secondary border-border/50 h-10" />
           <Input placeholder="Telefone (WhatsApp)" value={form.phone} onChange={e => update("phone", e.target.value)} className="rounded-xl bg-secondary border-border/50 h-10" />
           
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">Data de nascimento</label>
+            <Input type="date" value={form.birthdate} onChange={e => update("birthdate", e.target.value)} className="rounded-xl bg-secondary border-border/50 h-10" />
+          </div>
           <Select value={form.interest} onValueChange={v => update("interest", v)}>
             <SelectTrigger className="rounded-xl bg-secondary border-border/50 h-10">
               <SelectValue placeholder="Interesse" />
