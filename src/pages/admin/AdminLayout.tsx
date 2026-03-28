@@ -55,7 +55,12 @@ const AdminLayout = () => {
           ))}
         </nav>
 
-        <div className="p-3 border-t border-border/50">
+        <div className="p-3 border-t border-border/50 space-y-1">
+          {user && (
+            <div className="px-3 py-1.5 mb-1">
+              <p className="text-[10px] text-muted-foreground truncate">{user.email}</p>
+            </div>
+          )}
           <NavLink
             to="/"
             className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-muted-foreground hover:bg-accent transition-all duration-200"
@@ -63,6 +68,13 @@ const AdminLayout = () => {
             <ChevronLeft className="w-4 h-4" />
             Voltar ao site
           </NavLink>
+          <button
+            onClick={signOut}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all duration-200 w-full"
+          >
+            <LogOut className="w-4 h-4" />
+            Sair
+          </button>
         </div>
       </aside>
 
