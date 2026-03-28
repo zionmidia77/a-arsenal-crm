@@ -2,10 +2,12 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Send, ArrowLeft, Bike, Sparkles } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Send, ArrowLeft, Sparkles, UserCheck } from "lucide-react";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
+import { supabase } from "@/integrations/supabase/client";
+import consultantAvatar from "@/assets/consultant-avatar.png";
 
 // ── Types ──
 interface ChatMessage {
@@ -24,9 +26,8 @@ const TypingIndicator = () => (
     className="flex items-end gap-2.5 mb-4"
   >
     <Avatar className="h-8 w-8 border border-primary/30 shrink-0">
-      <AvatarFallback className="bg-primary/20 text-primary text-xs font-bold">
-        <Bike className="w-3.5 h-3.5" />
-      </AvatarFallback>
+      <AvatarImage src={consultantAvatar} alt="Consultor" />
+      <AvatarFallback className="bg-primary/20 text-primary text-xs font-bold">A</AvatarFallback>
     </Avatar>
     <div className="glass-card px-4 py-3.5 flex gap-1.5 rounded-2xl rounded-bl-sm">
       {[0, 1, 2].map((i) => (
@@ -60,9 +61,8 @@ const ChatBubble = ({ msg }: { msg: ChatMessage }) => {
     >
       {!isUser && (
         <Avatar className="h-8 w-8 border border-primary/30 shrink-0">
-          <AvatarFallback className="bg-primary/20 text-primary text-xs font-bold">
-            <Bike className="w-3.5 h-3.5" />
-          </AvatarFallback>
+          <AvatarImage src={consultantAvatar} alt="Consultor" />
+          <AvatarFallback className="bg-primary/20 text-primary text-xs font-bold">A</AvatarFallback>
         </Avatar>
       )}
       <div
@@ -123,6 +123,30 @@ const SuggestionChips = ({ onSelect }: { onSelect: (text: string) => void }) => 
   );
 };
 
+// ── "Last seen" helper ──
+const useLastSeen = () => {
+  const [lastSeen, setLastSeen] = useState<string>("online agora");
+  const [isOnline, setIsOnline] = useState(true);
+
+  useEffect(() => {
+    // Simulate realistic "last seen" behavior
+    const interval = setInterval(() => {
+      const rand = Math.random();
+      if (rand > 0.92) {
+        setIsOnline(false);
+        setLastSeen("visto por último às " + new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }));
+        setTimeout(() => {
+          setIsOnline(true);
+          setLastSeen("online agora");
+        }, 3000 + Math.random() * 5000);
+      }
+    }, 15000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return { lastSeen, isOnline };
+};
+
 // ── Main Component ──
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
 
@@ -133,8 +157,13 @@ const ChatFunnel = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [clientId, setClientId] = useState<string | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(true);
+  const [sessionId] = useState(() => crypto.randomUUID());
+  const [conversationSaved, setConversationSaved] = useState(false);
+  const [isTransferred, setIsTransferred] = useState(false);
+  const [messageCount, setMessageCount] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const { lastSeen, isOnline } = useLastSeen();
 
   const scrollToBottom = useCallback(() => {
     setTimeout(
@@ -146,6 +175,47 @@ const ChatFunnel = () => {
       100
     );
   }, []);
+
+  // Save conversation to DB
+  const saveConversation = useCallback(async (msgs: ChatMessage[], cId?: string | null, status = "active") => {
+    const serialized = msgs.map(m => ({
+      role: m.role,
+      content: m.content,
+      timestamp: m.timestamp.toISOString(),
+    }));
+
+    try {
+      const { data: existing } = await supabase
+        .from("chat_conversations")
+        .select("id")
+        .eq("session_id", sessionId)
+        .maybeSingle();
+
+      if (existing) {
+        await supabase
+          .from("chat_conversations")
+          .update({
+            messages: serialized as any,
+            client_id: cId || clientId || null,
+            status,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", existing.id);
+      } else {
+        await supabase
+          .from("chat_conversations")
+          .insert({
+            session_id: sessionId,
+            messages: serialized as any,
+            client_id: cId || clientId || null,
+            status,
+          });
+        setConversationSaved(true);
+      }
+    } catch (err) {
+      console.error("Error saving conversation:", err);
+    }
+  }, [sessionId, clientId]);
 
   // Send welcome message on mount
   useEffect(() => {
@@ -159,9 +229,35 @@ const ChatFunnel = () => {
     setMessages([welcome]);
   }, []);
 
+  // Handle transfer to human
+  const handleTransfer = useCallback(async () => {
+    setIsTransferred(true);
+    const transferMsg: ChatMessage = {
+      id: `system-${Date.now()}`,
+      role: "assistant",
+      content: "Entendi seu perfil! 🤝 Vou te transferir pro nosso especialista que vai finalizar tudo pra você. Ele já tem todas as informações da nossa conversa. Aguarde um momento...",
+      timestamp: new Date(),
+    };
+    setMessages(prev => [...prev, transferMsg]);
+    await saveConversation([...messages, transferMsg], clientId, "transferred");
+    
+    // Log interaction if we have a client
+    if (clientId) {
+      await supabase.from("interactions").insert({
+        client_id: clientId,
+        type: "system" as const,
+        content: "Lead transferido do chat IA para atendente humano",
+        created_by: "ai-consultant",
+      });
+    }
+    
+    toast.success("Conversa transferida para um especialista!");
+    scrollToBottom();
+  }, [messages, clientId, saveConversation, scrollToBottom]);
+
   const sendMessage = useCallback(
     async (text: string) => {
-      if (!text.trim() || isLoading) return;
+      if (!text.trim() || isLoading || isTransferred) return;
 
       setShowSuggestions(false);
       const userMsg: ChatMessage = {
@@ -171,20 +267,21 @@ const ChatFunnel = () => {
         timestamp: new Date(),
       };
 
-      setMessages((prev) => [...prev, userMsg]);
+      const newMessages = [...messages, userMsg];
+      setMessages(newMessages);
       setInputValue("");
       setIsLoading(true);
+      setMessageCount(prev => prev + 1);
       scrollToBottom();
 
-      // Build history for API (exclude welcome if it's the static one)
-      const apiMessages = [...messages, userMsg]
+      // Build history for API
+      const apiMessages = newMessages
         .filter((m) => m.id !== "welcome" || m.role === "user")
         .map((m) => ({
           role: m.role as "user" | "assistant",
           content: m.content,
         }));
 
-      // Include the welcome as an assistant message for context
       if (messages[0]?.id === "welcome") {
         apiMessages.unshift({
           role: "assistant",
@@ -201,9 +298,7 @@ const ChatFunnel = () => {
           const last = prev[prev.length - 1];
           if (last?.id === assistantId) {
             return prev.map((m) =>
-              m.id === assistantId
-                ? { ...m, content: assistantSoFar }
-                : m
+              m.id === assistantId ? { ...m, content: assistantSoFar } : m
             );
           }
           return [
@@ -271,10 +366,10 @@ const ChatFunnel = () => {
 
             try {
               const parsed = JSON.parse(jsonStr);
-              const content = parsed.choices?.[0]?.delta?.content as
-                | string
-                | undefined;
+              const content = parsed.choices?.[0]?.delta?.content as string | undefined;
               if (content) upsertAssistant(content);
+
+              // Detect client_id from tool results if returned in metadata
             } catch {
               textBuffer = line + "\n" + textBuffer;
               break;
@@ -293,9 +388,7 @@ const ChatFunnel = () => {
             if (jsonStr === "[DONE]") continue;
             try {
               const parsed = JSON.parse(jsonStr);
-              const content = parsed.choices?.[0]?.delta?.content as
-                | string
-                | undefined;
+              const content = parsed.choices?.[0]?.delta?.content as string | undefined;
               if (content) upsertAssistant(content);
             } catch {
               /* ignore */
@@ -305,16 +398,20 @@ const ChatFunnel = () => {
       } catch (e) {
         console.error("Chat error:", e);
         if (!assistantSoFar) {
-          upsertAssistant(
-            "Ops, tive um probleminha aqui. Pode mandar de novo? 😅"
-          );
+          upsertAssistant("Ops, tive um probleminha aqui. Pode mandar de novo? 😅");
         }
       } finally {
         setIsLoading(false);
         inputRef.current?.focus();
+
+        // Save conversation after each exchange
+        setMessages(prev => {
+          saveConversation(prev);
+          return prev;
+        });
       }
     },
-    [messages, isLoading, clientId, scrollToBottom]
+    [messages, isLoading, isTransferred, clientId, scrollToBottom, saveConversation]
   );
 
   const handleSubmit = (e?: React.FormEvent) => {
@@ -333,6 +430,9 @@ const ChatFunnel = () => {
     sendMessage(text);
   };
 
+  // Show transfer button after 4+ user messages (lead likely qualified)
+  const showTransferButton = messageCount >= 4 && !isTransferred;
+
   return (
     <div className="flex flex-col h-screen bg-background">
       {/* Header */}
@@ -345,23 +445,46 @@ const ChatFunnel = () => {
         >
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <Avatar className="h-10 w-10 border-2 border-primary/40 glow-red">
-          <AvatarFallback className="bg-primary/20 text-primary font-bold text-sm">
-            <Bike className="w-4 h-4" />
-          </AvatarFallback>
-        </Avatar>
+        <div className="relative">
+          <Avatar className="h-10 w-10 border-2 border-primary/40 glow-red">
+            <AvatarImage src={consultantAvatar} alt="Consultor Arsenal" />
+            <AvatarFallback className="bg-primary/20 text-primary font-bold text-sm">A</AvatarFallback>
+          </Avatar>
+          <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-background ${isOnline ? "bg-emerald-500" : "bg-muted-foreground"}`} />
+        </div>
         <div className="flex-1 min-w-0">
           <p className="font-display font-semibold text-foreground text-sm">
             Consultor Arsenal
           </p>
           <p className="text-xs text-muted-foreground flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
-            online agora
+            {isOnline ? (
+              <>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
+                online agora
+              </>
+            ) : (
+              lastSeen
+            )}
           </p>
         </div>
-        <div className="flex items-center gap-1 text-[10px] text-muted-foreground bg-secondary/50 px-2.5 py-1 rounded-full">
-          <Sparkles className="w-3 h-3 text-primary" />
-          IA
+        <div className="flex items-center gap-2">
+          {showTransferButton && (
+            <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleTransfer}
+                className="text-xs gap-1.5 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
+              >
+                <UserCheck className="w-3.5 h-3.5" />
+                Falar com humano
+              </Button>
+            </motion.div>
+          )}
+          <div className="flex items-center gap-1 text-[10px] text-muted-foreground bg-secondary/50 px-2.5 py-1 rounded-full">
+            <Sparkles className="w-3 h-3 text-primary" />
+            IA
+          </div>
         </div>
       </div>
 
@@ -375,50 +498,64 @@ const ChatFunnel = () => {
 
         <AnimatePresence>{isLoading && <TypingIndicator />}</AnimatePresence>
 
-        {/* Suggestion chips after welcome */}
         {showSuggestions && messages.length === 1 && !isLoading && (
           <SuggestionChips onSelect={handleSuggestion} />
+        )}
+
+        {isTransferred && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex justify-center my-4"
+          >
+            <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs px-4 py-2 rounded-full flex items-center gap-2">
+              <UserCheck className="w-3.5 h-3.5" />
+              Transferido para especialista
+            </div>
+          </motion.div>
         )}
       </div>
 
       {/* Input */}
       <div className="px-4 py-3 border-t border-border/50 bg-background/80 backdrop-blur-xl">
-        <form onSubmit={handleSubmit} className="flex gap-2 items-end">
-          <div className="flex-1 relative">
-            <textarea
-              ref={inputRef}
-              value={inputValue}
-              onChange={(e) => {
-                setInputValue(e.target.value);
-                // Auto-resize
-                e.target.style.height = "auto";
-                e.target.style.height =
-                  Math.min(e.target.scrollHeight, 120) + "px";
-              }}
-              onKeyDown={handleKeyDown}
-              placeholder="Digite sua mensagem..."
-              rows={1}
-              disabled={isLoading}
-              className="w-full resize-none rounded-2xl bg-secondary border border-border/50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all disabled:opacity-50 placeholder:text-muted-foreground"
-              style={{ maxHeight: "120px" }}
-            />
+        {isTransferred ? (
+          <div className="text-center text-sm text-muted-foreground py-2">
+            Conversa transferida. Um especialista entrará em contato em breve.
           </div>
-          <Button
-            type="submit"
-            size="icon"
-            disabled={!inputValue.trim() || isLoading}
-            className="rounded-full shrink-0 h-11 w-11 glow-red transition-all"
-          >
-            <Send className="h-4 w-4" />
-          </Button>
-        </form>
-
+        ) : (
+          <form onSubmit={handleSubmit} className="flex gap-2 items-end">
+            <div className="flex-1 relative">
+              <textarea
+                ref={inputRef}
+                value={inputValue}
+                onChange={(e) => {
+                  setInputValue(e.target.value);
+                  e.target.style.height = "auto";
+                  e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
+                }}
+                onKeyDown={handleKeyDown}
+                placeholder="Digite sua mensagem..."
+                rows={1}
+                disabled={isLoading}
+                className="w-full resize-none rounded-2xl bg-secondary border border-border/50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all disabled:opacity-50 placeholder:text-muted-foreground"
+                style={{ maxHeight: "120px" }}
+              />
+            </div>
+            <Button
+              type="submit"
+              size="icon"
+              disabled={!inputValue.trim() || isLoading}
+              className="rounded-full shrink-0 h-11 w-11 glow-red transition-all"
+            >
+              <Send className="h-4 w-4" />
+            </Button>
+          </form>
+        )}
         <p className="text-[9px] text-muted-foreground text-center mt-2 opacity-50">
           Arsenal Motors · Atendimento inteligente
         </p>
       </div>
 
-      {/* CSS for typing animation */}
       <style>{`
         @keyframes typing-bounce {
           0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
