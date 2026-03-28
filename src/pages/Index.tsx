@@ -174,6 +174,8 @@ const Index = () => {
           </Button>
         </div>
       </motion.div>
+
+      <FloatingChatButton />
     </div>
   );
 };

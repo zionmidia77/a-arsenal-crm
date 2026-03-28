@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { Users, Flame, UserCheck, TrendingUp, ArrowUpRight, ArrowDownRight, BarChart3, Eye } from "lucide-react";
+import EmptyState from "@/components/EmptyState";
 import { AreaChart, Area, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import { useDashboardStats, useClients } from "@/hooks/useSupabase";
 import { useNavigate } from "react-router-dom";
