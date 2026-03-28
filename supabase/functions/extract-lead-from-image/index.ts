@@ -236,17 +236,45 @@ serve(async (req) => {
       );
     }
 
+    // Smart deduplication: phone → email → name
     let existingClient: any = null;
-    if (extracted.phone) {
-      const cleanPhone = extracted.phone.replace(/\D/g, "");
+    const cleanPhone = extracted.phone?.replace(/\D/g, "") || "";
+    const cleanEmail = (extracted.email || "").trim().toLowerCase();
+    const cleanName = (extracted.name || "").trim().toLowerCase();
+
+    // 1. Match by phone (last 8 digits)
+    if (cleanPhone.length >= 8) {
+      const phoneSuffix = cleanPhone.slice(-8);
       const { data } = await supabase
         .from("clients")
         .select("*")
-        .or(`phone.eq.${extracted.phone},phone.eq.${cleanPhone}`)
-        .limit(1);
+        .ilike("phone", `%${phoneSuffix}%`)
+        .limit(3);
+      if (data && data.length > 0) existingClient = data[0];
+    }
 
-      if (data && data.length > 0) {
-        existingClient = data[0];
+    // 2. Match by email
+    if (!existingClient && cleanEmail) {
+      const { data } = await supabase
+        .from("clients")
+        .select("*")
+        .ilike("email", cleanEmail)
+        .limit(1);
+      if (data && data.length > 0) existingClient = data[0];
+    }
+
+    // 3. Fuzzy name match (first + last name, only if single result)
+    if (!existingClient && cleanName.length >= 3) {
+      const parts = cleanName.split(/\s+/);
+      const first = parts[0];
+      const last = parts.length > 1 ? parts[parts.length - 1] : null;
+      if (last && last.length >= 2) {
+        const { data } = await supabase
+          .from("clients")
+          .select("*")
+          .ilike("name", `%${first}%${last}%`)
+          .limit(3);
+        if (data && data.length === 1) existingClient = data[0];
       }
     }
 
