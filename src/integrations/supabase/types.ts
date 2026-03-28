@@ -350,6 +350,65 @@ export type Database = {
         }
         Relationships: []
       }
+      financing_simulations: {
+        Row: {
+          client_id: string | null
+          client_name: string | null
+          client_phone: string | null
+          created_at: string
+          down_payment: number
+          financed_amount: number
+          id: string
+          interest_rate: number
+          monthly_payment: number
+          months: number
+          moto_value: number
+          source: string
+          status: string
+          total_interest: number
+        }
+        Insert: {
+          client_id?: string | null
+          client_name?: string | null
+          client_phone?: string | null
+          created_at?: string
+          down_payment?: number
+          financed_amount: number
+          id?: string
+          interest_rate?: number
+          monthly_payment: number
+          months: number
+          moto_value: number
+          source?: string
+          status?: string
+          total_interest?: number
+        }
+        Update: {
+          client_id?: string | null
+          client_name?: string | null
+          client_phone?: string | null
+          created_at?: string
+          down_payment?: number
+          financed_amount?: number
+          id?: string
+          interest_rate?: number
+          monthly_payment?: number
+          months?: number
+          moto_value?: number
+          source?: string
+          status?: string
+          total_interest?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financing_simulations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       interactions: {
         Row: {
           client_id: string

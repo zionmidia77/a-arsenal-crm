@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { NavLink } from "@/components/NavLink";
-import { LayoutDashboard, Users, ListChecks, MessageSquare, Menu, X, Bike, ChevronLeft, Kanban, LogOut, BarChart3, CalendarDays, Target, MessagesSquare } from "lucide-react";
+import { LayoutDashboard, Users, ListChecks, MessageSquare, Menu, X, Bike, ChevronLeft, Kanban, LogOut, BarChart3, CalendarDays, Target, MessagesSquare, Calculator } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import BottomTabBar from "@/components/BottomTabBar";
 import { useRealtimeLeads } from "@/hooks/useRealtimeLeads";
@@ -25,6 +25,7 @@ const navItems = [
   { to: "/admin/chat-history", icon: MessagesSquare, label: "Conversas IA" },
   { to: "/admin/metrics", icon: BarChart3, label: "Métricas" },
   { to: "/admin/goals", icon: Target, label: "Metas" },
+  { to: "/admin/simulations", icon: Calculator, label: "Simulações" },
 ];
 
 const AdminLayout = () => {

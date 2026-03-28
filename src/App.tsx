@@ -20,6 +20,7 @@ import AdminClientDetail from "./pages/admin/AdminClientDetail";
 import AdminGoals from "./pages/admin/AdminGoals";
 import AdminCalendar from "./pages/admin/AdminCalendar";
 import AdminChatHistory from "./pages/admin/AdminChatHistory";
+import AdminSimulations from "./pages/admin/AdminSimulations";
 import MemberArea from "./pages/MemberArea";
 import Login from "./pages/auth/Login";
 import Signup from "./pages/auth/Signup";
@@ -62,6 +63,7 @@ const App = () => (
               <Route path="calendar" element={<AdminCalendar />} />
               <Route path="goals" element={<AdminGoals />} />
               <Route path="chat-history" element={<AdminChatHistory />} />
+              <Route path="simulations" element={<AdminSimulations />} />
               <Route path="client/:id" element={<AdminClientDetail />} />
             </Route>
             <Route
