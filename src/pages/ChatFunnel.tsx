@@ -774,7 +774,12 @@ const ChatFunnel = () => {
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-6">
         <AnimatePresence mode="popLayout">
           {messages.map((msg) => (
-            <ChatBubble key={msg.id} msg={msg} />
+            <div key={msg.id}>
+              <ChatBubble msg={msg} />
+              {msg.vehicles && msg.vehicles.length > 0 && (
+                <VehicleCarousel vehicles={msg.vehicles} />
+              )}
+            </div>
           ))}
         </AnimatePresence>
 
