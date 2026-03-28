@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Bell, Flame, AlertTriangle, MessageCircle, Clock, ChevronRight } from "lucide-react";
+import { Bell, Flame, AlertTriangle, FileCheck, ChevronRight } from "lucide-react";
 import { useOverdueTasks, useClients } from "@/hooks/useSupabase";
 import { useNavigate } from "react-router-dom";
 
@@ -17,9 +17,26 @@ const NotificationCenter = () => {
     return diff < 24 * 60 * 60 * 1000;
   });
 
-  const totalNotifications = (overdueTasks?.length || 0) + newLeads.length;
+  // Leads with financing docs 100% complete
+  const docsReadyLeads = (recentClients || []).filter(c => {
+    const docs = c.financing_docs as Record<string, boolean> | null;
+    if (!docs) return false;
+    return docs.cnh && docs.proof_of_residence && docs.pay_stub && docs.reference;
+  });
+
+  const totalNotifications = (overdueTasks?.length || 0) + newLeads.length + docsReadyLeads.length;
 
   const notifications = [
+    // Docs complete — highest priority
+    ...docsReadyLeads.slice(0, 5).map(c => ({
+      id: `docs-${c.id}`,
+      icon: FileCheck,
+      color: "text-green-400",
+      bg: "bg-green-500/10",
+      title: "📋 Docs completos!",
+      desc: `${c.name} — ficha pronta para enviar`,
+      action: () => { navigate(`/admin/client/${c.id}`); setOpen(false); },
+    })),
     ...(overdueTasks || []).slice(0, 5).map(t => ({
       id: `task-${t.id}`,
       icon: AlertTriangle,
