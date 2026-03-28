@@ -715,6 +715,57 @@ export type Database = {
           },
         ]
       }
+      stock_vehicles: {
+        Row: {
+          brand: string
+          color: string | null
+          condition: string
+          created_at: string
+          description: string | null
+          features: string[] | null
+          id: string
+          image_url: string | null
+          km: number | null
+          model: string
+          price: number
+          status: string
+          updated_at: string
+          year: number | null
+        }
+        Insert: {
+          brand: string
+          color?: string | null
+          condition?: string
+          created_at?: string
+          description?: string | null
+          features?: string[] | null
+          id?: string
+          image_url?: string | null
+          km?: number | null
+          model: string
+          price: number
+          status?: string
+          updated_at?: string
+          year?: number | null
+        }
+        Update: {
+          brand?: string
+          color?: string | null
+          condition?: string
+          created_at?: string
+          description?: string | null
+          features?: string[] | null
+          id?: string
+          image_url?: string | null
+          km?: number | null
+          model?: string
+          price?: number
+          status?: string
+          updated_at?: string
+          year?: number | null
+        }
+        Relationships: []
+      }
       tasks: {
         Row: {
           client_id: string
