@@ -116,6 +116,7 @@ const fadeUp = {
 const LTVDashboard = () => {
   const navigate = useNavigate();
   const { data, isLoading } = useLTVStats();
+  const [showBirthdays, setShowBirthdays] = useState(true);
 
   if (isLoading) {
     return (
