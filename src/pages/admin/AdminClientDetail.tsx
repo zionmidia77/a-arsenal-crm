@@ -7,12 +7,14 @@ import { useClient, useClientInteractions, useClientVehicles, useCreateInteracti
 import {
   ArrowLeft, MessageCircle, Phone, Mail, MapPin, Calendar, Bike,
   TrendingUp, Clock, Plus, Star, CalendarPlus, Check, AlertTriangle,
-  Copy, Send, Bot, Tag, FileCheck
+  Copy, Send, Bot, Tag, FileCheck, Trophy, Sparkles
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import TagManager from "@/components/admin/TagManager";
 import FinancingSection from "@/components/admin/FinancingSection";
+import ReferralSection from "@/components/admin/ReferralSection";
+import LTVOpportunities from "@/components/admin/LTVOpportunities";
 import { useAIChat } from "@/hooks/useAIChat";
 
 const tempBadge: Record<string, string> = {
