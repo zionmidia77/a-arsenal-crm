@@ -119,6 +119,7 @@ export type Database = {
           birthdate: string | null
           budget_range: string | null
           city: string | null
+          cpf: string | null
           created_at: string
           down_payment_amount: number | null
           email: string | null
@@ -134,6 +135,7 @@ export type Database = {
           interest: string | null
           last_contact_at: string | null
           lead_score: number
+          marital_status: string | null
           name: string
           notes: string | null
           payment_type: string | null
@@ -156,6 +158,7 @@ export type Database = {
           birthdate?: string | null
           budget_range?: string | null
           city?: string | null
+          cpf?: string | null
           created_at?: string
           down_payment_amount?: number | null
           email?: string | null
@@ -171,6 +174,7 @@ export type Database = {
           interest?: string | null
           last_contact_at?: string | null
           lead_score?: number
+          marital_status?: string | null
           name: string
           notes?: string | null
           payment_type?: string | null
@@ -193,6 +197,7 @@ export type Database = {
           birthdate?: string | null
           budget_range?: string | null
           city?: string | null
+          cpf?: string | null
           created_at?: string
           down_payment_amount?: number | null
           email?: string | null
@@ -208,6 +213,7 @@ export type Database = {
           interest?: string | null
           last_contact_at?: string | null
           lead_score?: number
+          marital_status?: string | null
           name?: string
           notes?: string | null
           payment_type?: string | null
