@@ -132,7 +132,7 @@ const ChatFunnel = () => {
     setTimeout(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" }), 100);
   }, []);
 
-  const sendBotMessage = useCallback((stepIdx: number, currentFlow: typeof flow) => {
+  const sendBotMessage = useCallback((stepIdx: number, currentFlow: Omit<Message, "id" | "sender">[]) => {
     if (stepIdx >= currentFlow.length) return;
     setTyping(true);
     scrollToBottom();
@@ -140,7 +140,16 @@ const ChatFunnel = () => {
       setTyping(false);
       const flowItem = currentFlow[stepIdx];
       setMessages((prev) => [...prev, { id: Date.now(), sender: "bot", ...flowItem }]);
+      setStep(stepIdx);
       scrollToBottom();
+
+      // If this message has no interaction (no options, no inputType), auto-advance
+      if (!flowItem.options && !flowItem.inputType) {
+        const nextIdx = stepIdx + 1;
+        if (nextIdx < currentFlow.length) {
+          setTimeout(() => sendBotMessage(nextIdx, currentFlow), 800);
+        }
+      }
     }, 1000 + Math.random() * 600);
   }, [scrollToBottom]);
 
@@ -220,11 +229,9 @@ const ChatFunnel = () => {
       newAnswers.interest = answer;
       const newFlow = getFlow(answer);
       setFlow(newFlow);
-      const nextStep = step + 1;
-      setStep(nextStep);
       setAnswers(newAnswers);
       scrollToBottom();
-      sendBotMessage(nextStep, newFlow);
+      sendBotMessage(step + 1, newFlow);
       return;
     } else if (currentFlowItem?.field === "budget") {
       newAnswers.budget = answer;
@@ -240,14 +247,24 @@ const ChatFunnel = () => {
 
     setAnswers(newAnswers);
     const nextStep = step + 1;
-    setStep(nextStep);
     scrollToBottom();
 
     if (nextStep >= flow.length) {
+      // Beyond last message - save lead
+      setStep(nextStep);
       await saveLeadToDatabase(newAnswers);
       setTimeout(() => navigate("/dashboard"), 2500);
     } else {
+      // Check if this is the LAST interactive step (next message is the final non-interactive one)
+      const isLastInteraction = nextStep === flow.length - 1 && !flow[nextStep].options && !flow[nextStep].inputType;
+      if (isLastInteraction) {
+        // Save lead BEFORE showing final message
+        await saveLeadToDatabase(newAnswers);
+      }
       sendBotMessage(nextStep, flow);
+      if (isLastInteraction) {
+        setTimeout(() => navigate("/dashboard"), 3500);
+      }
     }
   };
 
