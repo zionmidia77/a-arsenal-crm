@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { NavLink } from "@/components/NavLink";
 import { LayoutDashboard, Users, ListChecks, MessageSquare, Menu, X, Bike, ChevronLeft, Kanban, LogOut, BarChart3 } from "lucide-react";
