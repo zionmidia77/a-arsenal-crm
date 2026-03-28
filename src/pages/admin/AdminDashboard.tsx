@@ -1,20 +1,15 @@
 import { motion } from "framer-motion";
 import {
-  Users, Flame, AlertTriangle, TrendingUp, Clock, CalendarCheck,
-  MessageCircle, Eye, Check, ChevronRight, ArrowUpRight, BarChart3
+  Users, Flame, AlertTriangle, TrendingUp, CalendarCheck,
+  MessageCircle, Eye, ChevronRight, BarChart3, Target, Trophy
 } from "lucide-react";
 import { AreaChart, Area, ResponsiveContainer, Tooltip, XAxis } from "recharts";
-import { useDashboardStats, useClients, useOverdueTasks, useAllPendingTasks } from "@/hooks/useSupabase";
+import { useDashboardStats, useClients, useOverdueTasks, useAllPendingTasks, useLeadsChartData } from "@/hooks/useSupabase";
 import { useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import EmptyState from "@/components/EmptyState";
-import type { Tables } from "@/integrations/supabase/types";
-
-const chartData = [
-  { day: "Seg", leads: 4 }, { day: "Ter", leads: 7 }, { day: "Qua", leads: 5 },
-  { day: "Qui", leads: 9 }, { day: "Sex", leads: 12 }, { day: "Sab", leads: 6 }, { day: "Dom", leads: 3 },
-];
 
 const tempEmoji: Record<string, string> = { hot: "🔥", warm: "🟡", cold: "🔵", frozen: "⚪" };
 const tempBg: Record<string, string> = { hot: "bg-primary/10", warm: "bg-warning/10", cold: "bg-info/10", frozen: "bg-muted" };
@@ -41,9 +36,17 @@ const AdminDashboard = () => {
   const { data: recentClients, isLoading: clientsLoading } = useClients();
   const { data: overdueTasks } = useOverdueTasks();
   const { data: pendingTasks } = useAllPendingTasks();
+  const { data: chartData } = useLeadsChartData();
 
   const hotLeads = (recentClients || []).filter(c => c.temperature === "hot").slice(0, 5);
   const todayTasks = (pendingTasks || []).filter(t => t.due_date === new Date().toISOString().split("T")[0]);
+
+  const greeting = () => {
+    const h = new Date().getHours();
+    if (h < 12) return "Bom dia";
+    if (h < 18) return "Boa tarde";
+    return "Boa noite";
+  };
 
   const statCards = [
     { label: "Leads novos", value: stats?.totalLeads || 0, icon: Users, color: "text-info", bg: "bg-info/10" },
@@ -56,7 +59,7 @@ const AdminDashboard = () => {
     <motion.div variants={stagger} initial="initial" animate="animate" className="p-5 md:p-6 space-y-6 max-w-4xl">
       {/* Greeting */}
       <motion.div variants={fadeUp}>
-        <h1 className="text-2xl font-display font-bold">Bom dia, Arsenal 👊</h1>
+        <h1 className="text-2xl font-display font-bold">{greeting()}, Arsenal 👊</h1>
         <p className="text-sm text-muted-foreground">
           {(overdueTasks?.length || 0) > 0
             ? `⚠️ Você tem ${overdueTasks?.length} follow-ups atrasados`
@@ -87,10 +90,27 @@ const AdminDashboard = () => {
         ))}
       </div>
 
-      {/* 🔥 DAILY ROUTINE - "Hoje você precisa fazer:" */}
+      {/* Conversion Rate */}
+      {stats && stats.totalLeads > 0 && (
+        <motion.div variants={fadeUp} className="glass-card gradient-border p-4 flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-success/10 flex items-center justify-center">
+            <Trophy className="w-5 h-5 text-success" />
+          </div>
+          <div className="flex-1">
+            <p className="text-xs text-muted-foreground">Taxa de conversão</p>
+            <p className="text-xl font-display font-bold">{stats.conversionRate}%</p>
+          </div>
+          <div className="text-right">
+            <p className="text-xs text-muted-foreground">Fechados</p>
+            <p className="text-sm font-semibold text-success">{stats.closedWon} <span className="text-muted-foreground font-normal">/ {stats.totalLeads}</span></p>
+          </div>
+        </motion.div>
+      )}
+
+      {/* 🔥 DAILY ROUTINE */}
       <motion.div variants={fadeUp} className="glass-card gradient-border p-5 space-y-4">
         <div className="flex items-center gap-2">
-          <span className="text-lg">🎯</span>
+          <Target className="w-5 h-5 text-primary" />
           <div>
             <p className="text-sm font-display font-semibold">Hoje você precisa fazer:</p>
             <p className="text-[11px] text-muted-foreground">Foco nas ações que geram resultado</p>
@@ -110,7 +130,7 @@ const AdminDashboard = () => {
                 return (
                   <div key={task.id} className="flex items-center gap-2">
                     <span className="text-[10px] text-destructive/70">{task.due_date}</span>
-                    <span className="text-xs font-medium">{clientData?.name}</span>
+                    <span className="text-xs font-medium truncate flex-1">{clientData?.name}</span>
                     {clientData?.phone && (
                       <Button size="sm" className="h-6 ml-auto rounded-full text-[10px] gap-1" onClick={() => window.open(`https://wa.me/55${clientData.phone.replace(/\D/g, "")}`)}>
                         <MessageCircle className="w-2.5 h-2.5" /> Chamar
@@ -135,12 +155,7 @@ const AdminDashboard = () => {
                 <div key={client.id} className="flex items-center gap-2">
                   <span className="text-xs font-medium truncate flex-1">{client.name}</span>
                   <span className="text-[10px] text-muted-foreground">{client.interest}</span>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-6 rounded-full text-[10px]"
-                    onClick={() => navigate(`/admin/client/${client.id}`)}
-                  >
+                  <Button size="sm" variant="outline" className="h-6 rounded-full text-[10px]" onClick={() => navigate(`/admin/client/${client.id}`)}>
                     <Eye className="w-2.5 h-2.5" />
                   </Button>
                 </div>
@@ -182,14 +197,19 @@ const AdminDashboard = () => {
         )}
       </motion.div>
 
-      {/* Chart */}
+      {/* Chart - Real Data */}
       <motion.div variants={fadeUp} className="glass-card p-5">
         <div className="flex items-center gap-2 mb-4">
           <BarChart3 className="w-4 h-4 text-primary" />
           <span className="text-sm font-medium">Leads esta semana</span>
+          {chartData && (
+            <span className="text-xs text-muted-foreground ml-auto">
+              Total: {chartData.reduce((a, b) => a + b.leads, 0)}
+            </span>
+          )}
         </div>
         <ResponsiveContainer width="100%" height={140}>
-          <AreaChart data={chartData}>
+          <AreaChart data={chartData || []}>
             <defs>
               <linearGradient id="leadGradient" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="hsl(0 72% 51%)" stopOpacity={0.3} />
@@ -229,7 +249,10 @@ const AdminDashboard = () => {
                   <p className="text-sm font-medium truncate">{client.name}</p>
                   <p className="text-xs text-muted-foreground">{client.interest || "Sem interesse"} · {formatTimeAgo(client.created_at)}</p>
                 </div>
-                <Eye className="w-4 h-4 text-muted-foreground" />
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-muted-foreground font-mono">{client.lead_score}pts</span>
+                  <Eye className="w-4 h-4 text-muted-foreground" />
+                </div>
               </motion.div>
             ))}
           </div>

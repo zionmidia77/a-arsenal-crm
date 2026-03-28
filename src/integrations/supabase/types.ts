@@ -422,6 +422,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      auto_cool_leads: { Args: never; Returns: undefined }
       calculate_lead_score: {
         Args: { client_id_param: string }
         Returns: number
