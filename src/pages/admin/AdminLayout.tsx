@@ -18,6 +18,7 @@ const AdminLayout = () => {
   const [open, setOpen] = useState(false);
   const location = useLocation();
   const isClientDetail = location.pathname.includes("/admin/client/");
+  useRealtimeLeads();
 
   return (
     <div className="min-h-screen bg-background flex">
