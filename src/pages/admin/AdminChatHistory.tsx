@@ -257,7 +257,7 @@ const AdminChatHistory = () => {
                 </p>
               </CardHeader>
               <CardContent>
-                <ScrollArea className="h-[500px]">
+                <ScrollArea className="h-[440px]" ref={scrollRef}>
                   <div className="space-y-3 pr-4">
                     {Array.isArray(selectedConvo.messages) && selectedConvo.messages.map((msg, i) => (
                       <div
