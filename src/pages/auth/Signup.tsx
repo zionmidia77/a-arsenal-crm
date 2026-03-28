@@ -51,6 +51,11 @@ const Signup = () => {
     }
   };
 
+  // Redirect if already logged in
+  if (!authLoading && user) {
+    return <Navigate to="/admin" replace />;
+  }
+
   if (success) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
