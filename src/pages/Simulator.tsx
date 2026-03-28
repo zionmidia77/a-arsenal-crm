@@ -132,7 +132,21 @@ const Simulator = () => {
           </div>
         </motion.div>
 
-        <Button className="w-full rounded-xl h-12 text-base glow-red group" onClick={() => navigate("/chat")}>
+        <Button className="w-full rounded-xl h-12 text-base glow-red group" onClick={async () => {
+          try {
+            await supabase.from("financing_simulations").insert({
+              moto_value: motoValue[0],
+              down_payment: downPayment[0],
+              financed_amount: financed,
+              months: months[0],
+              monthly_payment: Math.round(monthly),
+              interest_rate: rate,
+              total_interest: Math.round(totalInterest),
+              source: "simulator",
+            });
+          } catch {}
+          navigate("/chat");
+        }}>
           <CheckCircle2 className="w-4 h-4 mr-2" />
           Quero essa condição 🔥
         </Button>

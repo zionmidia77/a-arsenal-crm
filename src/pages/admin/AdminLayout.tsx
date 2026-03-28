@@ -25,6 +25,7 @@ const navItems = [
   { to: "/admin/chat-history", icon: MessagesSquare, label: "Conversas IA" },
   { to: "/admin/metrics", icon: BarChart3, label: "Métricas" },
   { to: "/admin/goals", icon: Target, label: "Metas" },
+  { to: "/admin/simulations", icon: Calculator, label: "Simulações" },
 ];
 
 const AdminLayout = () => {
