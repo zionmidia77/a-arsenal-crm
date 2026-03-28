@@ -13,7 +13,7 @@ const BUDGETS = ["Até R$ 15 mil", "R$ 15 a 30 mil", "R$ 30 a 50 mil", "Acima de
 
 const AddLeadDialog = () => {
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ name: "", phone: "", interest: "", budget_range: "", source: "", notes: "" });
+  const [form, setForm] = useState({ name: "", phone: "", interest: "", budget_range: "", source: "", notes: "", birthdate: "" });
   const createClient = useCreateClient();
 
   const handleSubmit = () => {
