@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { useState, useEffect, useRef } from "react";
 import {
   Users, Flame, AlertTriangle, TrendingUp, CalendarCheck,
   MessageCircle, Eye, ChevronRight, BarChart3, Target, Trophy, Activity
@@ -19,6 +20,29 @@ const stagger = { animate: { transition: { staggerChildren: 0.06 } } };
 const fadeUp = {
   initial: { opacity: 0, y: 12 },
   animate: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] } },
+};
+
+// Animated counter component
+const AnimatedCounter = ({ value, duration = 1.2 }: { value: number; duration?: number }) => {
+  const [display, setDisplay] = useState(0);
+  const prevValue = useRef(0);
+
+  useEffect(() => {
+    const start = prevValue.current;
+    const end = value;
+    if (start === end) return;
+    const startTime = performance.now();
+    const step = (now: number) => {
+      const progress = Math.min((now - startTime) / (duration * 1000), 1);
+      const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+      setDisplay(Math.round(start + (end - start) * eased));
+      if (progress < 1) requestAnimationFrame(step);
+      else prevValue.current = end;
+    };
+    requestAnimationFrame(step);
+  }, [value, duration]);
+
+  return <>{display}</>;
 };
 
 const formatTimeAgo = (dateStr: string) => {
@@ -72,19 +96,34 @@ const AdminDashboard = () => {
       {/* Stats */}
       <div className="grid grid-cols-2 gap-3">
         {statCards.map((s, i) => (
-          <motion.div key={i} variants={fadeUp} className="glass-card-hover p-4">
+          <motion.div
+            key={i}
+            variants={fadeUp}
+            whileHover={{ scale: 1.04, transition: { duration: 0.2 } }}
+            whileTap={{ scale: 0.97 }}
+            className="glass-card-hover p-4 cursor-pointer"
+          >
             <div className="flex items-center justify-between mb-3">
-              <div className={`w-9 h-9 rounded-xl ${s.bg} flex items-center justify-center`}>
+              <motion.div
+                className={`w-9 h-9 rounded-xl ${s.bg} flex items-center justify-center`}
+                whileHover={{ rotate: [0, -10, 10, 0], transition: { duration: 0.4 } }}
+              >
                 <s.icon className={`w-4 h-4 ${s.color}`} />
-              </div>
+              </motion.div>
               {s.label === "Atrasados" && (s.value > 0) && (
-                <span className="w-2.5 h-2.5 rounded-full bg-destructive animate-pulse" />
+                <motion.span
+                  className="w-2.5 h-2.5 rounded-full bg-destructive"
+                  animate={{ scale: [1, 1.4, 1], opacity: [1, 0.6, 1] }}
+                  transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                />
               )}
             </div>
             {statsLoading ? (
               <Skeleton className="h-8 w-16" />
             ) : (
-              <p className="text-2xl font-display font-bold tabular-nums">{s.value}</p>
+              <p className="text-2xl font-display font-bold tabular-nums">
+                <AnimatedCounter value={s.value} />
+              </p>
             )}
             <p className="text-xs text-muted-foreground mt-0.5">{s.label}</p>
           </motion.div>
@@ -93,17 +132,25 @@ const AdminDashboard = () => {
 
       {/* Conversion Rate */}
       {stats && stats.totalLeads > 0 && (
-        <motion.div variants={fadeUp} className="glass-card gradient-border p-4 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-success/10 flex items-center justify-center">
+        <motion.div
+          variants={fadeUp}
+          whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
+          className="glass-card gradient-border p-4 flex items-center gap-4 cursor-pointer"
+        >
+          <motion.div
+            className="w-12 h-12 rounded-xl bg-success/10 flex items-center justify-center"
+            animate={{ rotate: [0, 5, -5, 0] }}
+            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+          >
             <Trophy className="w-5 h-5 text-success" />
-          </div>
+          </motion.div>
           <div className="flex-1">
             <p className="text-xs text-muted-foreground">Taxa de conversão</p>
-            <p className="text-xl font-display font-bold">{stats.conversionRate}%</p>
+            <p className="text-xl font-display font-bold"><AnimatedCounter value={Math.round(stats.conversionRate)} />%</p>
           </div>
           <div className="text-right">
             <p className="text-xs text-muted-foreground">Fechados</p>
-            <p className="text-sm font-semibold text-success">{stats.closedWon} <span className="text-muted-foreground font-normal">/ {stats.totalLeads}</span></p>
+            <p className="text-sm font-semibold text-success"><AnimatedCounter value={stats.closedWon} /> <span className="text-muted-foreground font-normal">/ {stats.totalLeads}</span></p>
           </div>
         </motion.div>
       )}
@@ -120,16 +167,22 @@ const AdminDashboard = () => {
 
         {/* Overdue alerts */}
         {(overdueTasks?.length || 0) > 0 && (
-          <div className="bg-destructive/10 rounded-xl p-3 border border-destructive/20">
+          <motion.div
+            className="bg-destructive/10 rounded-xl p-3 border border-destructive/20"
+            animate={{ boxShadow: ["0 0 0 0 hsl(var(--destructive) / 0)", "0 0 12px 2px hsl(var(--destructive) / 0.15)", "0 0 0 0 hsl(var(--destructive) / 0)"] }}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+          >
             <div className="flex items-center gap-2 mb-2">
-              <AlertTriangle className="w-4 h-4 text-destructive" />
+              <motion.div animate={{ rotate: [0, -15, 15, 0] }} transition={{ duration: 0.6, repeat: Infinity, repeatDelay: 2 }}>
+                <AlertTriangle className="w-4 h-4 text-destructive" />
+              </motion.div>
               <span className="text-xs font-medium text-destructive">Follow-ups atrasados ({overdueTasks?.length})</span>
             </div>
             <div className="space-y-1.5">
               {overdueTasks?.slice(0, 3).map(task => {
                 const clientData = task.clients as any;
                 return (
-                  <div key={task.id} className="flex items-center gap-2">
+                  <motion.div key={task.id} className="flex items-center gap-2" whileHover={{ x: 4, transition: { duration: 0.15 } }}>
                     <span className="text-[10px] text-destructive/70">{task.due_date}</span>
                     <span className="text-xs font-medium truncate flex-1">{clientData?.name}</span>
                     {clientData?.phone && (
@@ -137,11 +190,11 @@ const AdminDashboard = () => {
                         <MessageCircle className="w-2.5 h-2.5" /> Chamar
                       </Button>
                     )}
-                  </div>
+                  </motion.div>
                 );
               })}
             </div>
-          </div>
+          </motion.div>
         )}
 
         {/* Hot leads to act on */}
@@ -249,6 +302,8 @@ const AdminDashboard = () => {
               <motion.div
                 key={client.id}
                 variants={fadeUp}
+                whileHover={{ scale: 1.02, x: 4, transition: { duration: 0.15 } }}
+                whileTap={{ scale: 0.98 }}
                 className="glass-card-hover px-4 py-3 flex items-center gap-3 cursor-pointer"
                 onClick={() => navigate(`/admin/client/${client.id}`)}
               >
