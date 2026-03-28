@@ -60,6 +60,11 @@ const normalizeExtracted = (raw: any): ExtractedData => ({
     raw?.confidence === "high" || raw?.confidence === "medium" || raw?.confidence === "low"
       ? raw.confidence
       : "medium",
+  birthdate: typeof raw?.birthdate === "string" && raw.birthdate.trim() ? raw.birthdate.trim() : null,
+  cpf: typeof raw?.cpf === "string" && raw.cpf.trim() ? raw.cpf.trim() : null,
+  employer: typeof raw?.employer === "string" && raw.employer.trim() ? raw.employer.trim() : null,
+  position: typeof raw?.position === "string" && raw.position.trim() ? raw.position.trim() : null,
+  salary: typeof raw?.salary === "number" ? raw.salary : null,
 });
 
 // --- Similarity scoring ---
