@@ -33,6 +33,7 @@ const App = () => (
             <Route path="leads" element={<AdminLeads />} />
             <Route path="tasks" element={<AdminTasks />} />
             <Route path="messages" element={<AdminMessages />} />
+            <Route path="client/:id" element={<AdminClientDetail />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
