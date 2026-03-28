@@ -32,6 +32,7 @@ export const useRealtimeLeads = () => {
           if (isFirstLoad.current) return;
 
           const newClient = payload.new as any;
+          const isHot = newClient.temperature === "hot";
 
           // Invalidate queries so lists refresh
           queryClient.invalidateQueries({ queryKey: ["clients"] });
@@ -41,17 +42,42 @@ export const useRealtimeLeads = () => {
           // Play sound
           playNotificationSound();
 
-          // Show rich toast notification
-          toast("🆕 Novo lead chegou!", {
-            description: `${newClient.name}${newClient.interest ? ` · ${newClient.interest}` : ""}${newClient.phone ? ` · ${newClient.phone}` : ""}`,
-            duration: 8000,
-            action: {
-              label: "Ver Pipeline",
-              onClick: () => {
-                window.location.href = "/admin/pipeline";
+          // Browser notification (if permitted)
+          if ("Notification" in window && Notification.permission === "granted") {
+            new Notification(
+              isHot ? "🔥 LEAD QUENTE!" : "🆕 Novo lead",
+              {
+                body: `${newClient.name}${newClient.interest ? ` · ${newClient.interest}` : ""}`,
+                icon: "/favicon.ico",
+                tag: `lead-${newClient.id}`,
+              }
+            );
+          }
+
+          if (isHot) {
+            // Hot lead — urgent red toast
+            toast.error("🔥 LEAD QUENTE!", {
+              description: `${newClient.name}${newClient.interest ? ` · ${newClient.interest}` : ""}${newClient.phone ? ` · ${newClient.phone}` : ""}\nContate IMEDIATAMENTE!`,
+              duration: 15000,
+              action: {
+                label: "Ver lead",
+                onClick: () => {
+                  window.location.href = `/admin/client/${newClient.id}`;
+                },
               },
-            },
-          });
+            });
+          } else {
+            toast("🆕 Novo lead chegou!", {
+              description: `${newClient.name}${newClient.interest ? ` · ${newClient.interest}` : ""}${newClient.phone ? ` · ${newClient.phone}` : ""}`,
+              duration: 8000,
+              action: {
+                label: "Ver Pipeline",
+                onClick: () => {
+                  window.location.href = "/admin/pipeline";
+                },
+              },
+            });
+          }
         }
       )
       .on(
