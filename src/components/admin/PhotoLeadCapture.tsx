@@ -19,6 +19,11 @@ type ExtractedData = {
   notes: string | null;
   source: string;
   confidence: string;
+  birthdate: string | null;
+  cpf: string | null;
+  employer: string | null;
+  position: string | null;
+  salary: number | null;
 };
 
 type SimilarityCandidate = {
