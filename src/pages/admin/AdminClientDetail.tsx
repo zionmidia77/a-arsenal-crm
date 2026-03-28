@@ -67,6 +67,8 @@ const AdminClientDetail = () => {
   const [note, setNote] = useState("");
   const [noteType, setNoteType] = useState<string>("system");
   const [showSchedule, setShowSchedule] = useState(false);
+  const [showAIChat, setShowAIChat] = useState(false);
+  const [aiInput, setAIInput] = useState("");
   const [scheduleDate, setScheduleDate] = useState(new Date().toISOString().split("T")[0]);
   const [scheduleReason, setScheduleReason] = useState("");
 
