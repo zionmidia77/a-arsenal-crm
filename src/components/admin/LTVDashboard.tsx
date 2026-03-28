@@ -129,8 +129,41 @@ const fadeUp = {
 
 const LTVDashboard = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { data, isLoading } = useLTVStats();
   const [showBirthdays, setShowBirthdays] = useState(true);
+
+  const markCongratulated = useMutation({
+    mutationFn: async (client: { id: string; name: string }) => {
+      // Insert interaction
+      await supabase.from("interactions").insert({
+        client_id: client.id,
+        type: "system" as const,
+        content: `🎂 Parabéns enviado para ${client.name} (aniversário)`,
+        created_by: "user",
+      });
+      // Mark birthday opportunity as acted (if exists)
+      await supabase
+        .from("opportunities")
+        .update({ status: "acted", acted_at: new Date().toISOString() })
+        .eq("client_id", client.id)
+        .eq("type", "birthday")
+        .eq("status", "pending");
+      // Complete birthday task (if exists)
+      await supabase
+        .from("tasks")
+        .update({ status: "completed", completed_at: new Date().toISOString() })
+        .eq("client_id", client.id)
+        .eq("type", "relationship")
+        .eq("status", "pending")
+        .ilike("reason", "%aniversário%");
+    },
+    onSuccess: (_, client) => {
+      toast.success(`✅ ${client.name} marcado como parabenizado!`);
+      queryClient.invalidateQueries({ queryKey: ["ltv-dashboard-stats"] });
+    },
+    onError: () => toast.error("Erro ao marcar como parabenizado"),
+  });
 
   if (isLoading) {
     return (
