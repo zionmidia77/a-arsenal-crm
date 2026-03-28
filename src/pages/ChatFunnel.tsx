@@ -464,6 +464,139 @@ const ChatFunnel = () => {
     sendMessage(text);
   };
 
+  // Document photo handler
+  const handleDocumentUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || isLoading || isTransferred) return;
+    if (fileInputRef.current) fileInputRef.current.value = "";
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Envie apenas fotos/imagens");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Imagem muito grande (máx 10MB)");
+      return;
+    }
+
+    setIsAnalyzingDoc(true);
+
+    const userMsg: ChatMessage = {
+      id: `user-doc-${Date.now()}`,
+      role: "user",
+      content: "📷 Enviei um documento para análise",
+      timestamp: new Date(),
+    };
+    setMessages(prev => [...prev, userMsg]);
+    setMessageCount(prev => prev + 1);
+    scrollToBottom();
+
+    try {
+      const reader = new FileReader();
+      const base64 = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-document`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({ image_base64: base64, client_id: clientId }),
+        }
+      );
+
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.error || "Erro ao analisar documento");
+      }
+
+      const result = await resp.json();
+      const docLabels: Record<string, string> = {
+        cnh: "CNH (Carteira de Habilitação)",
+        income_proof: "Comprovante de Renda",
+        address_proof: "Comprovante de Residência",
+        identity: "Documento de Identidade",
+      };
+
+      let responseContent = "";
+
+      if (result.document_type === "not_document") {
+        responseContent = "Hmm, isso não parece ser um documento. 🤔 Manda a foto da sua **CNH**, **holerite** ou **comprovante de residência** que eu analiso rapidinho!";
+      } else {
+        const label = docLabels[result.document_type] || "Documento";
+        responseContent = `✅ **${label}** recebido e analisado!\n\n`;
+        responseContent += `${result.summary || ""}\n\n`;
+
+        if (result.extracted_data) {
+          const ext = result.extracted_data;
+          const details: string[] = [];
+          if (ext.full_name) details.push(`👤 **Nome:** ${ext.full_name}`);
+          if (ext.cpf) details.push(`🔢 **CPF:** ${ext.cpf}`);
+          if (ext.cnh_number) details.push(`🪪 **CNH:** ${ext.cnh_number}`);
+          if (ext.cnh_category) details.push(`📋 **Categoria:** ${ext.cnh_category}`);
+          if (ext.cnh_expiry) details.push(`📅 **Validade:** ${ext.cnh_expiry}`);
+          if (ext.employer) details.push(`🏢 **Empregador:** ${ext.employer}`);
+          if (ext.position) details.push(`💼 **Cargo:** ${ext.position}`);
+          if (ext.salary) details.push(`💰 **Salário:** R$ ${Number(ext.salary).toLocaleString("pt-BR")}`);
+          if (ext.city) details.push(`📍 **Cidade:** ${ext.city}`);
+          if (details.length > 0) responseContent += details.join("\n") + "\n\n";
+        }
+
+        if (result.issues?.length > 0) {
+          responseContent += `⚠️ **Atenção:** ${result.issues.join(", ")}\n\n`;
+        }
+
+        if (result.document_type === "cnh") {
+          responseContent += "Agora manda seu **comprovante de renda** (holerite ou contracheque) pra eu adiantar a análise de crédito! 📋";
+        } else if (result.document_type === "income_proof") {
+          responseContent += "Massa! Agora só falta o **comprovante de residência** e ficamos prontos! 🏠";
+        } else if (result.document_type === "address_proof") {
+          responseContent += "Perfeito! Documentação ficando completa! 🎯";
+        }
+
+        if (clientId) {
+          const { data: client } = await supabase
+            .from("clients")
+            .select("financing_docs")
+            .eq("id", clientId)
+            .maybeSingle();
+          const docs = client?.financing_docs as Record<string, boolean> | null;
+          if (docs?.cnh && docs?.pay_stub && docs?.proof_of_residence) {
+            responseContent += "\n\n🎉 **Documentação completa!** Vou encaminhar pra análise de crédito!";
+          }
+        }
+      }
+
+      const assistantMsg: ChatMessage = {
+        id: `assistant-doc-${Date.now()}`,
+        role: "assistant",
+        content: responseContent,
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, assistantMsg]);
+      setMessages(prev => { saveConversation(prev); return prev; });
+    } catch (err) {
+      console.error("Document analysis error:", err);
+      const errorMsg: ChatMessage = {
+        id: `assistant-doc-err-${Date.now()}`,
+        role: "assistant",
+        content: "Ops, não consegui analisar esse documento agora. Tenta de novo com uma foto mais nítida! 📸",
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, errorMsg]);
+      toast.error("Erro ao analisar documento");
+    } finally {
+      setIsAnalyzingDoc(false);
+      scrollToBottom();
+    }
+  }, [clientId, isLoading, isTransferred, scrollToBottom, saveConversation]);
+
   // Show transfer button after 4+ user messages (lead likely qualified)
   const showTransferButton = messageCount >= 4 && !isTransferred;
 
