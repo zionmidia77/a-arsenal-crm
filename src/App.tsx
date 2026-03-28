@@ -54,6 +54,7 @@ const App = () => (
               <Route path="pipeline" element={<AdminPipeline />} />
               <Route path="tasks" element={<AdminTasks />} />
               <Route path="messages" element={<AdminMessages />} />
+              <Route path="metrics" element={<AdminMetrics />} />
               <Route path="client/:id" element={<AdminClientDetail />} />
             </Route>
             <Route path="*" element={<NotFound />} />

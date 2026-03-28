@@ -16,6 +16,7 @@ const navItems = [
   { to: "/admin/pipeline", icon: Kanban, label: "Pipeline" },
   { to: "/admin/tasks", icon: ListChecks, label: "Tarefas" },
   { to: "/admin/messages", icon: MessageSquare, label: "Mensagens" },
+  { to: "/admin/metrics", icon: BarChart3, label: "Métricas" },
 ];
 
 const AdminLayout = () => {
