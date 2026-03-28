@@ -494,12 +494,16 @@ const ChatFunnel = () => {
             try {
               const parsed = JSON.parse(jsonStr);
 
-              // Check for metadata event (client_id from lead creation)
-              if (parsed.metadata?.client_id) {
-                const newClientId = parsed.metadata.client_id;
-                setClientId(newClientId);
-                // Update conversation with linked client_id
-                saveConversation(newMessages, newClientId);
+              // Check for metadata event (client_id, vehicles)
+              if (parsed.metadata) {
+                if (parsed.metadata.client_id) {
+                  const newClientId = parsed.metadata.client_id;
+                  setClientId(newClientId);
+                  saveConversation(newMessages, newClientId);
+                }
+                if (parsed.metadata.vehicles?.length) {
+                  setPendingVehicles(parsed.metadata.vehicles);
+                }
                 continue;
               }
 
