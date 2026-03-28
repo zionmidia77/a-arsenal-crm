@@ -132,7 +132,7 @@ const ChatFunnel = () => {
     setTimeout(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" }), 100);
   }, []);
 
-  const sendBotMessage = useCallback((stepIdx: number, currentFlow: typeof flow) => {
+  const sendBotMessage = useCallback((stepIdx: number, currentFlow: Omit<Message, "id" | "sender">[]) => {
     if (stepIdx >= currentFlow.length) return;
     setTyping(true);
     scrollToBottom();
@@ -140,7 +140,16 @@ const ChatFunnel = () => {
       setTyping(false);
       const flowItem = currentFlow[stepIdx];
       setMessages((prev) => [...prev, { id: Date.now(), sender: "bot", ...flowItem }]);
+      setStep(stepIdx);
       scrollToBottom();
+
+      // If this message has no interaction (no options, no inputType), auto-advance
+      if (!flowItem.options && !flowItem.inputType) {
+        const nextIdx = stepIdx + 1;
+        if (nextIdx < currentFlow.length) {
+          setTimeout(() => sendBotMessage(nextIdx, currentFlow), 800);
+        }
+      }
     }, 1000 + Math.random() * 600);
   }, [scrollToBottom]);
 
