@@ -61,6 +61,7 @@ const App = () => (
               <Route path="metrics" element={<AdminMetrics />} />
               <Route path="calendar" element={<AdminCalendar />} />
               <Route path="goals" element={<AdminGoals />} />
+              <Route path="chat-history" element={<AdminChatHistory />} />
               <Route path="client/:id" element={<AdminClientDetail />} />
             </Route>
             <Route
