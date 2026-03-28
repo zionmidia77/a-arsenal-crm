@@ -1,18 +1,23 @@
 import { motion } from "framer-motion";
-import { Users, Flame, UserCheck, TrendingUp, ArrowUpRight, ArrowDownRight, BarChart3, Eye } from "lucide-react";
-import EmptyState from "@/components/EmptyState";
+import {
+  Users, Flame, AlertTriangle, TrendingUp, Clock, CalendarCheck,
+  MessageCircle, Eye, Check, ChevronRight, ArrowUpRight, BarChart3
+} from "lucide-react";
 import { AreaChart, Area, ResponsiveContainer, Tooltip, XAxis } from "recharts";
-import { useDashboardStats, useClients } from "@/hooks/useSupabase";
+import { useDashboardStats, useClients, useOverdueTasks, useAllPendingTasks } from "@/hooks/useSupabase";
 import { useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import EmptyState from "@/components/EmptyState";
+import type { Tables } from "@/integrations/supabase/types";
 
 const chartData = [
   { day: "Seg", leads: 4 }, { day: "Ter", leads: 7 }, { day: "Qua", leads: 5 },
   { day: "Qui", leads: 9 }, { day: "Sex", leads: 12 }, { day: "Sab", leads: 6 }, { day: "Dom", leads: 3 },
 ];
 
-const tempMap = { hot: "🔥", warm: "🟡", cold: "🔵", frozen: "⚪" };
-const tempBg = { hot: "bg-primary/10", warm: "bg-warning/10", cold: "bg-info/10", frozen: "bg-muted" };
+const tempEmoji: Record<string, string> = { hot: "🔥", warm: "🟡", cold: "🔵", frozen: "⚪" };
+const tempBg: Record<string, string> = { hot: "bg-primary/10", warm: "bg-warning/10", cold: "bg-info/10", frozen: "bg-muted" };
 
 const stagger = { animate: { transition: { staggerChildren: 0.06 } } };
 const fadeUp = {
@@ -34,19 +39,30 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
   const { data: recentClients, isLoading: clientsLoading } = useClients();
+  const { data: overdueTasks } = useOverdueTasks();
+  const { data: pendingTasks } = useAllPendingTasks();
+
+  const hotLeads = (recentClients || []).filter(c => c.temperature === "hot").slice(0, 5);
+  const todayTasks = (pendingTasks || []).filter(t => t.due_date === new Date().toISOString().split("T")[0]);
 
   const statCards = [
     { label: "Leads novos", value: stats?.totalLeads || 0, icon: Users, color: "text-info", bg: "bg-info/10" },
     { label: "Leads quentes", value: stats?.hotLeads || 0, icon: Flame, color: "text-primary", bg: "bg-primary/10" },
-    { label: "Clientes ativos", value: stats?.activeClients || 0, icon: UserCheck, color: "text-success", bg: "bg-success/10" },
-    { label: "Oportunidades", value: stats?.opportunities || 0, icon: TrendingUp, color: "text-warning", bg: "bg-warning/10" },
+    { label: "Follow-ups hoje", value: stats?.todayTasks || 0, icon: CalendarCheck, color: "text-success", bg: "bg-success/10" },
+    { label: "Atrasados", value: stats?.overdueTasks || 0, icon: AlertTriangle, color: "text-destructive", bg: "bg-destructive/10" },
   ];
 
   return (
     <motion.div variants={stagger} initial="initial" animate="animate" className="p-5 md:p-6 space-y-6 max-w-4xl">
+      {/* Greeting */}
       <motion.div variants={fadeUp}>
-        <h1 className="text-2xl font-display font-bold">Dashboard</h1>
-        <p className="text-sm text-muted-foreground">Visão geral do seu negócio</p>
+        <h1 className="text-2xl font-display font-bold">Bom dia, Arsenal 👊</h1>
+        <p className="text-sm text-muted-foreground">
+          {(overdueTasks?.length || 0) > 0
+            ? `⚠️ Você tem ${overdueTasks?.length} follow-ups atrasados`
+            : "Tudo em dia! Continue assim 🔥"
+          }
+        </p>
       </motion.div>
 
       {/* Stats */}
@@ -57,6 +73,9 @@ const AdminDashboard = () => {
               <div className={`w-9 h-9 rounded-xl ${s.bg} flex items-center justify-center`}>
                 <s.icon className={`w-4 h-4 ${s.color}`} />
               </div>
+              {s.label === "Atrasados" && (s.value > 0) && (
+                <span className="w-2.5 h-2.5 rounded-full bg-destructive animate-pulse" />
+              )}
             </div>
             {statsLoading ? (
               <Skeleton className="h-8 w-16" />
@@ -67,6 +86,101 @@ const AdminDashboard = () => {
           </motion.div>
         ))}
       </div>
+
+      {/* 🔥 DAILY ROUTINE - "Hoje você precisa fazer:" */}
+      <motion.div variants={fadeUp} className="glass-card gradient-border p-5 space-y-4">
+        <div className="flex items-center gap-2">
+          <span className="text-lg">🎯</span>
+          <div>
+            <p className="text-sm font-display font-semibold">Hoje você precisa fazer:</p>
+            <p className="text-[11px] text-muted-foreground">Foco nas ações que geram resultado</p>
+          </div>
+        </div>
+
+        {/* Overdue alerts */}
+        {(overdueTasks?.length || 0) > 0 && (
+          <div className="bg-destructive/10 rounded-xl p-3 border border-destructive/20">
+            <div className="flex items-center gap-2 mb-2">
+              <AlertTriangle className="w-4 h-4 text-destructive" />
+              <span className="text-xs font-medium text-destructive">Follow-ups atrasados ({overdueTasks?.length})</span>
+            </div>
+            <div className="space-y-1.5">
+              {overdueTasks?.slice(0, 3).map(task => {
+                const clientData = task.clients as any;
+                return (
+                  <div key={task.id} className="flex items-center gap-2">
+                    <span className="text-[10px] text-destructive/70">{task.due_date}</span>
+                    <span className="text-xs font-medium">{clientData?.name}</span>
+                    {clientData?.phone && (
+                      <Button size="sm" className="h-6 ml-auto rounded-full text-[10px] gap-1" onClick={() => window.open(`https://wa.me/55${clientData.phone.replace(/\D/g, "")}`)}>
+                        <MessageCircle className="w-2.5 h-2.5" /> Chamar
+                      </Button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Hot leads to act on */}
+        {hotLeads.length > 0 && (
+          <div className="bg-primary/5 rounded-xl p-3 border border-primary/20">
+            <div className="flex items-center gap-2 mb-2">
+              <Flame className="w-4 h-4 text-primary" />
+              <span className="text-xs font-medium text-primary">Leads quentes ({hotLeads.length})</span>
+            </div>
+            <div className="space-y-1.5">
+              {hotLeads.slice(0, 3).map(client => (
+                <div key={client.id} className="flex items-center gap-2">
+                  <span className="text-xs font-medium truncate flex-1">{client.name}</span>
+                  <span className="text-[10px] text-muted-foreground">{client.interest}</span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-6 rounded-full text-[10px]"
+                    onClick={() => navigate(`/admin/client/${client.id}`)}
+                  >
+                    <Eye className="w-2.5 h-2.5" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Today's follow-ups */}
+        {todayTasks.length > 0 && (
+          <div className="bg-success/5 rounded-xl p-3 border border-success/20">
+            <div className="flex items-center gap-2 mb-2">
+              <CalendarCheck className="w-4 h-4 text-success" />
+              <span className="text-xs font-medium text-success">Retornos agendados ({todayTasks.length})</span>
+            </div>
+            <div className="space-y-1.5">
+              {todayTasks.slice(0, 3).map(task => {
+                const clientData = task.clients as any;
+                return (
+                  <div key={task.id} className="flex items-center gap-2">
+                    <span className="text-xs font-medium truncate flex-1">{clientData?.name}</span>
+                    <span className="text-[10px] text-muted-foreground">{task.reason}</span>
+                    {clientData?.phone && (
+                      <Button size="sm" className="h-6 ml-auto rounded-full text-[10px] gap-1" onClick={() => window.open(`https://wa.me/55${clientData.phone.replace(/\D/g, "")}`)}>
+                        <MessageCircle className="w-2.5 h-2.5" /> Chamar
+                      </Button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {hotLeads.length === 0 && todayTasks.length === 0 && (overdueTasks?.length || 0) === 0 && (
+          <p className="text-sm text-muted-foreground text-center py-4">
+            ✅ Nada pendente! Aproveite para prospectar novos leads.
+          </p>
+        )}
+      </motion.div>
 
       {/* Chart */}
       <motion.div variants={fadeUp} className="glass-card p-5">
@@ -91,7 +205,12 @@ const AdminDashboard = () => {
 
       {/* Recent Leads */}
       <motion.div variants={fadeUp}>
-        <h2 className="font-display font-semibold mb-3">Leads recentes</h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-display font-semibold">Leads recentes</h2>
+          <Button variant="ghost" size="sm" className="text-xs text-primary" onClick={() => navigate("/admin/leads")}>
+            Ver todos <ChevronRight className="w-3 h-3 ml-1" />
+          </Button>
+        </div>
         {clientsLoading ? (
           <div className="space-y-2">{[1, 2, 3].map(i => <Skeleton key={i} className="h-16 rounded-2xl" />)}</div>
         ) : recentClients && recentClients.length > 0 ? (
@@ -104,7 +223,7 @@ const AdminDashboard = () => {
                 onClick={() => navigate(`/admin/client/${client.id}`)}
               >
                 <div className={`w-9 h-9 rounded-full ${tempBg[client.temperature]} flex items-center justify-center text-xs font-bold shrink-0`}>
-                  {tempMap[client.temperature]}
+                  {tempEmoji[client.temperature]}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{client.name}</p>

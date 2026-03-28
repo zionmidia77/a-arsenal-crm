@@ -57,6 +57,21 @@ export const useUpdateClient = () => {
   });
 };
 
+// ============ ALL CLIENTS FOR KANBAN ============
+export const useAllClients = () => {
+  return useQuery({
+    queryKey: ["clients-all"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("clients")
+        .select("*")
+        .order("lead_score", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+};
+
 // ============ VEHICLES ============
 export const useClientVehicles = (clientId: string) => {
   return useQuery({
@@ -100,12 +115,61 @@ export const useTasks = (filters?: { status?: string; due_date?: string }) => {
   return useQuery({
     queryKey: ["tasks", filters],
     queryFn: async () => {
-      let query = supabase.from("tasks").select("*, clients(name, phone)").order("due_date", { ascending: true });
+      let query = supabase.from("tasks").select("*, clients(name, phone, temperature, pipeline_stage, interest)").order("due_date", { ascending: true });
       if (filters?.status) query = query.eq("status", filters.status);
       if (filters?.due_date) query = query.eq("due_date", filters.due_date);
       const { data, error } = await query;
       if (error) throw error;
       return data;
+    },
+  });
+};
+
+export const useAllPendingTasks = () => {
+  return useQuery({
+    queryKey: ["tasks-pending"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("tasks")
+        .select("*, clients(name, phone, temperature, pipeline_stage, interest)")
+        .eq("status", "pending")
+        .order("due_date", { ascending: true })
+        .limit(50);
+      if (error) throw error;
+      return data;
+    },
+  });
+};
+
+export const useOverdueTasks = () => {
+  const today = new Date().toISOString().split("T")[0];
+  return useQuery({
+    queryKey: ["tasks-overdue"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("tasks")
+        .select("*, clients(name, phone, temperature, pipeline_stage, interest)")
+        .eq("status", "pending")
+        .lt("due_date", today)
+        .order("due_date", { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+  });
+};
+
+export const useCreateTask = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (task: TablesInsert<"tasks">) => {
+      const { data, error } = await supabase.from("tasks").insert(task).select().single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["tasks"] });
+      qc.invalidateQueries({ queryKey: ["tasks-pending"] });
+      qc.invalidateQueries({ queryKey: ["tasks-overdue"] });
     },
   });
 };
@@ -118,7 +182,11 @@ export const useUpdateTask = () => {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["tasks"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["tasks"] });
+      qc.invalidateQueries({ queryKey: ["tasks-pending"] });
+      qc.invalidateQueries({ queryKey: ["tasks-overdue"] });
+    },
   });
 };
 
@@ -155,17 +223,22 @@ export const useDashboardStats = () => {
   return useQuery({
     queryKey: ["dashboard-stats"],
     queryFn: async () => {
-      const [clients, hotLeads, activeTasks, opportunities] = await Promise.all([
+      const today = new Date().toISOString().split("T")[0];
+      const [clients, hotLeads, activeTasks, overdueTasks, opportunities, todayTasks] = await Promise.all([
         supabase.from("clients").select("id", { count: "exact", head: true }),
         supabase.from("clients").select("id", { count: "exact", head: true }).eq("temperature", "hot"),
         supabase.from("clients").select("id", { count: "exact", head: true }).eq("status", "active"),
+        supabase.from("tasks").select("id", { count: "exact", head: true }).eq("status", "pending").lt("due_date", today),
         supabase.from("opportunities").select("id", { count: "exact", head: true }).eq("status", "pending"),
+        supabase.from("tasks").select("id", { count: "exact", head: true }).eq("status", "pending").eq("due_date", today),
       ]);
       return {
         totalLeads: clients.count || 0,
         hotLeads: hotLeads.count || 0,
         activeClients: activeTasks.count || 0,
+        overdueTasks: overdueTasks.count || 0,
         opportunities: opportunities.count || 0,
+        todayTasks: todayTasks.count || 0,
       };
     },
   });
