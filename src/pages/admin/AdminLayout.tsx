@@ -104,6 +104,7 @@ const AdminLayout = () => {
           <div className="flex-1" />
           
           <GlobalSearch />
+          <PhotoLeadCapture />
           <AddLeadDialog />
           <NotificationCenter />
         </header>
