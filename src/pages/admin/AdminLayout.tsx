@@ -1,6 +1,6 @@
 import { Outlet, useLocation } from "react-router-dom";
 import { NavLink } from "@/components/NavLink";
-import { LayoutDashboard, Users, ListChecks, MessageSquare, Menu, X, Bike, ChevronLeft, Kanban, LogOut } from "lucide-react";
+import { LayoutDashboard, Users, ListChecks, MessageSquare, Menu, X, Bike, ChevronLeft, Kanban, LogOut, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import BottomTabBar from "@/components/BottomTabBar";
