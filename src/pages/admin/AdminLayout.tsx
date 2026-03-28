@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { NavLink } from "@/components/NavLink";
 import { LayoutDashboard, Users, ListChecks, MessageSquare, Menu, X, Bike, ChevronLeft, Kanban, LogOut, BarChart3 } from "lucide-react";
@@ -25,6 +26,12 @@ const AdminLayout = () => {
   const isClientDetail = location.pathname.includes("/admin/client/");
   const { signOut, user } = useAuth();
   useRealtimeLeads();
+
+  useEffect(() => {
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-background flex">
