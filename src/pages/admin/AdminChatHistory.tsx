@@ -206,7 +206,7 @@ const AdminChatHistory = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* Conversation list */}
-        <div className="lg:col-span-1 space-y-2">
+        <div className="lg:col-span-3 space-y-2">
           {isLoading ? (
             <div className="text-center text-muted-foreground py-8">Carregando...</div>
           ) : filteredConversations.length === 0 ? (
