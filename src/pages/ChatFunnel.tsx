@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Send, ArrowLeft, Sparkles, UserCheck, Camera, FileCheck, Loader2 } from "lucide-react";
+import { Send, ArrowLeft, Sparkles, UserCheck, Camera, FileCheck, Loader2, Bike, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
