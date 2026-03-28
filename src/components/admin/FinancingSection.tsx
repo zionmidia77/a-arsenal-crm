@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import {
   FileCheck, Upload, CheckCircle2, Circle, AlertTriangle, Send,
-  MessageCircle, Crown, Shield, Briefcase, DollarSign, Loader2, Edit2, Save
+  MessageCircle, Crown, Shield, Briefcase, DollarSign, Loader2, Edit2, Save,
+  Building2, Search, ShieldCheck, ShieldAlert, ChevronDown, ChevronUp,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUpdateClient } from "@/hooks/useSupabase";
