@@ -962,8 +962,9 @@ serve(async (req) => {
       ...messages,
     ];
 
-    // Track client_id created during tool calls
+    // Track client_id and vehicles found during tool calls
     let createdClientId: string | null = null;
+    let foundVehicles: unknown[] = [];
 
     // Tool calling loop (max 5 iterations for complex flows)
     for (let i = 0; i < 5; i++) {
