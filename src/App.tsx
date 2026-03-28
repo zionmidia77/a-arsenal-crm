@@ -60,6 +60,14 @@ const App = () => (
               <Route path="calendar" element={<AdminCalendar />} />
               <Route path="client/:id" element={<AdminClientDetail />} />
             </Route>
+            <Route
+              path="/member"
+              element={
+                <ProtectedRoute>
+                  <MemberArea />
+                </ProtectedRoute>
+              }
+            />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

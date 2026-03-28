@@ -224,6 +224,15 @@ const AdminDashboard = () => {
         </ResponsiveContainer>
       </motion.div>
 
+      {/* Activity Feed */}
+      <motion.div variants={fadeUp} className="glass-card p-5">
+        <div className="flex items-center gap-2 mb-4">
+          <Activity className="w-4 h-4 text-primary" />
+          <span className="text-sm font-medium">Atividades recentes</span>
+        </div>
+        <ActivityFeed />
+      </motion.div>
+
       {/* Recent Leads */}
       <motion.div variants={fadeUp}>
         <div className="flex items-center justify-between mb-3">

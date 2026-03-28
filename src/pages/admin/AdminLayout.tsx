@@ -16,6 +16,7 @@ const navItems = [
   { to: "/admin/leads", icon: Users, label: "Leads" },
   { to: "/admin/pipeline", icon: Kanban, label: "Pipeline" },
   { to: "/admin/tasks", icon: ListChecks, label: "Tarefas" },
+  { to: "/admin/calendar", icon: CalendarDays, label: "Agenda" },
   { to: "/admin/messages", icon: MessageSquare, label: "Mensagens" },
   { to: "/admin/metrics", icon: BarChart3, label: "Métricas" },
 ];
