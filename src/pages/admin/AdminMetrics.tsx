@@ -1,8 +1,10 @@
 import { motion } from "framer-motion";
 import {
   BarChart3, TrendingUp, Clock, Users, Target, Flame,
-  ArrowDownRight, ArrowUpRight, Zap, CalendarDays, Award, Filter
+  ArrowDownRight, ArrowUpRight, Zap, CalendarDays, Award, Filter, FileDown
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { generatePDFReport } from "@/lib/generateReport";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, AreaChart, Area, CartesianGrid, Legend
