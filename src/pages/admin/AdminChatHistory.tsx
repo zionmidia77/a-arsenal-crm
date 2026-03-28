@@ -32,7 +32,27 @@ interface Conversation {
   transferred_at: string | null;
   created_at: string;
   updated_at: string;
-  clients?: { name: string; phone: string | null } | null;
+  clients?: {
+    name: string;
+    phone: string | null;
+    email: string | null;
+    city: string | null;
+    interest: string | null;
+    budget_range: string | null;
+    temperature: string;
+    pipeline_stage: string;
+    has_trade_in: boolean | null;
+    has_clean_credit: boolean | null;
+    has_down_payment: boolean | null;
+    down_payment_amount: number | null;
+    salary: number | null;
+    employer: string | null;
+    financing_status: string | null;
+    lead_score: number;
+    source: string | null;
+    notes: string | null;
+    birthdate: string | null;
+  } | null;
 }
 
 const AdminChatHistory = () => {
