@@ -185,8 +185,10 @@ const ChatFunnel = () => {
   const [conversationSaved, setConversationSaved] = useState(false);
   const [isTransferred, setIsTransferred] = useState(false);
   const [messageCount, setMessageCount] = useState(0);
+  const [isAnalyzingDoc, setIsAnalyzingDoc] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { lastSeen, isOnline } = useLastSeen();
 
   const scrollToBottom = useCallback(() => {
