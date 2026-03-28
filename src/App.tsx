@@ -15,6 +15,7 @@ import AdminLeads from "./pages/admin/AdminLeads";
 import AdminTasks from "./pages/admin/AdminTasks";
 import AdminMessages from "./pages/admin/AdminMessages";
 import AdminPipeline from "./pages/admin/AdminPipeline";
+import AdminMetrics from "./pages/admin/AdminMetrics";
 import AdminClientDetail from "./pages/admin/AdminClientDetail";
 import Login from "./pages/auth/Login";
 import Signup from "./pages/auth/Signup";
@@ -53,6 +54,7 @@ const App = () => (
               <Route path="pipeline" element={<AdminPipeline />} />
               <Route path="tasks" element={<AdminTasks />} />
               <Route path="messages" element={<AdminMessages />} />
+              <Route path="metrics" element={<AdminMetrics />} />
               <Route path="client/:id" element={<AdminClientDetail />} />
             </Route>
             <Route path="*" element={<NotFound />} />
