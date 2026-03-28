@@ -96,19 +96,34 @@ const AdminDashboard = () => {
       {/* Stats */}
       <div className="grid grid-cols-2 gap-3">
         {statCards.map((s, i) => (
-          <motion.div key={i} variants={fadeUp} className="glass-card-hover p-4">
+          <motion.div
+            key={i}
+            variants={fadeUp}
+            whileHover={{ scale: 1.04, transition: { duration: 0.2 } }}
+            whileTap={{ scale: 0.97 }}
+            className="glass-card-hover p-4 cursor-pointer"
+          >
             <div className="flex items-center justify-between mb-3">
-              <div className={`w-9 h-9 rounded-xl ${s.bg} flex items-center justify-center`}>
+              <motion.div
+                className={`w-9 h-9 rounded-xl ${s.bg} flex items-center justify-center`}
+                whileHover={{ rotate: [0, -10, 10, 0], transition: { duration: 0.4 } }}
+              >
                 <s.icon className={`w-4 h-4 ${s.color}`} />
-              </div>
+              </motion.div>
               {s.label === "Atrasados" && (s.value > 0) && (
-                <span className="w-2.5 h-2.5 rounded-full bg-destructive animate-pulse" />
+                <motion.span
+                  className="w-2.5 h-2.5 rounded-full bg-destructive"
+                  animate={{ scale: [1, 1.4, 1], opacity: [1, 0.6, 1] }}
+                  transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                />
               )}
             </div>
             {statsLoading ? (
               <Skeleton className="h-8 w-16" />
             ) : (
-              <p className="text-2xl font-display font-bold tabular-nums">{s.value}</p>
+              <p className="text-2xl font-display font-bold tabular-nums">
+                <AnimatedCounter value={s.value} />
+              </p>
             )}
             <p className="text-xs text-muted-foreground mt-0.5">{s.label}</p>
           </motion.div>
