@@ -454,9 +454,20 @@ const AdminChatHistory = () => {
                 <div className="space-y-1.5">
                   <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Contato</p>
                   {selectedConvo.clients.phone && (
-                    <div className="flex items-center gap-1.5 text-xs">
-                      <Phone className="w-3 h-3 text-muted-foreground" />
-                      <span>{selectedConvo.clients.phone}</span>
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-1.5">
+                        <Phone className="w-3 h-3 text-muted-foreground" />
+                        <span>{selectedConvo.clients.phone}</span>
+                      </div>
+                      <a
+                        href={`https://wa.me/55${selectedConvo.clients.phone.replace(/\D/g, "")}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-green-600 hover:bg-green-700 text-white text-[10px] font-medium transition-colors"
+                      >
+                        <MessageSquare className="w-3 h-3" />
+                        WhatsApp
+                      </a>
                     </div>
                   )}
                   {selectedConvo.clients.email && (
