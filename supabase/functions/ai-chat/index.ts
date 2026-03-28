@@ -104,6 +104,13 @@ const tools = [
           position: { type: "string", description: "Job title/position" },
           salary: { type: "number", description: "Monthly income in BRL" },
           email: { type: "string" },
+          cpf: { type: "string", description: "CPF number" },
+          marital_status: {
+            type: "string",
+            enum: ["solteiro", "casado", "divorciado", "viuvo", "uniao_estavel"],
+          },
+          reference_name: { type: "string", description: "Personal reference full name" },
+          reference_phone: { type: "string", description: "Personal reference phone" },
           payment_type: {
             type: "string",
             enum: ["financing", "cash", "consortium"],
