@@ -20,6 +20,16 @@ type ExtractedData = {
   confidence: "high" | "medium" | "low";
 };
 
+type SimilarityCandidate = {
+  id: string;
+  name: string;
+  phone: string | null;
+  email: string | null;
+  city: string | null;
+  similarity_score: number;
+  match_reasons: string[];
+};
+
 const jsonResponse = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
@@ -47,40 +57,190 @@ const normalizeExtracted = (raw: any): ExtractedData => ({
       : "medium",
 });
 
-const mergeExtractedData = (items: ExtractedData[]): ExtractedData => {
-  const merged: ExtractedData = {
-    name: null,
-    phone: null,
-    email: null,
-    city: null,
-    interest: null,
-    budget_range: null,
-    notes: null,
-    source: "facebook",
-    confidence: "low",
-  };
+// --- Similarity scoring ---
 
-  for (const item of items) {
-    if (!merged.name && item.name) merged.name = item.name;
-    if (!merged.phone && item.phone) merged.phone = item.phone;
-    if (!merged.email && item.email) merged.email = item.email;
-    if (!merged.city && item.city) merged.city = item.city;
-    if (!merged.interest && item.interest) merged.interest = item.interest;
-    if (!merged.budget_range && item.budget_range) merged.budget_range = item.budget_range;
+const normalizeStr = (s: string | null | undefined): string =>
+  (s || "").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
-    if (item.notes) {
-      merged.notes = merged.notes ? `${merged.notes}\n---\n${item.notes}` : item.notes;
+const digitsOnly = (s: string | null | undefined): string =>
+  (s || "").replace(/\D/g, "");
+
+const levenshtein = (a: string, b: string): number => {
+  if (!a.length) return b.length;
+  if (!b.length) return a.length;
+  const matrix: number[][] = [];
+  for (let i = 0; i <= a.length; i++) matrix[i] = [i];
+  for (let j = 0; j <= b.length; j++) matrix[0][j] = j;
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      matrix[i][j] = Math.min(
+        matrix[i - 1][j] + 1,
+        matrix[i][j - 1] + 1,
+        matrix[i - 1][j - 1] + cost,
+      );
     }
+  }
+  return matrix[a.length][b.length];
+};
 
-    if (item.confidence === "high") {
-      merged.confidence = "high";
-    } else if (item.confidence === "medium" && merged.confidence !== "high") {
-      merged.confidence = "medium";
+const nameSimilarity = (a: string | null, b: string | null): number => {
+  const na = normalizeStr(a);
+  const nb = normalizeStr(b);
+  if (!na || !nb) return 0;
+  if (na === nb) return 100;
+
+  // Token-based: compare first+last name tokens
+  const tokensA = na.split(/\s+/).filter(Boolean);
+  const tokensB = nb.split(/\s+/).filter(Boolean);
+
+  let matchedTokens = 0;
+  const totalTokens = Math.max(tokensA.length, tokensB.length);
+
+  for (const ta of tokensA) {
+    for (const tb of tokensB) {
+      if (ta === tb) { matchedTokens++; break; }
+      const maxLen = Math.max(ta.length, tb.length);
+      if (maxLen > 2 && levenshtein(ta, tb) <= 1) { matchedTokens += 0.8; break; }
     }
   }
 
-  return merged;
+  const tokenScore = (matchedTokens / totalTokens) * 100;
+
+  // Also check first+last name match (common pattern)
+  const firstA = tokensA[0], lastA = tokensA[tokensA.length - 1];
+  const firstB = tokensB[0], lastB = tokensB[tokensB.length - 1];
+  let flScore = 0;
+  if (firstA === firstB) flScore += 50;
+  else if (firstA && firstB && levenshtein(firstA, firstB) <= 1) flScore += 40;
+  if (tokensA.length > 1 && tokensB.length > 1) {
+    if (lastA === lastB) flScore += 50;
+    else if (lastA && lastB && levenshtein(lastA, lastB) <= 1) flScore += 40;
+  }
+
+  return Math.max(tokenScore, flScore);
 };
+
+const phoneSimilarity = (a: string | null, b: string | null): number => {
+  const da = digitsOnly(a);
+  const db = digitsOnly(b);
+  if (!da || !db || da.length < 8 || db.length < 8) return 0;
+  // Last 8 digits match = very high
+  if (da.slice(-8) === db.slice(-8)) return 95;
+  // Last 9 digits match = exact
+  if (da.length >= 9 && db.length >= 9 && da.slice(-9) === db.slice(-9)) return 100;
+  return 0;
+};
+
+const emailSimilarity = (a: string | null, b: string | null): number => {
+  const ea = normalizeStr(a);
+  const eb = normalizeStr(b);
+  if (!ea || !eb) return 0;
+  if (ea === eb) return 100;
+  // Same domain, similar local part
+  const [localA, domainA] = ea.split("@");
+  const [localB, domainB] = eb.split("@");
+  if (domainA && domainA === domainB && localA && localB) {
+    const maxLen = Math.max(localA.length, localB.length);
+    const dist = levenshtein(localA, localB);
+    if (dist <= 2) return 80;
+    return Math.max(0, 60 - (dist / maxLen) * 60);
+  }
+  return 0;
+};
+
+const computeSimilarity = (
+  extracted: ExtractedData,
+  candidate: any,
+): { score: number; reasons: string[] } => {
+  const reasons: string[] = [];
+  let totalWeight = 0;
+  let weightedScore = 0;
+
+  // Phone (weight 40)
+  const pScore = phoneSimilarity(extracted.phone, candidate.phone);
+  if (pScore > 0) {
+    weightedScore += pScore * 40;
+    totalWeight += 40;
+    reasons.push(`Telefone ${pScore >= 95 ? "idêntico" : "similar"} (${pScore}%)`);
+  }
+
+  // Email (weight 35)
+  const eScore = emailSimilarity(extracted.email, candidate.email);
+  if (eScore > 0) {
+    weightedScore += eScore * 35;
+    totalWeight += 35;
+    reasons.push(`Email ${eScore >= 90 ? "idêntico" : "similar"} (${eScore}%)`);
+  }
+
+  // Name (weight 25)
+  const nScore = nameSimilarity(extracted.name, candidate.name);
+  if (nScore > 30) {
+    weightedScore += nScore * 25;
+    totalWeight += 25;
+    reasons.push(`Nome ${nScore >= 90 ? "idêntico" : nScore >= 70 ? "muito similar" : "parcialmente similar"} (${nScore}%)`);
+  }
+
+  if (totalWeight === 0) return { score: 0, reasons: [] };
+
+  const finalScore = Math.round(weightedScore / totalWeight);
+  return { score: finalScore, reasons };
+};
+
+const findSimilarCandidates = async (
+  supabase: any,
+  extracted: ExtractedData,
+): Promise<SimilarityCandidate[]> => {
+  const orConditions: string[] = [];
+  const cleanPhone = digitsOnly(extracted.phone);
+  const cleanEmail = normalizeStr(extracted.email);
+  const cleanName = normalizeStr(extracted.name);
+
+  if (cleanPhone.length >= 8) {
+    orConditions.push(`phone.ilike.%${cleanPhone.slice(-8)}%`);
+  }
+  if (cleanEmail) {
+    orConditions.push(`email.ilike.%${cleanEmail}%`);
+  }
+
+  // Name search: first + last name
+  const nameParts = cleanName.split(/\s+/).filter(Boolean);
+  if (nameParts.length >= 1 && nameParts[0].length >= 2) {
+    orConditions.push(`name.ilike.%${nameParts[0]}%`);
+  }
+
+  if (orConditions.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from("clients")
+    .select("id, name, phone, email, city")
+    .or(orConditions.join(","))
+    .limit(10);
+
+  if (error || !data) return [];
+
+  const candidates: SimilarityCandidate[] = [];
+
+  for (const row of data) {
+    const { score, reasons } = computeSimilarity(extracted, row);
+    if (score >= 40) {
+      candidates.push({
+        id: row.id,
+        name: row.name,
+        phone: row.phone,
+        email: row.email,
+        city: row.city,
+        similarity_score: score,
+        match_reasons: reasons,
+      });
+    }
+  }
+
+  candidates.sort((a, b) => b.similarity_score - a.similarity_score);
+  return candidates.slice(0, 5);
+};
+
+// --- AI extraction ---
 
 const extractWithAI = async (apiKey: string, images: string[]) => {
   const userContent = [
@@ -138,9 +298,7 @@ Para budget_range, use: "Até R$ 15 mil", "R$ 15 a 30 mil", "R$ 30 a 50 mil", "A
     try {
       const parsed = JSON.parse(raw);
       err.message = parsed?.error || parsed?.message || err.message;
-    } catch {
-      // ignore parse errors
-    }
+    } catch { /* ignore */ }
     throw err;
   }
 
@@ -156,6 +314,8 @@ Para budget_range, use: "Até R$ 15 mil", "R$ 15 a 30 mil", "R$ 30 a 50 mil", "A
 
   return normalizeExtracted(parsedContent);
 };
+
+// --- Main handler ---
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -218,72 +378,67 @@ serve(async (req) => {
 
     const extracted = await extractWithAI(LOVABLE_API_KEY, imageList);
 
+    // Find similar candidates for deduplication
+    const similar_candidates = await findSimilarCandidates(supabase, extracted);
+
     if (action === "extract_only") {
-      return jsonResponse({ extracted, images_processed: imageList.length });
+      return jsonResponse({
+        extracted,
+        similar_candidates,
+        images_processed: imageList.length,
+      });
     }
 
-    if (action !== "create") {
-      return jsonResponse({ error: "Ação inválida" }, 400);
-    }
-
-    if (!extracted.name) {
-      return jsonResponse(
-        {
-          error: "Não foi possível identificar o nome nas imagens",
-          extracted,
-        },
-        400,
-      );
-    }
-
-    // Smart deduplication: phone → email → name
-    let existingClient: any = null;
-    const cleanPhone = extracted.phone?.replace(/\D/g, "") || "";
-    const cleanEmail = (extracted.email || "").trim().toLowerCase();
-    const cleanName = (extracted.name || "").trim().toLowerCase();
-
-    // 1. Match by phone (last 8 digits)
-    if (cleanPhone.length >= 8) {
-      const phoneSuffix = cleanPhone.slice(-8);
-      const { data } = await supabase
-        .from("clients")
-        .select("*")
-        .ilike("phone", `%${phoneSuffix}%`)
-        .limit(3);
-      if (data && data.length > 0) existingClient = data[0];
-    }
-
-    // 2. Match by email
-    if (!existingClient && cleanEmail) {
-      const { data } = await supabase
-        .from("clients")
-        .select("*")
-        .ilike("email", cleanEmail)
-        .limit(1);
-      if (data && data.length > 0) existingClient = data[0];
-    }
-
-    // 3. Fuzzy name match (first + last name, only if single result)
-    if (!existingClient && cleanName.length >= 3) {
-      const parts = cleanName.split(/\s+/);
-      const first = parts[0];
-      const last = parts.length > 1 ? parts[parts.length - 1] : null;
-      if (last && last.length >= 2) {
-        const { data } = await supabase
-          .from("clients")
-          .select("*")
-          .ilike("name", `%${first}%${last}%`)
-          .limit(3);
-        if (data && data.length === 1) existingClient = data[0];
+    if (action === "create_new") {
+      // Force create a new lead, ignoring duplicates
+      if (!extracted.name) {
+        return jsonResponse({ error: "Nome é obrigatório" }, 400);
       }
+      const { data: newClient, error: insertError } = await supabase
+        .from("clients")
+        .insert({
+          name: extracted.name,
+          phone: extracted.phone || null,
+          email: extracted.email || null,
+          city: extracted.city || null,
+          interest: extracted.interest || null,
+          budget_range: extracted.budget_range || null,
+          notes: extracted.notes || null,
+          source: extracted.source || "facebook",
+          status: "lead",
+          temperature: "warm",
+          pipeline_stage: "new",
+        })
+        .select()
+        .single();
+
+      if (insertError) throw insertError;
+      return jsonResponse({ action: "created", client: newClient, extracted, images_processed: imageList.length });
     }
 
-    if (existingClient) {
+    if (action === "merge") {
+      const mergeTargetId = body?.merge_target_id;
+      if (!mergeTargetId) {
+        return jsonResponse({ error: "ID do lead para mesclar é obrigatório" }, 400);
+      }
+
+      const { data: existingClient, error: fetchError } = await supabase
+        .from("clients")
+        .select("*")
+        .eq("id", mergeTargetId)
+        .single();
+
+      if (fetchError || !existingClient) {
+        return jsonResponse({ error: "Lead não encontrado para mesclar" }, 404);
+      }
+
       const updates: Record<string, any> = {};
+      if (extracted.phone && !existingClient.phone) updates.phone = extracted.phone;
       if (extracted.city && !existingClient.city) updates.city = extracted.city;
       if (extracted.email && !existingClient.email) updates.email = extracted.email;
       if (extracted.interest && !existingClient.interest) updates.interest = extracted.interest;
       if (extracted.budget_range && !existingClient.budget_range) updates.budget_range = extracted.budget_range;
+
       if (extracted.notes) {
         updates.notes =
           (existingClient.notes ? `${existingClient.notes}\n---\n` : "") +
@@ -303,24 +458,58 @@ serve(async (req) => {
         await supabase.from("interactions").insert({
           client_id: existingClient.id,
           type: "system",
-          content: `Lead atualizado via captura de foto (${imageList.length} imagem(ns)). Dados extraídos: ${extracted.notes || "sem notas adicionais"}`,
+          content: `Lead mesclado via captura de foto (${imageList.length} imagem(ns)). Score de similaridade usado.`,
           created_by: "ai-photo",
         });
 
-        return jsonResponse({
-          action: "updated",
-          client: data,
-          extracted,
-          images_processed: imageList.length,
-        });
+        return jsonResponse({ action: "merged", client: data, extracted, images_processed: imageList.length });
       }
 
-      return jsonResponse({
-        action: "already_exists",
-        client: existingClient,
-        extracted,
-        images_processed: imageList.length,
-      });
+      return jsonResponse({ action: "already_exists", client: existingClient, extracted, images_processed: imageList.length });
+    }
+
+    // Legacy "create" action with auto-dedup
+    if (action !== "create") {
+      return jsonResponse({ error: "Ação inválida" }, 400);
+    }
+
+    if (!extracted.name) {
+      return jsonResponse({ error: "Não foi possível identificar o nome nas imagens", extracted }, 400);
+    }
+
+    // Auto-merge if there's a very high similarity candidate (>= 85%)
+    const topCandidate = similar_candidates[0];
+    if (topCandidate && topCandidate.similarity_score >= 85) {
+      const { data: existingClient } = await supabase
+        .from("clients")
+        .select("*")
+        .eq("id", topCandidate.id)
+        .single();
+
+      if (existingClient) {
+        const updates: Record<string, any> = {};
+        if (extracted.city && !existingClient.city) updates.city = extracted.city;
+        if (extracted.email && !existingClient.email) updates.email = extracted.email;
+        if (extracted.interest && !existingClient.interest) updates.interest = extracted.interest;
+        if (extracted.budget_range && !existingClient.budget_range) updates.budget_range = extracted.budget_range;
+        if (extracted.notes) {
+          updates.notes =
+            (existingClient.notes ? `${existingClient.notes}\n---\n` : "") +
+            `[Fotos ${new Date().toLocaleDateString("pt-BR")} - ${imageList.length} imagem(ns)] ${extracted.notes}`;
+        }
+
+        if (Object.keys(updates).length > 0) {
+          const { data, error } = await supabase
+            .from("clients")
+            .update(updates)
+            .eq("id", existingClient.id)
+            .select()
+            .single();
+          if (error) throw error;
+          return jsonResponse({ action: "updated", client: data, extracted, similar_candidates, images_processed: imageList.length });
+        }
+        return jsonResponse({ action: "already_exists", client: existingClient, extracted, similar_candidates, images_processed: imageList.length });
+      }
     }
 
     const { data: newClient, error: insertError } = await supabase
@@ -343,33 +532,19 @@ serve(async (req) => {
 
     if (insertError) throw insertError;
 
-    return jsonResponse({
-      action: "created",
-      client: newClient,
-      extracted,
-      images_processed: imageList.length,
-    });
+    return jsonResponse({ action: "created", client: newClient, extracted, similar_candidates, images_processed: imageList.length });
   } catch (error: any) {
     console.error("Error in extract-lead-from-image:", error);
 
     if (error?.status === 429) {
-      return jsonResponse(
-        { error: "Muitas requisições para IA agora. Aguarde alguns segundos e tente novamente." },
-        429,
-      );
+      return jsonResponse({ error: "Muitas requisições agora. Aguarde alguns segundos." }, 429);
     }
-
     if (error?.status === 402) {
-      return jsonResponse(
-        { error: "Limite de uso de IA atingido. Adicione créditos para continuar." },
-        402,
-      );
+      return jsonResponse({ error: "Limite de uso de IA atingido." }, 402);
     }
-
     if (error instanceof SyntaxError) {
-      return jsonResponse({ error: "Resposta inválida da IA. Tente novamente com imagens mais nítidas." }, 500);
+      return jsonResponse({ error: "Resposta inválida da IA. Tente com imagens mais nítidas." }, 500);
     }
-
     return jsonResponse({ error: error?.message || "Erro interno ao processar imagens" }, 500);
   }
 });
