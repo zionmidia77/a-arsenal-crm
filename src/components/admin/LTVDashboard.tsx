@@ -206,29 +206,132 @@ const LTVDashboard = () => {
         ))}
       </div>
 
-      {/* Today's birthday alerts */}
+      {/* Today's birthday alerts - expandable */}
       {data.birthdaysToday.length > 0 && (
-        <div className="bg-pink-400/5 rounded-xl p-3 border border-pink-400/20">
-          <div className="flex items-center gap-2 mb-2">
-            <Cake className="w-4 h-4 text-pink-400" />
-            <span className="text-xs font-medium text-pink-400">
+        <div className="rounded-xl border border-pink-400/20 overflow-hidden">
+          <button
+            onClick={() => setShowBirthdays(!showBirthdays)}
+            className="w-full flex items-center gap-2 p-3 bg-pink-400/5 hover:bg-pink-400/10 transition-colors"
+          >
+            <motion.div
+              animate={{ rotate: [0, -10, 10, -10, 0] }}
+              transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 4 }}
+            >
+              <Cake className="w-4 h-4 text-pink-400" />
+            </motion.div>
+            <span className="text-xs font-medium text-pink-400 flex-1 text-left">
               🎂 Aniversariantes hoje ({data.birthdaysToday.length})
             </span>
-          </div>
-          <div className="space-y-1.5">
-            {data.birthdaysToday.map((client) => (
-              <div key={client.id} className="flex items-center gap-2">
-                <span className="text-xs font-medium truncate flex-1">{client.name}</span>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-6 rounded-full text-[10px] gap-1 border-pink-400/30 text-pink-400"
-                  onClick={() => navigate(`/admin/client/${client.id}`)}
-                >
-                  Ver <ChevronRight className="w-2.5 h-2.5" />
-                </Button>
-              </div>
-            ))}
+            <motion.span
+              className="text-[9px] font-bold bg-pink-500 text-white px-1.5 py-0.5 rounded-full"
+              animate={{ scale: [1, 1.1, 1] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            >
+              Ação pendente
+            </motion.span>
+            {showBirthdays ? (
+              <ChevronUp className="w-3.5 h-3.5 text-pink-400" />
+            ) : (
+              <ChevronDown className="w-3.5 h-3.5 text-pink-400" />
+            )}
+          </button>
+
+          <AnimatePresence>
+            {showBirthdays && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+                className="overflow-hidden"
+              >
+                <div className="p-3 space-y-2 bg-pink-400/5">
+                  {data.birthdaysToday.map((client) => {
+                    const age = client.birthdate
+                      ? new Date().getFullYear() - new Date(client.birthdate + "T12:00:00").getFullYear()
+                      : null;
+                    return (
+                      <motion.div
+                        key={client.id}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="flex items-center gap-2 p-2 rounded-lg bg-background/40 border border-pink-400/10"
+                      >
+                        <div className="w-8 h-8 rounded-full bg-pink-400/20 flex items-center justify-center text-sm shrink-0">
+                          🎂
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium truncate">{client.name}</p>
+                          {age && (
+                            <p className="text-[10px] text-muted-foreground">Fazendo {age} anos</p>
+                          )}
+                        </div>
+                        <div className="flex gap-1 shrink-0">
+                          {client.phone && (
+                            <Button
+                              size="sm"
+                              className="h-7 rounded-full text-[10px] gap-1 bg-green-600 hover:bg-green-700 text-white border-0"
+                              onClick={() =>
+                                window.open(
+                                  `https://wa.me/55${client.phone!.replace(/\D/g, "")}?text=${encodeURIComponent(
+                                    `Parabéns pelo seu aniversário, ${client.name}! 🎂🎉 Aqui é da Arsenal Motors, desejamos tudo de melhor pra você! 🥳`
+                                  )}`
+                                )
+                              }
+                            >
+                              <MessageCircle className="w-3 h-3" /> Parabéns
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 rounded-full text-[10px] gap-1 border-pink-400/30 text-pink-400"
+                            onClick={() => navigate(`/admin/client/${client.id}`)}
+                          >
+                            <Eye className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
+
+      {/* Birthdays this month (not today) */}
+      {data.birthdaysThisMonth.filter(c => !data.birthdaysToday.some(t => t.id === c.id)).length > 0 && (
+        <div className="rounded-xl p-3 border border-border/50 bg-secondary/20">
+          <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-2">
+            📅 Próximos aniversários este mês
+          </p>
+          <div className="space-y-1">
+            {data.birthdaysThisMonth
+              .filter(c => !data.birthdaysToday.some(t => t.id === c.id))
+              .sort((a, b) => {
+                const da = new Date(a.birthdate! + "T12:00:00").getDate();
+                const db = new Date(b.birthdate! + "T12:00:00").getDate();
+                return da - db;
+              })
+              .map(client => {
+                const day = new Date(client.birthdate! + "T12:00:00").getDate();
+                return (
+                  <div key={client.id} className="flex items-center gap-2">
+                    <span className="text-[10px] text-muted-foreground font-mono w-8">dia {day}</span>
+                    <span className="text-xs font-medium truncate flex-1">{client.name}</span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 rounded-full text-[10px]"
+                      onClick={() => navigate(`/admin/client/${client.id}`)}
+                    >
+                      <Eye className="w-2.5 h-2.5" />
+                    </Button>
+                  </div>
+                );
+              })}
           </div>
         </div>
       )}
