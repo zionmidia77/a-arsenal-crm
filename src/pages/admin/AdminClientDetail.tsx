@@ -456,6 +456,14 @@ const AdminClientDetail = () => {
         </div>
       </motion.div>
 
+      {/* 📋 Financing Qualification */}
+      <motion.div variants={fadeUp}>
+        <h2 className="font-display font-semibold text-sm mb-3 flex items-center gap-2">
+          <FileCheck className="w-4 h-4 text-primary" /> Qualificação para Financiamento
+        </h2>
+        <FinancingSection client={client} />
+      </motion.div>
+
       {/* Vehicles */}
       {vehicles && vehicles.length > 0 && (
         <motion.div variants={fadeUp}>
