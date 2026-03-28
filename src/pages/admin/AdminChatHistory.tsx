@@ -253,9 +253,9 @@ const AdminChatHistory = () => {
                     )}
                   </CardTitle>
                   <div className="flex items-center gap-2">
-                    {selectedConvo.status === "transferred" && (
-                      <Badge className="bg-amber-500/20 text-amber-400 gap-1">
-                        <UserCheck className="w-3 h-3" /> Transferido
+                    {(selectedConvo.status === "transferred" || selectedConvo.status === "attended") && (
+                      <Badge className={`gap-1 ${statusColor(selectedConvo.status)}`}>
+                        <UserCheck className="w-3 h-3" /> {statusLabel(selectedConvo.status)}
                       </Badge>
                     )}
                     <Button variant="ghost" size="icon" onClick={() => setSelectedConvo(null)}>
