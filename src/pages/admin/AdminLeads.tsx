@@ -387,6 +387,13 @@ const AdminLeads = () => {
           )}
         </div>
       )}
+
+      <MergeLeadsDialog
+        open={mergeOpen}
+        onOpenChange={setMergeOpen}
+        selectedLeads={selectedLeads}
+        onComplete={exitSelectMode}
+      />
     </motion.div>
   );
 };
