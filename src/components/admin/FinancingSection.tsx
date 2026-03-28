@@ -497,9 +497,71 @@ const FinancingSection = ({ client }: FinancingSectionProps) => {
           </button>
 
           {showVerification && verifying && (
-            <div className="mt-3 flex items-center gap-2 justify-center py-4">
-              <Loader2 className="w-5 h-5 animate-spin text-primary" />
-              <p className="text-xs text-muted-foreground">Analisando holerite e verificando empresa...</p>
+            <div className="mt-4 space-y-1">
+              {VERIFY_STEPS.map((step, i) => {
+                const isActive = verifyStep === i;
+                const isDone = verifyStep > i;
+                const isPending = verifyStep < i;
+                return (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-300 ${
+                      isActive ? "bg-primary/10 border border-primary/30" :
+                      isDone ? "bg-secondary/30" : "opacity-40"
+                    }`}
+                  >
+                    <div className="relative w-6 h-6 flex items-center justify-center shrink-0">
+                      {isDone ? (
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                        >
+                          <CheckCircle2 className="w-5 h-5 text-green-400" />
+                        </motion.div>
+                      ) : isActive ? (
+                        <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                      ) : (
+                        <Circle className="w-5 h-5 text-muted-foreground/50" />
+                      )}
+                    </div>
+                    <span className={`text-xs font-medium transition-colors ${
+                      isActive ? "text-foreground" : isDone ? "text-muted-foreground" : "text-muted-foreground/50"
+                    }`}>
+                      {step.emoji} {step.label}
+                    </span>
+                    {isActive && (
+                      <motion.div
+                        className="ml-auto flex gap-0.5"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                      >
+                        {[0, 1, 2].map(dot => (
+                          <motion.div
+                            key={dot}
+                            className="w-1 h-1 rounded-full bg-primary"
+                            animate={{ opacity: [0.3, 1, 0.3] }}
+                            transition={{ duration: 1.2, repeat: Infinity, delay: dot * 0.2 }}
+                          />
+                        ))}
+                      </motion.div>
+                    )}
+                  </motion.div>
+                );
+              })}
+
+              {/* Progress bar */}
+              <div className="mt-2 h-1 rounded-full bg-secondary overflow-hidden">
+                <motion.div
+                  className="h-full rounded-full bg-primary"
+                  initial={{ width: "0%" }}
+                  animate={{ width: `${Math.min(((verifyStep + 1) / VERIFY_STEPS.length) * 100, 100)}%` }}
+                  transition={{ duration: 0.5, ease: "easeOut" }}
+                />
+              </div>
             </div>
           )}
 
