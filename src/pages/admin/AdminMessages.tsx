@@ -15,6 +15,7 @@ const categoryBadge: Record<string, string> = {
   lead: "bg-blue-400/15 text-blue-400",
   relacionamento: "bg-pink-400/15 text-pink-400",
   oportunidade: "bg-amber-400/15 text-amber-400",
+  aniversario: "bg-fuchsia-400/15 text-fuchsia-400",
 };
 
 const stagger = { animate: { transition: { staggerChildren: 0.05 } } };
