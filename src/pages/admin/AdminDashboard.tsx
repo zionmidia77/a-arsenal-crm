@@ -115,6 +115,97 @@ const AdminDashboard = () => {
         </p>
       </motion.div>
 
+      {/* 🎂 Birthday Banner */}
+      <AnimatePresence>
+        {(birthdayClients?.length || 0) > 0 && !dismissedBirthday && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            className="relative overflow-hidden rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-pink-500/10 p-4"
+          >
+            {/* Animated confetti dots */}
+            {[...Array(6)].map((_, i) => (
+              <motion.div
+                key={i}
+                className="absolute w-1.5 h-1.5 rounded-full"
+                style={{
+                  background: ["#f59e0b", "#ef4444", "#ec4899", "#8b5cf6", "#10b981", "#3b82f6"][i],
+                  left: `${15 + i * 15}%`,
+                  top: `${10 + (i % 3) * 30}%`,
+                }}
+                animate={{
+                  y: [0, -8, 0],
+                  opacity: [0.4, 1, 0.4],
+                  scale: [0.8, 1.2, 0.8],
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  delay: i * 0.3,
+                  ease: "easeInOut",
+                }}
+              />
+            ))}
+
+            <button
+              onClick={() => setDismissedBirthday(true)}
+              className="absolute top-2 right-2 p-1 rounded-full hover:bg-background/20 transition-colors"
+            >
+              <X className="w-3.5 h-3.5 text-muted-foreground" />
+            </button>
+
+            <div className="flex items-start gap-3">
+              <motion.div
+                className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center shrink-0"
+                animate={{ rotate: [0, -10, 10, -10, 0] }}
+                transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 3 }}
+              >
+                <Cake className="w-5 h-5 text-amber-400" />
+              </motion.div>
+
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-display font-semibold flex items-center gap-1.5">
+                  🎂 {birthdayClients!.length === 1 ? "Aniversário hoje!" : `${birthdayClients!.length} aniversários hoje!`}
+                </p>
+                <div className="mt-1.5 space-y-1">
+                  {birthdayClients!.map(client => (
+                    <motion.div
+                      key={client.id}
+                      className="flex items-center gap-2"
+                      whileHover={{ x: 4 }}
+                    >
+                      <span className="text-xs font-medium">{client.name}</span>
+                      <div className="flex gap-1 ml-auto">
+                        {client.phone && (
+                          <Button
+                            size="sm"
+                            className="h-6 rounded-full text-[10px] gap-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border-0"
+                            variant="outline"
+                            onClick={() => window.open(`https://wa.me/55${client.phone!.replace(/\D/g, "")}?text=${encodeURIComponent(`Parabéns pelo seu aniversário, ${client.name}! 🎂🎉 Aqui é da Arsenal Motors, desejamos tudo de melhor! 🥳`)}`)}
+                          >
+                            <Gift className="w-2.5 h-2.5" /> Parabenizar
+                          </Button>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 rounded-full text-[10px]"
+                          onClick={() => navigate(`/admin/client/${client.id}`)}
+                        >
+                          <Eye className="w-2.5 h-2.5" />
+                        </Button>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Stats */}
       <div className="grid grid-cols-2 gap-3">
         {statCards.map((s, i) => (
