@@ -24,14 +24,8 @@ import NPSSection from "@/components/admin/NPSSection";
 import ClientReportSection from "@/components/admin/ClientReportSection";
 import ExclusiveOffersSection from "@/components/admin/ExclusiveOffersSection";
 import { useAIChat } from "@/hooks/useAIChat";
-import TagManager from "@/components/admin/TagManager";
-import FinancingSection from "@/components/admin/FinancingSection";
-import ReferralSection from "@/components/admin/ReferralSection";
-import LTVOpportunities from "@/components/admin/LTVOpportunities";
-import NPSSection from "@/components/admin/NPSSection";
-import ClientReportSection from "@/components/admin/ClientReportSection";
-import ExclusiveOffersSection from "@/components/admin/ExclusiveOffersSection";
-import { useAIChat } from "@/hooks/useAIChat";
+
+
 
 const tempBadge: Record<string, string> = {
   hot: "bg-primary/15 text-primary",
