@@ -269,13 +269,26 @@ const LTVDashboard = () => {
             <span className="text-xs font-medium text-pink-400 flex-1 text-left">
               🎂 Aniversariantes hoje ({data.birthdaysToday.length})
             </span>
-            <motion.span
-              className="text-[9px] font-bold bg-pink-500 text-white px-1.5 py-0.5 rounded-full"
-              animate={{ scale: [1, 1.1, 1] }}
-              transition={{ duration: 2, repeat: Infinity }}
-            >
-              Ação pendente
-            </motion.span>
+            {(() => {
+              const pending = data.birthdaysToday.filter(c => !data.congratulatedIds.has(c.id)).length;
+              const done = data.birthdaysToday.length - pending;
+              if (pending === 0) {
+                return (
+                  <span className="text-[9px] font-bold bg-emerald-500 text-white px-1.5 py-0.5 rounded-full">
+                    ✓ Todos parabenizados
+                  </span>
+                );
+              }
+              return (
+                <motion.span
+                  className="text-[9px] font-bold bg-pink-500 text-white px-1.5 py-0.5 rounded-full"
+                  animate={{ scale: [1, 1.1, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                >
+                  {done > 0 ? `${done}/${data.birthdaysToday.length} feitos` : "Ação pendente"}
+                </motion.span>
+              );
+            })()}
             {showBirthdays ? (
               <ChevronUp className="w-3.5 h-3.5 text-pink-400" />
             ) : (
