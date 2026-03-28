@@ -132,17 +132,25 @@ const AdminDashboard = () => {
 
       {/* Conversion Rate */}
       {stats && stats.totalLeads > 0 && (
-        <motion.div variants={fadeUp} className="glass-card gradient-border p-4 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-success/10 flex items-center justify-center">
+        <motion.div
+          variants={fadeUp}
+          whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
+          className="glass-card gradient-border p-4 flex items-center gap-4 cursor-pointer"
+        >
+          <motion.div
+            className="w-12 h-12 rounded-xl bg-success/10 flex items-center justify-center"
+            animate={{ rotate: [0, 5, -5, 0] }}
+            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+          >
             <Trophy className="w-5 h-5 text-success" />
-          </div>
+          </motion.div>
           <div className="flex-1">
             <p className="text-xs text-muted-foreground">Taxa de conversão</p>
-            <p className="text-xl font-display font-bold">{stats.conversionRate}%</p>
+            <p className="text-xl font-display font-bold"><AnimatedCounter value={Math.round(stats.conversionRate)} />%</p>
           </div>
           <div className="text-right">
             <p className="text-xs text-muted-foreground">Fechados</p>
-            <p className="text-sm font-semibold text-success">{stats.closedWon} <span className="text-muted-foreground font-normal">/ {stats.totalLeads}</span></p>
+            <p className="text-sm font-semibold text-success"><AnimatedCounter value={stats.closedWon} /> <span className="text-muted-foreground font-normal">/ {stats.totalLeads}</span></p>
           </div>
         </motion.div>
       )}
