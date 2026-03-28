@@ -732,6 +732,9 @@ serve(async (req) => {
       ...messages,
     ];
 
+    // Track client_id created during tool calls
+    let createdClientId: string | null = null;
+
     // Tool calling loop (max 5 iterations for complex flows)
     for (let i = 0; i < 5; i++) {
       const toolResponse = await fetch(
@@ -785,6 +788,14 @@ serve(async (req) => {
         const toolResult = await executeTool(tc.function.name, args);
         console.log(`Tool result: ${toolResult}`);
 
+        // Track client_id from create_lead
+        if (tc.function.name === "create_lead") {
+          try {
+            const parsed = JSON.parse(toolResult);
+            if (parsed.client_id) createdClientId = parsed.client_id;
+          } catch {}
+        }
+
         aiMessages.push({
           role: "tool",
           tool_call_id: tc.id,
@@ -814,6 +825,27 @@ serve(async (req) => {
       const t = await streamResponse.text();
       console.error("Stream error:", streamResponse.status, t);
       throw new Error("Failed to stream response");
+    }
+
+    // If a lead was created, prepend a metadata SSE event with client_id
+    if (createdClientId) {
+      const metaEvent = `data: ${JSON.stringify({ metadata: { client_id: createdClientId } })}\n\n`;
+      const encoder = new TextEncoder();
+      const metaStream = new ReadableStream({
+        async start(controller) {
+          controller.enqueue(encoder.encode(metaEvent));
+          const reader = streamResponse.body!.getReader();
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            controller.enqueue(value);
+          }
+          controller.close();
+        },
+      });
+      return new Response(metaStream, {
+        headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+      });
     }
 
     return new Response(streamResponse.body, {
