@@ -104,6 +104,56 @@ const FinancingSection = ({ client }: FinancingSectionProps) => {
     }
   };
 
+  const verifyEmployer = async (file: File) => {
+    setVerifying(true);
+    try {
+      const base64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.readAsDataURL(file);
+      });
+
+      const { data, error } = await supabase.functions.invoke("verify-employer", {
+        body: { image_base64: base64 },
+      });
+
+      if (error) throw error;
+
+      if (data?.extracted) {
+        setExtractedPayStub(data.extracted);
+        // Auto-fill fields from pay stub
+        const ext = data.extracted;
+        const updates: any = { id: client.id };
+        if (ext.employer_name && !client.employer) updates.employer = ext.employer_name;
+        if (ext.position && !client.position) updates.position = ext.position;
+        if (ext.salary_net && !client.salary) updates.salary = parseFloat(ext.salary_net);
+        if (ext.employee_name && !client.name) updates.name = ext.employee_name;
+
+        if (Object.keys(updates).length > 1) {
+          updateClient.mutate(updates);
+          setEditFields(prev => ({
+            ...prev,
+            employer: ext.employer_name || prev.employer,
+            position: ext.position || prev.position,
+            salary: ext.salary_net || prev.salary,
+          }));
+          toast.success("Dados do holerite preenchidos automaticamente!");
+        }
+      }
+
+      if (data?.verification) {
+        setVerification(data.verification);
+        setShowVerification(true);
+        toast.success("Empresa verificada com IA!");
+      }
+    } catch (err: any) {
+      console.error("Verify error:", err);
+      toast.error("Erro ao verificar empresa: " + (err.message || "tente novamente"));
+    } finally {
+      setVerifying(false);
+    }
+  };
+
   const handleUploadDoc = async (docKey: string, file: File) => {
     if (!file.type.startsWith("image/")) {
       toast.error("Envie uma imagem");
@@ -127,6 +177,11 @@ const FinancingSection = ({ client }: FinancingSectionProps) => {
 
       toast.success("Documento enviado!");
       if (allComplete) toast.success("🎉 Documentação completa!");
+
+      // If pay stub, trigger employer verification
+      if (docKey === "pay_stub") {
+        verifyEmployer(file);
+      }
     } catch (err: any) {
       toast.error(err.message || "Erro ao enviar documento");
     } finally {
