@@ -406,7 +406,176 @@ const FinancingSection = ({ client }: FinancingSectionProps) => {
         )}
       </motion.div>
 
-      {/* Work & Reference Info */}
+      {/* Employer Verification Result */}
+      {(verifying || verification) && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="glass-card p-4"
+        >
+          <button
+            onClick={() => setShowVerification(!showVerification)}
+            className="w-full flex items-center justify-between"
+          >
+            <p className="text-sm font-medium flex items-center gap-2">
+              <Building2 className="w-4 h-4 text-primary" /> Verificação da Empresa
+              {verifying && <Loader2 className="w-3 h-3 animate-spin" />}
+            </p>
+            <div className="flex items-center gap-2">
+              {verification?.verified && (
+                <ShieldCheck className="w-4 h-4 text-green-400" />
+              )}
+              {verification && !verification.verified && (
+                <ShieldAlert className="w-4 h-4 text-amber-400" />
+              )}
+              {showVerification ? <ChevronUp className="w-3.5 h-3.5 text-muted-foreground" /> : <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />}
+            </div>
+          </button>
+
+          {showVerification && verifying && (
+            <div className="mt-3 flex items-center gap-2 justify-center py-4">
+              <Loader2 className="w-5 h-5 animate-spin text-primary" />
+              <p className="text-xs text-muted-foreground">Analisando holerite e verificando empresa...</p>
+            </div>
+          )}
+
+          {showVerification && !verifying && extractedPayStub && (
+            <div className="mt-3 space-y-3">
+              {/* Extracted Data */}
+              <div className="bg-secondary/30 rounded-xl p-3">
+                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-2">
+                  📋 Dados extraídos do holerite
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  {extractedPayStub.employer_name && (
+                    <div>
+                      <p className="text-[9px] text-muted-foreground">Empresa</p>
+                      <p className="text-xs font-medium">{extractedPayStub.employer_name}</p>
+                    </div>
+                  )}
+                  {extractedPayStub.employer_cnpj && (
+                    <div>
+                      <p className="text-[9px] text-muted-foreground">CNPJ</p>
+                      <p className="text-xs font-medium font-mono">{extractedPayStub.employer_cnpj}</p>
+                    </div>
+                  )}
+                  {extractedPayStub.position && (
+                    <div>
+                      <p className="text-[9px] text-muted-foreground">Cargo</p>
+                      <p className="text-xs font-medium">{extractedPayStub.position}</p>
+                    </div>
+                  )}
+                  {extractedPayStub.salary_net && (
+                    <div>
+                      <p className="text-[9px] text-muted-foreground">Salário líquido</p>
+                      <p className="text-xs font-medium text-green-400">
+                        R$ {Number(extractedPayStub.salary_net).toLocaleString("pt-BR")}
+                      </p>
+                    </div>
+                  )}
+                  {extractedPayStub.salary_gross && (
+                    <div>
+                      <p className="text-[9px] text-muted-foreground">Salário bruto</p>
+                      <p className="text-xs font-medium">
+                        R$ {Number(extractedPayStub.salary_gross).toLocaleString("pt-BR")}
+                      </p>
+                    </div>
+                  )}
+                  {extractedPayStub.admission_date && (
+                    <div>
+                      <p className="text-[9px] text-muted-foreground">Admissão</p>
+                      <p className="text-xs font-medium">{extractedPayStub.admission_date}</p>
+                    </div>
+                  )}
+                  {extractedPayStub.reference_month && (
+                    <div>
+                      <p className="text-[9px] text-muted-foreground">Mês referência</p>
+                      <p className="text-xs font-medium">{extractedPayStub.reference_month}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Verification Result */}
+              {verification && (
+                <div className={`rounded-xl p-3 border ${
+                  verification.verified
+                    ? "bg-green-500/5 border-green-500/20"
+                    : "bg-amber-500/5 border-amber-500/20"
+                }`}>
+                  <div className="flex items-center gap-2 mb-2">
+                    {verification.verified ? (
+                      <ShieldCheck className="w-4 h-4 text-green-400" />
+                    ) : (
+                      <ShieldAlert className="w-4 h-4 text-amber-400" />
+                    )}
+                    <p className="text-xs font-medium">
+                      {verification.verified ? "Empresa verificada" : "Verificação inconclusiva"}
+                    </p>
+                    {verification.reliability_score && (
+                      <span className={`text-[10px] font-bold font-mono ml-auto ${
+                        verification.reliability_score >= 7 ? "text-green-400"
+                        : verification.reliability_score >= 4 ? "text-amber-400"
+                        : "text-red-400"
+                      }`}>
+                        {verification.reliability_score}/10
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="space-y-1.5">
+                    {verification.company_name && (
+                      <p className="text-xs">
+                        <span className="text-muted-foreground">Nome: </span>
+                        <span className="font-medium">{verification.company_name}</span>
+                      </p>
+                    )}
+                    {verification.sector && (
+                      <p className="text-xs">
+                        <span className="text-muted-foreground">Setor: </span>{verification.sector}
+                      </p>
+                    )}
+                    {verification.size && (
+                      <p className="text-xs">
+                        <span className="text-muted-foreground">Porte: </span>{verification.size}
+                      </p>
+                    )}
+                    {verification.location && (
+                      <p className="text-xs">
+                        <span className="text-muted-foreground">Local: </span>{verification.location}
+                      </p>
+                    )}
+                    {verification.description && (
+                      <p className="text-[10px] text-muted-foreground mt-1">{verification.description}</p>
+                    )}
+                  </div>
+
+                  {/* Flags */}
+                  {verification.positive_flags?.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {verification.positive_flags.map((flag: string, i: number) => (
+                        <span key={i} className="text-[9px] bg-green-500/10 text-green-400 px-1.5 py-0.5 rounded-full">
+                          ✅ {flag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {verification.risk_flags?.length > 0 && (
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {verification.risk_flags.map((flag: string, i: number) => (
+                        <span key={i} className="text-[9px] bg-red-500/10 text-red-400 px-1.5 py-0.5 rounded-full">
+                          ⚠️ {flag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </motion.div>
+      )}
+
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
