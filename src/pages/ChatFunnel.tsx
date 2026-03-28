@@ -691,6 +691,29 @@ const ChatFunnel = () => {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="flex gap-2 items-end">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={handleDocumentUpload}
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              disabled={isLoading || isAnalyzingDoc}
+              onClick={() => fileInputRef.current?.click()}
+              className="rounded-full shrink-0 h-11 w-11 text-muted-foreground hover:text-primary transition-colors"
+              title="Enviar documento (CNH, holerite, comprovante)"
+            >
+              {isAnalyzingDoc ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Camera className="h-4 w-4" />
+              )}
+            </Button>
             <div className="flex-1 relative">
               <textarea
                 ref={inputRef}
@@ -701,9 +724,9 @@ const ChatFunnel = () => {
                   e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
                 }}
                 onKeyDown={handleKeyDown}
-                placeholder="Digite sua mensagem..."
+                placeholder={isAnalyzingDoc ? "Analisando documento..." : "Digite sua mensagem..."}
                 rows={1}
-                disabled={isLoading}
+                disabled={isLoading || isAnalyzingDoc}
                 className="w-full resize-none rounded-2xl bg-secondary border border-border/50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all disabled:opacity-50 placeholder:text-muted-foreground"
                 style={{ maxHeight: "120px" }}
               />
@@ -711,7 +734,7 @@ const ChatFunnel = () => {
             <Button
               type="submit"
               size="icon"
-              disabled={!inputValue.trim() || isLoading}
+              disabled={!inputValue.trim() || isLoading || isAnalyzingDoc}
               className="rounded-full shrink-0 h-11 w-11 glow-red transition-all"
             >
               <Send className="h-4 w-4" />
