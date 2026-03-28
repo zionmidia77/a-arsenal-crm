@@ -7,10 +7,12 @@ import { useClient, useClientInteractions, useClientVehicles, useCreateInteracti
 import {
   ArrowLeft, MessageCircle, Phone, Mail, MapPin, Calendar, Bike,
   TrendingUp, Clock, Plus, Star, CalendarPlus, Check, AlertTriangle,
-  Copy, Send
+  Copy, Send, Bot, Tag
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import TagManager from "@/components/admin/TagManager";
+import { useAIChat } from "@/hooks/useAIChat";
 
 const tempBadge: Record<string, string> = {
   hot: "bg-primary/15 text-primary",
@@ -65,7 +67,10 @@ const AdminClientDetail = () => {
   const [note, setNote] = useState("");
   const [noteType, setNoteType] = useState<string>("system");
   const [showSchedule, setShowSchedule] = useState(false);
+  const [showAIChat, setShowAIChat] = useState(false);
+  const [aiInput, setAIInput] = useState("");
   const [scheduleDate, setScheduleDate] = useState(new Date().toISOString().split("T")[0]);
+  const aiChat = useAIChat();
   const [scheduleReason, setScheduleReason] = useState("");
 
   if (isLoading) {
@@ -199,6 +204,14 @@ const AdminClientDetail = () => {
         </div>
       </motion.div>
 
+      {/* Tags */}
+      <motion.div variants={fadeUp} className="glass-card p-3">
+        <p className="text-xs font-medium mb-2 flex items-center gap-1.5">
+          <Tag className="w-3.5 h-3.5 text-primary" /> Tags
+        </p>
+        <TagManager clientId={client.id} />
+      </motion.div>
+
       {/* Last contact warning */}
       {lastContactDays !== null && lastContactDays > 2 && (
         <motion.div variants={fadeUp} className="bg-destructive/10 rounded-xl p-3 border border-destructive/20 flex items-center gap-2">
@@ -252,6 +265,101 @@ const AdminClientDetail = () => {
             </div>
           ))}
         </div>
+      </motion.div>
+
+      {/* AI Chat Assistant */}
+      <motion.div variants={fadeUp} className="glass-card p-4">
+        <button
+          onClick={() => setShowAIChat(!showAIChat)}
+          className="w-full flex items-center gap-2 text-sm font-medium"
+        >
+          <Bot className="w-4 h-4 text-primary" />
+          Assistente IA
+          <span className="text-[10px] text-muted-foreground ml-auto">{showAIChat ? 'Fechar' : 'Abrir'}</span>
+        </button>
+        {showAIChat && (
+          <div className="mt-3 space-y-3">
+            <div className="bg-secondary/30 rounded-xl p-3 max-h-60 overflow-y-auto space-y-2">
+              {aiChat.messages.length === 0 && (
+                <p className="text-xs text-muted-foreground text-center py-4">
+                  Pergunte sobre estratégias de venda para este lead
+                </p>
+              )}
+              {aiChat.messages.map((msg, i) => (
+                <div key={i} className={`text-xs ${msg.role === 'user' ? 'text-right' : ''}`}>
+                  <span className={`inline-block px-3 py-1.5 rounded-xl max-w-[85%] ${
+                    msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-card border border-border/50'
+                  }`}>
+                    {msg.content}
+                  </span>
+                </div>
+              ))}
+              {aiChat.isLoading && aiChat.messages[aiChat.messages.length - 1]?.role !== 'assistant' && (
+                <div className="flex gap-1.5 px-3 py-2">
+                  {[0,1,2].map(i => <span key={i} className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-pulse" style={{animationDelay: `${i*0.2}s`}} />)}
+                </div>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Input
+                value={aiInput}
+                onChange={e => setAIInput(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === "Enter" && aiInput.trim()) {
+                    aiChat.sendMessage(aiInput.trim(), {
+                      clientName: client.name,
+                      interest: client.interest,
+                      budget: client.budget_range,
+                      temperature: client.temperature,
+                      stage: client.pipeline_stage,
+                    });
+                    setAIInput("");
+                  }
+                }}
+                placeholder="Ex: Como abordar este lead?"
+                className="rounded-xl bg-secondary border-border/50 h-9 text-xs"
+              />
+              <Button
+                size="icon"
+                className="rounded-xl h-9 w-9 shrink-0"
+                disabled={!aiInput.trim() || aiChat.isLoading}
+                onClick={() => {
+                  if (aiInput.trim()) {
+                    aiChat.sendMessage(aiInput.trim(), {
+                      clientName: client.name,
+                      interest: client.interest,
+                      budget: client.budget_range,
+                      temperature: client.temperature,
+                      stage: client.pipeline_stage,
+                    });
+                    setAIInput("");
+                  }
+                }}
+              >
+                <Send className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+            <div className="flex gap-1.5 flex-wrap">
+              {["Como abordar?", "Sugerir mensagem", "Dicas de negociação", "Objeções comuns"].map(q => (
+                <button
+                  key={q}
+                  onClick={() => {
+                    aiChat.sendMessage(q, {
+                      clientName: client.name,
+                      interest: client.interest,
+                      budget: client.budget_range,
+                      temperature: client.temperature,
+                      stage: client.pipeline_stage,
+                    });
+                  }}
+                  className="text-[10px] px-2 py-1 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </motion.div>
 
       {/* Schedule Follow-up */}

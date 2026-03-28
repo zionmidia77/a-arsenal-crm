@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { MessageCircle, Eye } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { Draggable } from "@hello-pangea/dnd";
+import TagManager from "@/components/admin/TagManager";
 
 const tempBadge: Record<string, string> = {
   hot: "bg-primary/15 text-primary",
@@ -42,6 +43,8 @@ const KanbanCard = ({ client, index }: KanbanCardProps) => {
           {client.interest && (
             <p className="text-[11px] text-muted-foreground truncate">{client.interest}</p>
           )}
+
+          <TagManager clientId={client.id} compact />
 
           <div className="flex gap-1.5">
             {client.phone && (

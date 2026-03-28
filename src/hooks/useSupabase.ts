@@ -300,3 +300,60 @@ export const useLeadsChartData = () => {
     },
   });
 };
+
+// ============ TAGS ============
+export const useTags = () => {
+  return useQuery({
+    queryKey: ["tags"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("client_tags").select("*").order("name");
+      if (error) throw error;
+      return data;
+    },
+  });
+};
+
+export const useClientTags = (clientId: string) => {
+  return useQuery({
+    queryKey: ["client-tags", clientId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("client_tag_assignments")
+        .select("*, client_tags(*)")
+        .eq("client_id", clientId);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!clientId,
+  });
+};
+
+export const useToggleClientTag = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ clientId, tagId, assigned }: { clientId: string; tagId: string; assigned: boolean }) => {
+      if (assigned) {
+        const { error } = await supabase.from("client_tag_assignments").delete().eq("client_id", clientId).eq("tag_id", tagId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("client_tag_assignments").insert({ client_id: clientId, tag_id: tagId });
+        if (error) throw error;
+      }
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["client-tags", vars.clientId] });
+    },
+  });
+};
+
+export const useCreateTag = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ name, color }: { name: string; color: string }) => {
+      const { data, error } = await supabase.from("client_tags").insert({ name, color }).select().single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["tags"] }),
+  });
+};
