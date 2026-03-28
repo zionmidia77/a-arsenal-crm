@@ -110,6 +110,7 @@ const AdminLayout = () => {
           <NotificationCenter />
         </header>
         <main className={`flex-1 overflow-y-auto ${!isClientDetail ? "pb-20 md:pb-0" : ""}`}>
+          <AdminBreadcrumb />
           <Outlet />
         </main>
       </div>
