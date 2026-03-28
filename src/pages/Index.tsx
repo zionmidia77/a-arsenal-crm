@@ -37,9 +37,14 @@ const Index = () => {
           </div>
           <span className="font-display font-bold text-sm">Arsenal <span className="text-primary">Motors</span></span>
         </div>
-        <Button variant="ghost" size="sm" onClick={() => navigate("/admin")} className="text-xs text-muted-foreground">
-          Admin
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={() => navigate("/member")} className="text-xs text-muted-foreground">
+            Minha área
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => navigate("/admin")} className="text-xs text-muted-foreground">
+            Admin
+          </Button>
+        </div>
       </motion.nav>
 
       {/* Hero */}
