@@ -31,7 +31,7 @@ const tools = [
           },
           budget_range: {
             type: "string",
-            description: "Budget range if mentioned",
+            description: "Budget range e.g. 'R$ 15 a 30 mil', 'Acima de R$ 50 mil'",
           },
           has_trade_in: {
             type: "boolean",
@@ -39,20 +39,26 @@ const tools = [
           },
           has_clean_credit: {
             type: "boolean",
-            description: "Has clean credit for financing",
+            description: "Has clean credit (nome limpo) for financing",
           },
           has_down_payment: {
             type: "boolean",
-            description: "Has money for down payment",
+            description: "Has money for down payment (entrada)",
           },
           down_payment_amount: {
             type: "number",
-            description: "Down payment amount if mentioned",
+            description: "Down payment amount in BRL",
           },
-          city: { type: "string", description: "City if mentioned" },
+          city: { type: "string", description: "City where client lives" },
           birthdate: {
             type: "string",
-            description: "Birth date in YYYY-MM-DD format if mentioned",
+            description: "Birth date in YYYY-MM-DD format",
+          },
+          email: { type: "string", description: "Email address" },
+          payment_type: {
+            type: "string",
+            enum: ["financing", "cash", "consortium"],
+            description: "Preferred payment method",
           },
         },
         required: ["name", "phone"],
@@ -65,7 +71,7 @@ const tools = [
     function: {
       name: "update_lead",
       description:
-        "Update an existing lead with new information collected during conversation",
+        "Update an existing lead with new information collected during conversation. Call this EVERY TIME you learn something new about the client.",
       parameters: {
         type: "object",
         properties: {
@@ -73,21 +79,34 @@ const tools = [
             type: "string",
             description: "The UUID of the lead to update",
           },
-          interest: { type: "string" },
-          budget_range: { type: "string" },
+          interest: { type: "string", description: "comprar, trocar, vender, refinanciar" },
+          budget_range: { type: "string", description: "e.g. 'R$ 15 a 30 mil'" },
           has_trade_in: { type: "boolean" },
           has_clean_credit: { type: "boolean" },
           has_down_payment: { type: "boolean" },
           down_payment_amount: { type: "number" },
           city: { type: "string" },
-          birthdate: { type: "string" },
-          employer: { type: "string" },
-          salary: { type: "number" },
+          birthdate: { type: "string", description: "YYYY-MM-DD" },
+          employer: { type: "string", description: "Where they work" },
+          employment_time: { type: "string", description: "How long at current job e.g. '2 anos'" },
+          position: { type: "string", description: "Job title/position" },
+          salary: { type: "number", description: "Monthly income in BRL" },
+          email: { type: "string" },
           payment_type: {
             type: "string",
             enum: ["financing", "cash", "consortium"],
           },
-          notes: { type: "string", description: "Additional notes" },
+          notes: { type: "string", description: "Important notes about the client's situation" },
+          pipeline_stage: {
+            type: "string",
+            enum: ["new", "contacted", "interested", "negotiating", "scheduled"],
+            description: "Move lead through pipeline as conversation progresses",
+          },
+          temperature: {
+            type: "string",
+            enum: ["hot", "warm", "cold"],
+            description: "Lead temperature based on buying intent",
+          },
         },
         required: ["client_id"],
         additionalProperties: false,
@@ -97,9 +116,34 @@ const tools = [
   {
     type: "function",
     function: {
+      name: "register_trade_in",
+      description:
+        "Register a vehicle the client wants to trade in. Captures details for evaluation. Call when client says they have a moto to give as entrada/troca.",
+      parameters: {
+        type: "object",
+        properties: {
+          client_id: { type: "string", description: "Client UUID" },
+          brand: { type: "string", description: "Vehicle brand (Honda, Yamaha, etc.)" },
+          model: { type: "string", description: "Vehicle model (CG 160, Factor, etc.)" },
+          year: { type: "number", description: "Vehicle year" },
+          km: { type: "number", description: "Approximate kilometers" },
+          is_financed: { type: "boolean", description: "Is the vehicle still being financed?" },
+          installments_paid: { type: "number", description: "How many installments paid if financed" },
+          installments_total: { type: "number", description: "Total installments if financed" },
+          monthly_payment: { type: "number", description: "Monthly payment if financed" },
+          estimated_value: { type: "number", description: "Client's estimated value" },
+        },
+        required: ["client_id", "brand", "model"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "search_vehicles",
       description:
-        "Search available vehicles in the inventory. Use to recommend options matching the client's profile.",
+        "Search available vehicles in the inventory. Use to recommend options matching the client's profile and budget.",
       parameters: {
         type: "object",
         properties: {
@@ -109,13 +153,56 @@ const tools = [
           },
           max_value: {
             type: "number",
-            description: "Maximum estimated value",
+            description: "Maximum estimated value in BRL",
           },
           min_value: {
             type: "number",
-            description: "Minimum estimated value",
+            description: "Minimum estimated value in BRL",
           },
         },
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "simulate_financing",
+      description:
+        "Simulate a financing plan for the client. Use when discussing parcelas, entrada, and payment options.",
+      parameters: {
+        type: "object",
+        properties: {
+          client_id: { type: "string", description: "Client UUID" },
+          vehicle_value: { type: "number", description: "Total vehicle value in BRL" },
+          down_payment: { type: "number", description: "Down payment amount in BRL" },
+          installments: { type: "number", description: "Number of installments (12, 24, 36, 48)" },
+        },
+        required: ["client_id", "vehicle_value"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "schedule_visit",
+      description:
+        "Schedule a visit to the store or a call with the sales team. Use when the client is ready to move forward.",
+      parameters: {
+        type: "object",
+        properties: {
+          client_id: { type: "string", description: "Client UUID" },
+          visit_type: {
+            type: "string",
+            enum: ["store_visit", "video_call", "phone_call", "evaluation"],
+            description: "Type of appointment",
+          },
+          preferred_date: { type: "string", description: "Preferred date (YYYY-MM-DD)" },
+          preferred_time: { type: "string", description: "Preferred time (HH:MM)" },
+          notes: { type: "string", description: "Any special notes about the visit" },
+        },
+        required: ["client_id", "visit_type"],
         additionalProperties: false,
       },
     },
@@ -159,10 +246,11 @@ async function executeTool(
             has_trade_in: (args.has_trade_in as boolean) || false,
             has_clean_credit: (args.has_clean_credit as boolean) || null,
             has_down_payment: (args.has_down_payment as boolean) || false,
-            down_payment_amount:
-              (args.down_payment_amount as number) || null,
+            down_payment_amount: (args.down_payment_amount as number) || null,
             city: (args.city as string) || null,
             birthdate: (args.birthdate as string) || null,
+            email: (args.email as string) || null,
+            payment_type: (args.payment_type as string) || null,
             source: "ai-chat",
             status: "lead",
             temperature: "hot",
@@ -173,7 +261,6 @@ async function executeTool(
 
         if (error) throw error;
 
-        // Log the interaction
         await supabase.from("interactions").insert({
           client_id: data.id,
           type: "system",
@@ -184,7 +271,7 @@ async function executeTool(
         return JSON.stringify({
           success: true,
           client_id: data.id,
-          message: `Lead "${data.name}" criado com sucesso`,
+          message: `Lead "${data.name}" criado com sucesso. IMPORTANTE: Use este client_id (${data.id}) em TODAS as chamadas futuras de update_lead, register_trade_in, simulate_financing, schedule_visit e log_interaction.`,
         });
       }
 
@@ -197,10 +284,18 @@ async function executeTool(
 
         const { error } = await supabase
           .from("clients")
-          .update(cleanFields)
+          .update({ ...cleanFields, last_contact_at: new Date().toISOString() })
           .eq("id", client_id);
 
         if (error) throw error;
+
+        // Log what was updated
+        await supabase.from("interactions").insert({
+          client_id: client_id as string,
+          type: "system",
+          content: `Dados atualizados via chat IA: ${Object.keys(cleanFields).join(", ")}`,
+          created_by: "ai-consultant",
+        });
 
         return JSON.stringify({
           success: true,
@@ -208,11 +303,55 @@ async function executeTool(
         });
       }
 
+      case "register_trade_in": {
+        const { client_id, ...vehicleData } = args;
+
+        // Update client's has_trade_in flag
+        await supabase
+          .from("clients")
+          .update({ has_trade_in: true })
+          .eq("id", client_id);
+
+        // Register the trade-in vehicle
+        const { data, error } = await supabase
+          .from("vehicles")
+          .insert({
+            client_id: client_id as string,
+            brand: vehicleData.brand as string,
+            model: vehicleData.model as string,
+            year: (vehicleData.year as number) || null,
+            km: (vehicleData.km as number) || null,
+            is_financed: (vehicleData.is_financed as boolean) || false,
+            installments_paid: (vehicleData.installments_paid as number) || 0,
+            installments_total: (vehicleData.installments_total as number) || 0,
+            monthly_payment: (vehicleData.monthly_payment as number) || null,
+            estimated_value: (vehicleData.estimated_value as number) || null,
+            status: "current",
+          })
+          .select("id")
+          .single();
+
+        if (error) throw error;
+
+        await supabase.from("interactions").insert({
+          client_id: client_id as string,
+          type: "system",
+          content: `Moto de troca registrada: ${vehicleData.brand} ${vehicleData.model}${vehicleData.year ? ` ${vehicleData.year}` : ""}${vehicleData.is_financed ? " (financiada)" : ""}`,
+          created_by: "ai-consultant",
+        });
+
+        return JSON.stringify({
+          success: true,
+          vehicle_id: data.id,
+          message: `Moto ${vehicleData.brand} ${vehicleData.model} registrada para avaliação de troca.`,
+        });
+      }
+
       case "search_vehicles": {
         let query = supabase
           .from("vehicles")
           .select(
-            "id, brand, model, year, km, estimated_value, is_financed, status, clients(name)"
+            "id, brand, model, year, km, estimated_value, is_financed, status"
           )
           .eq("status", "current");
 
@@ -233,8 +372,7 @@ async function executeTool(
           return JSON.stringify({
             success: true,
             vehicles: [],
-            message:
-              "Nenhum veículo encontrado com esses critérios no estoque atual",
+            message: "Nenhum veículo encontrado com esses critérios no estoque atual. Diga ao cliente que vai verificar com a equipe e entrar em contato.",
           });
         }
 
@@ -249,6 +387,85 @@ async function executeTool(
             is_financed: v.is_financed,
           })),
           total: data.length,
+        });
+      }
+
+      case "simulate_financing": {
+        const vehicleValue = args.vehicle_value as number;
+        const downPayment = (args.down_payment as number) || 0;
+        const numInstallments = (args.installments as number) || 48;
+        const financed = vehicleValue - downPayment;
+        const rate = 0.0189; // 1.89% monthly rate (market average for motos)
+        const monthly = financed * (rate * Math.pow(1 + rate, numInstallments)) / (Math.pow(1 + rate, numInstallments) - 1);
+
+        // Also calculate other options
+        const options = [12, 24, 36, 48].map(n => {
+          const m = financed * (rate * Math.pow(1 + rate, n)) / (Math.pow(1 + rate, n) - 1);
+          return { installments: n, monthly_payment: Math.round(m * 100) / 100 };
+        });
+
+        await supabase.from("interactions").insert({
+          client_id: args.client_id as string,
+          type: "system",
+          content: `Simulação de financiamento: Veículo R$ ${vehicleValue.toLocaleString()}, Entrada R$ ${downPayment.toLocaleString()}, ${numInstallments}x de R$ ${Math.round(monthly * 100) / 100}`,
+          created_by: "ai-consultant",
+        });
+
+        return JSON.stringify({
+          success: true,
+          simulation: {
+            vehicle_value: vehicleValue,
+            down_payment: downPayment,
+            financed_amount: financed,
+            selected_plan: {
+              installments: numInstallments,
+              monthly_payment: Math.round(monthly * 100) / 100,
+            },
+            all_options: options,
+            rate_info: "Taxa de 1.89% a.m. (sujeita a análise de crédito)",
+          },
+        });
+      }
+
+      case "schedule_visit": {
+        // Create a task for the visit
+        const visitLabels: Record<string, string> = {
+          store_visit: "Visita à loja",
+          video_call: "Videochamada",
+          phone_call: "Ligação",
+          evaluation: "Avaliação de moto",
+        };
+        const label = visitLabels[args.visit_type as string] || "Agendamento";
+
+        const { error } = await supabase.from("tasks").insert({
+          client_id: args.client_id as string,
+          type: "follow_up",
+          reason: `📅 ${label} agendada${args.preferred_date ? ` para ${args.preferred_date}` : ""}${args.preferred_time ? ` às ${args.preferred_time}` : ""}${args.notes ? ` — ${args.notes}` : ""}`,
+          due_date: (args.preferred_date as string) || new Date().toISOString().split("T")[0],
+          scheduled_time: (args.preferred_time as string) || null,
+          priority: 9,
+          source: "ai-chat",
+          status: "pending",
+        });
+
+        if (error) throw error;
+
+        // Update pipeline stage
+        await supabase
+          .from("clients")
+          .update({ pipeline_stage: "scheduled", temperature: "hot" })
+          .eq("id", args.client_id);
+
+        await supabase.from("interactions").insert({
+          client_id: args.client_id as string,
+          type: "system",
+          content: `${label} agendada via chat IA${args.preferred_date ? ` para ${args.preferred_date}` : ""}${args.preferred_time ? ` às ${args.preferred_time}` : ""}`,
+          created_by: "ai-consultant",
+        });
+
+        return JSON.stringify({
+          success: true,
+          message: `${label} agendada com sucesso!`,
         });
       }
 
@@ -276,60 +493,96 @@ async function executeTool(
 }
 
 // ── System prompt ──
-const SYSTEM_PROMPT = `Você é o **Consultor Arsenal**, o atendente virtual da Arsenal Motors — uma loja de motos novas e seminovas.
+const SYSTEM_PROMPT = `Você é o **Consultor Arsenal**, vendedor real da Arsenal Motors — uma loja de motos novas e seminovas.
 
-## SUA PERSONALIDADE
-- Você é REAL. Nunca diga que é uma IA, chatbot ou assistente virtual.
-- Seu nome é Consultor Arsenal (ou só "Arsenal" quando for se apresentar de forma casual)
-- Você é consultivo e empático: ESCUTA primeiro, ENTENDE a necessidade, depois oferece soluções
-- Use linguagem NATURAL e informal brasileira (gírias leves, emojis moderados)
-- Respostas CURTAS: 1-3 frases no máximo. Como um WhatsApp real.
-- Demonstre INTERESSE genuíno pela pessoa
-- Use quebra de linhas naturais, como alguém digitando no WhatsApp
+## SUA IDENTIDADE
+- Você é um VENDEDOR DE VERDADE. Nunca diga que é IA, chatbot ou assistente virtual.
+- Seu nome é Arsenal (forma casual) ou Consultor Arsenal
+- Você é PROATIVO: não espera o cliente pedir, você CONDUZ a conversa
+- Linguagem NATURAL, informal brasileira, como WhatsApp real
+- Respostas CURTAS: 1-3 frases. Nada de textão.
+- Emojis moderados, naturais
 
-## SEU OBJETIVO
-1. Entender o que a pessoa precisa (comprar, trocar, vender, refinanciar)
-2. Coletar informações NATURALMENTE durante a conversa (nome, telefone, orçamento, entrada, troca, crédito)
-3. Criar o lead no sistema assim que tiver nome + telefone
-4. Buscar veículos no estoque quando souber o perfil
-5. Qualificar o lead para a equipe de vendas
+## SEU OBJETIVO PRINCIPAL
+Você é um CLOSER. Seu objetivo é:
+1. Entender a necessidade → conduzir para a VENDA
+2. Coletar TODOS os dados para o CRM (cada dado = oportunidade futura de venda)
+3. Qualificar o lead para financiamento
+4. Apresentar opções reais do estoque
+5. FECHAR: agendar visita, enviar proposta, ou marcar avaliação de troca
 
-## DADOS QUE VOCÊ PRECISA COLETAR (de forma natural, não interrogatório!)
-- Nome
-- Telefone/WhatsApp
-- Interesse (comprar/trocar/vender/refinanciar)
-- Faixa de orçamento
-- Tem moto pra dar na troca?
-- Tem entrada? Quanto?
-- Crédito limpo?
+## ESTRATÉGIA DE COLETA DE DADOS (faça naturalmente!)
+
+### Fase 1 — Identificação (primeiras mensagens)
+- Nome e telefone → create_lead IMEDIATAMENTE
+- O que procura (comprar/trocar/vender/refinanciar)
+
+### Fase 2 — Qualificação (conduzir ativamente)
+Depois de criar o lead, CONDUZA a conversa para descobrir:
+- **Orçamento**: "Mais ou menos quanto você tá pensando em investir?"
+- **Entrada**: "Você tem algum valor pra dar de entrada?"
+- **Troca**: "Tem moto pra dar na troca? Se tiver, a gente faz avaliação grátis!"
+  → Se sim: pergunte marca, modelo, ano, km, se é financiada
+  → Use register_trade_in para salvar
+- **Crédito**: "Seu nome tá limpo? Pra gente já ver as melhores condições de financiamento"
+- **Profissão**: "Você trabalha em quê? Pergunto porque algumas empresas têm convênio"
+- **Cidade**: "Você é de onde? Pra gente ver a melhor forma de atender"
+- **Data de nascimento**: "Me passa sua data de nascimento pra eu completar seu cadastro aqui"
+
+### Fase 3 — Apresentação (quando tiver perfil)
+- Use search_vehicles para buscar opções REAIS
+- Use simulate_financing para mostrar parcelas
+- Apresente 2-3 opções que casem com o perfil
+- Compare: "Essa aqui cabe no seu bolso: R$ X de entrada + 48x de R$ Y"
+
+### Fase 4 — Fechamento (conduzir para ação)
+- "Quer que eu reserve essa pra você?"
+- "Bora agendar pra você vir ver pessoalmente?"
+- "Posso mandar uma proposta completa no seu WhatsApp?"
+- Use schedule_visit quando o cliente topar
 
 ## REGRAS DE OURO
-1. NUNCA faça mais de uma pergunta por mensagem
-2. NUNCA invente preços — use a ferramenta search_vehicles para ver o estoque real
-3. Assim que tiver NOME + TELEFONE, use create_lead imediatamente
-4. Quando descobrir mais dados, use update_lead para atualizar
-5. Quando souber o perfil, use search_vehicles para buscar opções
-6. Se a pessoa mandar "oi", "olá" etc., responda de forma calorosa e pergunte como pode ajudar
-7. Use log_interaction para eventos importantes (agendou visita, pediu proposta, etc.)
-8. Não use markdown pesado (sem headers #, sem listas longas). Fale como no WhatsApp.
-9. Se não tiver motos no estoque que casam, diga que vai verificar com a equipe
+1. NUNCA faça mais de UMA pergunta por mensagem
+2. NUNCA invente preços — use search_vehicles e simulate_financing
+3. Assim que tiver NOME + TELEFONE → create_lead IMEDIATO
+4. A CADA nova informação → update_lead (NADA se perde!)
+5. Se o cliente tem moto pra troca → register_trade_in com todos os dados
+6. Quando souber o perfil → search_vehicles + simulate_financing
+7. Use log_interaction para: agendou visita, pediu proposta, interessou em moto específica
+8. CONDUZA a conversa — não espere o cliente perguntar
+9. Seja CONSULTIVO: "Com esse perfil, a melhor opção pra você é..."
+10. Se não tem no estoque → "Vou verificar com minha equipe e te retorno!"
 
-## FLUXO IDEAL
-1. Cumprimentar → "E aí! Tudo bem? Sou o consultor da Arsenal Motors 🏍️ Como posso te ajudar?"
-2. Escutar a necessidade
-3. Fazer perguntas naturais, UMA de cada vez
-4. Quando tiver nome+telefone → create_lead
-5. Quando souber o perfil → search_vehicles
-6. Apresentar opções reais do estoque
-7. Direcionar para ação (agendar visita, enviar proposta)
+## QUANDO O CLIENTE DIZ "SÓ ESTOU OLHANDO"
+- Não desista! "Tranquilo! Me conta o que você curte, posso te mostrar umas opções legais que chegaram"
+- Mostre entusiasmo pela moto que ele mencionar
+- Crie URGÊNCIA sutil: "Essa aqui tá saindo rápido..."
+
+## DADOS QUE GERAM RECEITA FUTURA (capte TODOS!)
+Cada dado no CRM é uma oportunidade:
+- Aniversário → oferta especial
+- Profissão/empresa → convênio corporativo
+- Cidade → eventos regionais
+- Moto atual → lembrete de revisão, upgrade
+- Família (casado, filhos) → segunda moto, moto pro filho
+- Email → newsletter com ofertas
+
+## FLUXO DE FINANCIAMENTO
+Quando o cliente quer financiar:
+1. Pergunte valor de entrada
+2. Pergunte se nome está limpo
+3. Use simulate_financing para mostrar opções
+4. Diga: "Com entrada de R$ X, fica 48x de R$ Y. Quer que eu faça a análise de crédito?"
+5. Se aprovar → schedule_visit para finalizar
 
 ## INFORMAÇÕES DA LOJA
-- Arsenal Motors — Loja de motos novas e seminovas
+- Arsenal Motors — Motos novas e seminovas
 - Todas as marcas (Honda, Yamaha, Suzuki, Kawasaki, BMW, etc.)
-- Financiamento em até 48x
-- Aceita motos na troca
-- Avaliação gratuita
-- Horário: Seg-Sáb 8h às 18h`;
+- Financiamento em até 48x com as melhores taxas
+- Aceita motos na troca (avaliação gratuita!)
+- Consórcio disponível
+- Horário: Seg-Sáb 8h às 18h
+- Primeira revisão GRÁTIS para quem comprar aqui`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS")
@@ -345,7 +598,7 @@ serve(async (req) => {
     const systemContent =
       SYSTEM_PROMPT +
       (context?.clientId
-        ? `\n\n## CONTEXTO ATUAL\nLead já criado com ID: ${context.clientId}. Use update_lead para atualizar.`
+        ? `\n\n## CONTEXTO ATUAL\nLead já criado com ID: ${context.clientId}. Use update_lead para atualizar. NÃO crie outro lead.`
         : "");
 
     let aiMessages: Array<{ role: string; content?: string; tool_call_id?: string; name?: string }> = [
@@ -353,8 +606,8 @@ serve(async (req) => {
       ...messages,
     ];
 
-    // Tool calling loop (max 3 iterations to prevent infinite loops)
-    for (let i = 0; i < 3; i++) {
+    // Tool calling loop (max 5 iterations for complex flows)
+    for (let i = 0; i < 5; i++) {
       const toolResponse = await fetch(
         "https://ai.gateway.lovable.dev/v1/chat/completions",
         {
@@ -375,22 +628,14 @@ serve(async (req) => {
       if (!toolResponse.ok) {
         if (toolResponse.status === 429) {
           return new Response(
-            JSON.stringify({
-              error: "Muitas requisições, tente novamente em breve.",
-            }),
-            {
-              status: 429,
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
-            }
+            JSON.stringify({ error: "Muitas requisições, tente novamente em breve." }),
+            { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
         if (toolResponse.status === 402) {
           return new Response(
             JSON.stringify({ error: "Créditos de IA esgotados." }),
-            {
-              status: 402,
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
-            }
+            { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
         const t = await toolResponse.text();
@@ -400,17 +645,12 @@ serve(async (req) => {
 
       const result = await toolResponse.json();
       const choice = result.choices?.[0];
-
       if (!choice) throw new Error("No response from AI");
 
       const toolCalls = choice.message?.tool_calls;
 
-      if (!toolCalls || toolCalls.length === 0) {
-        // No tool calls — we have the final response, now stream it
-        break;
-      }
+      if (!toolCalls || toolCalls.length === 0) break;
 
-      // Process tool calls
       aiMessages.push(choice.message);
 
       for (const tc of toolCalls) {
@@ -425,8 +665,6 @@ serve(async (req) => {
           content: toolResult,
         });
       }
-
-      // Continue loop to get final response after tool execution
     }
 
     // Final streaming response
