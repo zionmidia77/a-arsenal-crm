@@ -2,21 +2,34 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Check, Gift, TrendingUp, Heart, MessageCircle } from "lucide-react";
-import { useTasks, useUpdateTask } from "@/hooks/useSupabase";
+import { Check, Gift, TrendingUp, Heart, MessageCircle, Calendar, AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react";
+import { useTasks, useUpdateTask, useOverdueTasks, useAllPendingTasks } from "@/hooks/useSupabase";
+import { useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const typeIcon = { opportunity: TrendingUp, relationship: Heart, value: Gift, follow_up: TrendingUp };
-const typeColor = { opportunity: "text-primary", relationship: "text-pink-400", value: "text-success", follow_up: "text-info" };
-const typeBg = { opportunity: "bg-primary/10", relationship: "bg-pink-400/10", value: "bg-success/10", follow_up: "bg-info/10" };
-const typeLabel = { opportunity: "Oportunidade", relationship: "Relacionamento", value: "Valor", follow_up: "Follow-up" };
+const typeIcon: Record<string, any> = { opportunity: TrendingUp, relationship: Heart, value: Gift, follow_up: TrendingUp };
+const typeColor: Record<string, string> = { opportunity: "text-primary", relationship: "text-pink-400", value: "text-success", follow_up: "text-info" };
+const typeBg: Record<string, string> = { opportunity: "bg-primary/10", relationship: "bg-pink-400/10", value: "bg-success/10", follow_up: "bg-info/10" };
+const typeLabel: Record<string, string> = { opportunity: "Oportunidade", relationship: "Relacionamento", value: "Valor", follow_up: "Follow-up" };
 
 const stagger = { animate: { transition: { staggerChildren: 0.05 } } };
 const fadeUp = { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0, transition: { duration: 0.4 } } };
 
+const formatDate = (d: Date) => d.toISOString().split("T")[0];
+const formatDateBR = (s: string) => {
+  const d = new Date(s + "T12:00:00");
+  return d.toLocaleDateString("pt-BR", { weekday: "short", day: "numeric", month: "short" });
+};
+
 const AdminTasks = () => {
-  const today = new Date().toISOString().split("T")[0];
-  const { data: tasks, isLoading } = useTasks({ due_date: today });
+  const today = formatDate(new Date());
+  const [selectedDate, setSelectedDate] = useState(today);
+  const [activeTab, setActiveTab] = useState<"day" | "overdue" | "upcoming">("day");
+  const navigate = useNavigate();
+
+  const { data: dayTasks, isLoading } = useTasks({ due_date: selectedDate });
+  const { data: overdueTasks } = useOverdueTasks();
+  const { data: pendingTasks } = useAllPendingTasks();
   const updateTask = useUpdateTask();
   const [filter, setFilter] = useState<string>("all");
 
@@ -28,44 +41,107 @@ const AdminTasks = () => {
     });
   };
 
-  const allTasks = tasks || [];
-  const filtered = filter === "all" ? allTasks : allTasks.filter((t) => t.type === filter);
-  const doneCount = allTasks.filter((t) => t.status === "done").length;
-  const progress = allTasks.length > 0 ? (doneCount / allTasks.length) * 100 : 0;
+  const shiftDate = (days: number) => {
+    const d = new Date(selectedDate + "T12:00:00");
+    d.setDate(d.getDate() + days);
+    setSelectedDate(formatDate(d));
+    setActiveTab("day");
+  };
+
+  const activeTasks = activeTab === "overdue"
+    ? (overdueTasks || [])
+    : activeTab === "upcoming"
+      ? (pendingTasks || []).filter(t => t.due_date > today)
+      : (dayTasks || []);
+
+  const filtered = filter === "all" ? activeTasks : activeTasks.filter((t) => t.type === filter);
+  const doneCount = activeTasks.filter((t) => t.status === "done").length;
+  const progress = activeTasks.length > 0 ? (doneCount / activeTasks.length) * 100 : 0;
 
   return (
     <motion.div variants={stagger} initial="initial" animate="animate" className="p-5 md:p-6 space-y-5 max-w-4xl">
       <motion.div variants={fadeUp}>
-        <h1 className="text-2xl font-display font-bold">Tarefas de hoje</h1>
+        <h1 className="text-2xl font-display font-bold">Tarefas</h1>
         <p className="text-sm text-muted-foreground">
-          {allTasks.length > 0
-            ? `👉 Hoje você precisa falar com ${allTasks.length - doneCount} pessoas`
-            : "Nenhuma tarefa para hoje"
+          {(overdueTasks?.length || 0) > 0
+            ? `⚠️ ${overdueTasks?.length} atrasadas · ${activeTasks.length - doneCount} pendentes`
+            : `${activeTasks.length - doneCount} tarefas pendentes`
           }
         </p>
       </motion.div>
 
-      {allTasks.length > 0 && (
+      {/* Tab: Day / Overdue / Upcoming */}
+      <motion.div variants={fadeUp} className="flex gap-2">
+        <Button
+          variant={activeTab === "day" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setActiveTab("day")}
+          className="rounded-full text-xs gap-1"
+        >
+          <Calendar className="w-3 h-3" />
+          {selectedDate === today ? "Hoje" : formatDateBR(selectedDate)}
+        </Button>
+        <Button
+          variant={activeTab === "overdue" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setActiveTab("overdue")}
+          className="rounded-full text-xs gap-1"
+        >
+          <AlertTriangle className="w-3 h-3" />
+          Atrasadas
+          {(overdueTasks?.length || 0) > 0 && (
+            <span className="bg-destructive text-destructive-foreground text-[10px] px-1.5 rounded-full">{overdueTasks?.length}</span>
+          )}
+        </Button>
+        <Button
+          variant={activeTab === "upcoming" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setActiveTab("upcoming")}
+          className="rounded-full text-xs"
+        >
+          Próximas
+        </Button>
+      </motion.div>
+
+      {/* Date navigation for "day" tab */}
+      {activeTab === "day" && (
+        <motion.div variants={fadeUp} className="flex items-center justify-between">
+          <Button variant="ghost" size="icon" className="rounded-full h-8 w-8" onClick={() => shiftDate(-1)}>
+            <ChevronLeft className="w-4 h-4" />
+          </Button>
+          <button onClick={() => setSelectedDate(today)} className="text-sm font-medium hover:text-primary transition-colors">
+            {selectedDate === today ? "📅 Hoje" : formatDateBR(selectedDate)}
+          </button>
+          <Button variant="ghost" size="icon" className="rounded-full h-8 w-8" onClick={() => shiftDate(1)}>
+            <ChevronRight className="w-4 h-4" />
+          </Button>
+        </motion.div>
+      )}
+
+      {/* Progress */}
+      {activeTasks.length > 0 && (
         <motion.div variants={fadeUp} className="glass-card p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Progresso do dia</span>
-            <span className="font-display font-bold text-primary tabular-nums">{doneCount}/{allTasks.length}</span>
+            <span className="text-sm text-muted-foreground">Progresso</span>
+            <span className="font-display font-bold text-primary tabular-nums">{doneCount}/{activeTasks.length}</span>
           </div>
           <Progress value={progress} className="h-2.5 bg-secondary" />
-          {doneCount === allTasks.length && allTasks.length > 0 && (
-            <p className="text-xs text-success text-center font-medium">🎉 Todas as tarefas concluídas!</p>
+          {doneCount === activeTasks.length && activeTasks.length > 0 && (
+            <p className="text-xs text-success text-center font-medium">🎉 Todas concluídas!</p>
           )}
         </motion.div>
       )}
 
+      {/* Type filter */}
       <motion.div variants={fadeUp} className="flex gap-2 overflow-x-auto">
-        {["all", "opportunity", "relationship", "value", "follow_up"].map((f) => (
-          <Button key={f} variant={filter === f ? "default" : "outline"} size="sm" onClick={() => setFilter(f)} className="rounded-full shrink-0 text-xs capitalize">
-            {f === "all" ? "Todos" : typeLabel[f as keyof typeof typeLabel] || f}
+        {["all", "follow_up", "opportunity", "relationship", "value"].map((f) => (
+          <Button key={f} variant={filter === f ? "default" : "outline"} size="sm" onClick={() => setFilter(f)} className="rounded-full shrink-0 text-xs">
+            {f === "all" ? "Todos" : typeLabel[f] || f}
           </Button>
         ))}
       </motion.div>
 
+      {/* Task list */}
       {isLoading ? (
         <div className="space-y-2">{[1, 2, 3].map(i => <Skeleton key={i} className="h-16 rounded-2xl" />)}</div>
       ) : (
@@ -75,8 +151,9 @@ const AdminTasks = () => {
               const Icon = typeIcon[task.type] || TrendingUp;
               const clientData = task.clients as any;
               const isDone = task.status === "done";
+              const isOverdue = task.due_date < today && !isDone;
               return (
-                <motion.div key={task.id} layout variants={fadeUp} className={`glass-card-hover p-4 flex items-center gap-3 transition-all ${isDone ? "opacity-50" : ""}`}>
+                <motion.div key={task.id} layout variants={fadeUp} className={`glass-card-hover p-4 flex items-center gap-3 transition-all ${isDone ? "opacity-50" : ""} ${isOverdue ? "border-l-2 border-destructive" : ""}`}>
                   <Button
                     size="icon"
                     variant={isDone ? "default" : "outline"}
@@ -85,11 +162,17 @@ const AdminTasks = () => {
                   >
                     <Check className="w-4 h-4" />
                   </Button>
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 cursor-pointer" onClick={() => clientData && navigate(`/admin/client/${task.client_id}`)}>
                     <p className={`text-sm font-medium ${isDone ? "line-through text-muted-foreground" : ""}`}>
                       {clientData?.name || "Cliente"}
                     </p>
                     <p className="text-xs text-muted-foreground truncate">{task.reason}</p>
+                    {activeTab !== "day" && (
+                      <p className={`text-[10px] mt-0.5 ${isOverdue ? "text-destructive" : "text-muted-foreground"}`}>
+                        {formatDateBR(task.due_date)}
+                        {task.scheduled_time && ` às ${task.scheduled_time}`}
+                      </p>
+                    )}
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     {clientData?.phone && (
@@ -107,7 +190,9 @@ const AdminTasks = () => {
           </AnimatePresence>
           {filtered.length === 0 && (
             <div className="text-center py-12 text-muted-foreground text-sm">
-              {allTasks.length === 0 ? "Nenhuma tarefa cadastrada. Leads geram tarefas automaticamente!" : "Nenhuma tarefa neste filtro"}
+              {activeTab === "overdue" ? "✅ Nenhuma tarefa atrasada!" :
+               activeTab === "upcoming" ? "Nenhuma tarefa futura agendada" :
+               "Nenhuma tarefa para esta data"}
             </div>
           )}
         </div>
