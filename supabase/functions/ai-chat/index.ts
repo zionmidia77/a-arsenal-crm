@@ -210,6 +210,33 @@ const tools = [
   {
     type: "function",
     function: {
+      name: "send_whatsapp_proposal",
+      description:
+        "Generate and send a financing proposal via WhatsApp when the client approves the simulation. Creates a formatted proposal message with all details and generates a wa.me link. Call this ONLY after the client says they want to proceed with the financing.",
+      parameters: {
+        type: "object",
+        properties: {
+          client_id: { type: "string", description: "Client UUID" },
+          client_name: { type: "string", description: "Client's name" },
+          client_phone: { type: "string", description: "Client's phone number" },
+          vehicle_description: { type: "string", description: "Vehicle brand + model + year" },
+          vehicle_value: { type: "number", description: "Total vehicle value in BRL" },
+          down_payment: { type: "number", description: "Down payment amount in BRL" },
+          installments: { type: "number", description: "Number of installments chosen" },
+          monthly_payment: { type: "number", description: "Monthly payment amount in BRL" },
+          has_trade_in: { type: "boolean", description: "Client has a trade-in vehicle" },
+          trade_in_description: { type: "string", description: "Trade-in vehicle description if applicable" },
+          trade_in_value: { type: "number", description: "Estimated trade-in value if applicable" },
+          additional_notes: { type: "string", description: "Any additional notes about the deal" },
+        },
+        required: ["client_id", "client_name", "client_phone", "vehicle_description", "vehicle_value", "installments", "monthly_payment"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "log_interaction",
       description: "Log an important interaction/event in the client timeline",
       parameters: {
