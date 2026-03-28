@@ -496,6 +496,95 @@ async function executeTool(
         });
       }
 
+      case "send_whatsapp_proposal": {
+        const clientName = args.client_name as string;
+        const phone = (args.client_phone as string).replace(/\D/g, "");
+        const vehicle = args.vehicle_description as string;
+        const value = args.vehicle_value as number;
+        const dp = (args.down_payment as number) || 0;
+        const inst = args.installments as number;
+        const monthly = args.monthly_payment as number;
+        const hasTradeIn = args.has_trade_in as boolean;
+        const tradeDesc = (args.trade_in_description as string) || "";
+        const tradeValue = (args.trade_in_value as number) || 0;
+        const notes = (args.additional_notes as string) || "";
+
+        // Format the proposal message
+        const today = new Date().toLocaleDateString("pt-BR");
+        let proposalMsg = `🏍️ *PROPOSTA ARSENAL MOTORS*\n`;
+        proposalMsg += `📅 ${today}\n\n`;
+        proposalMsg += `Olá, *${clientName}*! Segue sua proposta:\n\n`;
+        proposalMsg += `🏷️ *Veículo:* ${vehicle}\n`;
+        proposalMsg += `💰 *Valor:* R$ ${value.toLocaleString("pt-BR")}\n`;
+        if (dp > 0) {
+          proposalMsg += `💵 *Entrada:* R$ ${dp.toLocaleString("pt-BR")}\n`;
+        }
+        if (hasTradeIn && tradeDesc) {
+          proposalMsg += `🔄 *Troca:* ${tradeDesc}`;
+          if (tradeValue > 0) proposalMsg += ` (avaliação: R$ ${tradeValue.toLocaleString("pt-BR")})`;
+          proposalMsg += `\n`;
+        }
+        proposalMsg += `📊 *Financiamento:* ${inst}x de R$ ${monthly.toLocaleString("pt-BR")}\n`;
+        proposalMsg += `📈 *Taxa:* 1.89% a.m. (sujeita a análise)\n\n`;
+        if (notes) proposalMsg += `📝 ${notes}\n\n`;
+        proposalMsg += `✅ *Próximos passos:*\n`;
+        proposalMsg += `1. Análise de crédito (resposta em até 2h)\n`;
+        proposalMsg += `2. Documentação\n`;
+        proposalMsg += `3. Retirada da moto! 🎉\n\n`;
+        proposalMsg += `_Arsenal Motors — Sua moto dos sonhos está aqui!_\n`;
+        proposalMsg += `📞 Horário: Seg-Sáb 8h às 18h`;
+
+        // Generate WhatsApp link
+        const phoneFormatted = phone.startsWith("55") ? phone : `55${phone}`;
+        const waLink = `https://wa.me/${phoneFormatted}?text=${encodeURIComponent(proposalMsg)}`;
+
+        // Save proposal as message sent
+        await supabase.from("messages_sent").insert({
+          client_id: args.client_id as string,
+          message_content: proposalMsg,
+          channel: "whatsapp",
+        });
+
+        // Update pipeline stage
+        await supabase
+          .from("clients")
+          .update({
+            pipeline_stage: "negotiating",
+            temperature: "hot",
+            has_down_payment: dp > 0,
+            down_payment_amount: dp > 0 ? dp : null,
+            payment_type: "financing",
+            last_contact_at: new Date().toISOString(),
+          })
+          .eq("id", args.client_id);
+
+        // Log interaction
+        await supabase.from("interactions").insert({
+          client_id: args.client_id as string,
+          type: "whatsapp",
+          content: `Proposta de financiamento enviada via WhatsApp: ${vehicle} — ${inst}x de R$ ${monthly}`,
+          created_by: "ai-consultant",
+        });
+
+        // Create follow-up task
+        await supabase.from("tasks").insert({
+          client_id: args.client_id as string,
+          type: "follow_up",
+          reason: `📋 Acompanhar proposta enviada: ${vehicle} — ${inst}x de R$ ${monthly}`,
+          due_date: new Date(Date.now() + 86400000).toISOString().split("T")[0],
+          priority: 9,
+          source: "ai-chat",
+          status: "pending",
+        });
+
+        return JSON.stringify({
+          success: true,
+          whatsapp_link: waLink,
+          message: `Proposta gerada! Link do WhatsApp pronto. Diga ao cliente que a proposta será enviada no WhatsApp dele. Inclua o link na sua resposta assim: [📲 Abrir proposta no WhatsApp](${waLink})`,
+          proposal_summary: `${vehicle} — Entrada R$ ${dp.toLocaleString("pt-BR")} + ${inst}x de R$ ${monthly}`,
+        });
+      }
+
       case "log_interaction": {
         const { error } = await supabase.from("interactions").insert({
           client_id: args.client_id as string,
