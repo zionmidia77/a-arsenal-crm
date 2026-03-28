@@ -1,5 +1,6 @@
-import { motion } from "framer-motion";
-import { Cake, PhoneCall, ArrowUpCircle, Sparkles, ChevronRight, TrendingUp } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useState } from "react";
+import { Cake, PhoneCall, ArrowUpCircle, Sparkles, ChevronRight, ChevronDown, ChevronUp, TrendingUp, MessageCircle, Gift, Eye } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
