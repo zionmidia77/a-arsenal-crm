@@ -18,6 +18,11 @@ type ExtractedData = {
   notes: string | null;
   source: string;
   confidence: "high" | "medium" | "low";
+  birthdate: string | null;
+  cpf: string | null;
+  employer: string | null;
+  position: string | null;
+  salary: number | null;
 };
 
 type SimilarityCandidate = {
@@ -55,6 +60,11 @@ const normalizeExtracted = (raw: any): ExtractedData => ({
     raw?.confidence === "high" || raw?.confidence === "medium" || raw?.confidence === "low"
       ? raw.confidence
       : "medium",
+  birthdate: typeof raw?.birthdate === "string" && raw.birthdate.trim() ? raw.birthdate.trim() : null,
+  cpf: typeof raw?.cpf === "string" && raw.cpf.trim() ? raw.cpf.trim() : null,
+  employer: typeof raw?.employer === "string" && raw.employer.trim() ? raw.employer.trim() : null,
+  position: typeof raw?.position === "string" && raw.position.trim() ? raw.position.trim() : null,
+  salary: typeof raw?.salary === "number" ? raw.salary : null,
 });
 
 // --- Similarity scoring ---
@@ -265,7 +275,7 @@ const extractWithAI = async (apiKey: string, images: string[]) => {
       messages: [
         {
           role: "system",
-          content: `Você é um assistente que extrai dados de contato de screenshots de conversas.
+          content: `Você é um assistente que extrai dados de contato de screenshots de conversas e documentos (CNH, RG, etc).
 Analise TODAS as imagens e consolide as informações.
 Se houver conflito, mantenha o dado mais completo.
 Responda APENAS com JSON válido no formato:
@@ -274,12 +284,18 @@ Responda APENAS com JSON válido no formato:
   "phone": "telefone com DDD ou null",
   "email": "email ou null",
   "city": "cidade ou null",
+  "birthdate": "data de nascimento no formato YYYY-MM-DD ou null",
+  "cpf": "CPF ou null",
+  "employer": "empregador ou null",
+  "position": "cargo ou null",
+  "salary": salário numérico ou null,
   "interest": "interesse identificado ou null",
   "budget_range": "faixa de orçamento ou null",
   "notes": "resumo consolidado, incluindo CNH, CPF e demais dados relevantes",
   "source": "facebook",
   "confidence": "high/medium/low"
 }
+Se for uma CNH, extraia obrigatoriamente: nome completo, data de nascimento, CPF, cidade.
 Para interesse, use se possível: "Quero comprar uma moto", "Quero trocar minha moto", "Quero vender minha moto", "Preciso de dinheiro".
 Para budget_range, use: "Até R$ 15 mil", "R$ 15 a 30 mil", "R$ 30 a 50 mil", "Acima de R$ 50 mil".`,
         },
@@ -405,6 +421,10 @@ serve(async (req) => {
           budget_range: extracted.budget_range || null,
           notes: extracted.notes || null,
           source: extracted.source || "facebook",
+          birthdate: extracted.birthdate || null,
+          employer: extracted.employer || null,
+          position: extracted.position || null,
+          salary: extracted.salary || null,
           status: "lead",
           temperature: "warm",
           pipeline_stage: "new",
@@ -438,6 +458,10 @@ serve(async (req) => {
       if (extracted.email && !existingClient.email) updates.email = extracted.email;
       if (extracted.interest && !existingClient.interest) updates.interest = extracted.interest;
       if (extracted.budget_range && !existingClient.budget_range) updates.budget_range = extracted.budget_range;
+      if (extracted.birthdate && !existingClient.birthdate) updates.birthdate = extracted.birthdate;
+      if (extracted.employer && !existingClient.employer) updates.employer = extracted.employer;
+      if (extracted.position && !existingClient.position) updates.position = extracted.position;
+      if (extracted.salary && !existingClient.salary) updates.salary = extracted.salary;
 
       if (extracted.notes) {
         updates.notes =
@@ -492,6 +516,10 @@ serve(async (req) => {
         if (extracted.email && !existingClient.email) updates.email = extracted.email;
         if (extracted.interest && !existingClient.interest) updates.interest = extracted.interest;
         if (extracted.budget_range && !existingClient.budget_range) updates.budget_range = extracted.budget_range;
+        if (extracted.birthdate && !existingClient.birthdate) updates.birthdate = extracted.birthdate;
+        if (extracted.employer && !existingClient.employer) updates.employer = extracted.employer;
+        if (extracted.position && !existingClient.position) updates.position = extracted.position;
+        if (extracted.salary && !existingClient.salary) updates.salary = extracted.salary;
         if (extracted.notes) {
           updates.notes =
             (existingClient.notes ? `${existingClient.notes}\n---\n` : "") +
@@ -523,6 +551,10 @@ serve(async (req) => {
         budget_range: extracted.budget_range || null,
         notes: extracted.notes || null,
         source: extracted.source || "facebook",
+        birthdate: extracted.birthdate || null,
+        employer: extracted.employer || null,
+        position: extracted.position || null,
+        salary: extracted.salary || null,
         status: "lead",
         temperature: "warm",
         pipeline_stage: "new",

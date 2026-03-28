@@ -19,6 +19,11 @@ type ExtractedData = {
   notes: string | null;
   source: string;
   confidence: string;
+  birthdate: string | null;
+  cpf: string | null;
+  employer: string | null;
+  position: string | null;
+  salary: number | null;
 };
 
 type SimilarityCandidate = {
@@ -229,6 +234,10 @@ const PhotoLeadCapture = () => {
           budget_range: editData.budget_range || null,
           notes: editData.notes || null,
           source: editData.source || "facebook",
+          birthdate: editData.birthdate || null,
+          employer: editData.employer || null,
+          position: editData.position || null,
+          salary: editData.salary || null,
           status: "lead" as const,
           temperature: "warm" as const,
           pipeline_stage: "new" as const,
