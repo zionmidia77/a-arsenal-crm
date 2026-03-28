@@ -167,6 +167,7 @@ const ChatFunnel = () => {
         interest: finalAnswers.interest,
         budget_range: finalAnswers.budget,
         has_trade_in: finalAnswers.hasTradeIn,
+        birthdate: finalAnswers.birthdate || null,
         source: "funnel",
         status: "lead",
         temperature: "hot",
