@@ -38,7 +38,7 @@ const Login = () => {
       }
     } else {
       toast.success("Bem-vindo de volta!");
-      navigate("/admin");
+      navigate(from, { replace: true });
     }
   };
 
