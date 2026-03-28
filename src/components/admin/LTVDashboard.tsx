@@ -1,10 +1,11 @@
 import { motion } from "framer-motion";
-import { Cake, PhoneCall, ArrowUpCircle, Sparkles, ChevronRight } from "lucide-react";
+import { Cake, PhoneCall, ArrowUpCircle, Sparkles, ChevronRight, TrendingUp } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
 
 const useLTVStats = () =>
   useQuery({
