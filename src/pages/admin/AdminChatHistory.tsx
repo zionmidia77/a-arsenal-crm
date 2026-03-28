@@ -94,7 +94,17 @@ const AdminChatHistory = () => {
     switch (s) {
       case "active": return "bg-emerald-500/20 text-emerald-400";
       case "transferred": return "bg-amber-500/20 text-amber-400";
+      case "attended": return "bg-blue-500/20 text-blue-400";
       default: return "bg-muted text-muted-foreground";
+    }
+  };
+
+  const statusLabel = (s: string) => {
+    switch (s) {
+      case "active": return "Ativo";
+      case "transferred": return "Transferido";
+      case "attended": return "Atendido";
+      default: return s;
     }
   };
 
