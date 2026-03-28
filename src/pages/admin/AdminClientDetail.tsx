@@ -3,14 +3,19 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { useClient, useClientInteractions, useClientVehicles, useCreateInteraction, useUpdateClient, useCreateTask } from "@/hooks/useSupabase";
 import {
   ArrowLeft, MessageCircle, Phone, Mail, MapPin, Calendar, Bike,
   TrendingUp, Clock, Plus, Star, CalendarPlus, Check, AlertTriangle,
-  Copy, Send, Bot, Tag, FileCheck, Trophy, Sparkles
+  Copy, Send, Bot, Tag, FileCheck, Trophy, Sparkles, CalendarIcon, Cake, Edit2
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { format, parse } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 import TagManager from "@/components/admin/TagManager";
 import FinancingSection from "@/components/admin/FinancingSection";
 import ReferralSection from "@/components/admin/ReferralSection";
@@ -19,6 +24,8 @@ import NPSSection from "@/components/admin/NPSSection";
 import ClientReportSection from "@/components/admin/ClientReportSection";
 import ExclusiveOffersSection from "@/components/admin/ExclusiveOffersSection";
 import { useAIChat } from "@/hooks/useAIChat";
+
+
 
 const tempBadge: Record<string, string> = {
   hot: "bg-primary/15 text-primary",
@@ -423,6 +430,43 @@ const AdminClientDetail = () => {
             <span className="text-sm">Origem: {client.source}</span>
           </div>
         )}
+
+        {/* Birthdate - editable */}
+        <div className="flex items-center gap-3">
+          <Cake className="w-4 h-4 text-muted-foreground" />
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="ghost"
+                className={cn(
+                  "h-auto p-0 text-sm font-normal hover:bg-transparent hover:underline",
+                  !client.birthdate && "text-muted-foreground"
+                )}
+              >
+                {client.birthdate
+                  ? `🎂 ${format(new Date(client.birthdate + "T12:00:00"), "dd/MM/yyyy")}`
+                  : "Adicionar data de nascimento"}
+                <Edit2 className="w-3 h-3 ml-1.5 text-muted-foreground" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <CalendarComponent
+                mode="single"
+                selected={client.birthdate ? new Date(client.birthdate + "T12:00:00") : undefined}
+                onSelect={(date) => {
+                  if (date) {
+                    const formatted = format(date, "yyyy-MM-dd");
+                    updateClient.mutate({ id: client.id, birthdate: formatted } as any);
+                    toast.success("Data de nascimento atualizada!");
+                  }
+                }}
+                disabled={(date) => date > new Date() || date < new Date("1920-01-01")}
+                initialFocus
+                className={cn("p-3 pointer-events-auto")}
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
       </motion.div>
 
       {/* Temperature */}
