@@ -40,6 +40,10 @@ const AdminChatHistory = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
   const [dateTo, setDateTo] = useState<Date | undefined>();
+  const [replyText, setReplyText] = useState("");
+  const [isSending, setIsSending] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const queryClient = useQueryClient();
 
   const { data: conversations = [], isLoading } = useQuery({
     queryKey: ["chat-conversations"],
