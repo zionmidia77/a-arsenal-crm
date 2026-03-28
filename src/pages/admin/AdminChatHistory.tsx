@@ -210,7 +210,7 @@ const AdminChatHistory = () => {
                             <span className="text-sm font-medium truncate max-w-[140px]">{clientName}</span>
                           </div>
                           <Badge className={`text-[10px] ${statusColor(convo.status)}`}>
-                            {convo.status === "transferred" ? "Transferido" : convo.status === "active" ? "Ativo" : convo.status}
+                            {statusLabel(convo.status)}
                           </Badge>
                         </div>
                         {lastMsg && (
