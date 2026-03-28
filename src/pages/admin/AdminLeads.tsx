@@ -329,9 +329,16 @@ const AdminLeads = () => {
       ) : (
         <div className="space-y-3">
           {filtered.map((client) => (
-            <motion.div key={client.id} variants={fadeUp} className={`glass-card-hover p-4 border-l-4 ${tempStyles[client.temperature]}`}>
+            <motion.div key={client.id} variants={fadeUp} className={`glass-card-hover p-4 border-l-4 ${tempStyles[client.temperature]} ${selectedIds.has(client.id) ? "ring-1 ring-primary/50 bg-primary/5" : ""}`}>
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-3">
+                  {selectMode && (
+                    <Checkbox
+                      checked={selectedIds.has(client.id)}
+                      onCheckedChange={() => toggleSelect(client.id)}
+                      className="mt-0.5"
+                    />
+                  )}
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${tempBadge[client.temperature]}`}>
                     {client.name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}
                   </div>
