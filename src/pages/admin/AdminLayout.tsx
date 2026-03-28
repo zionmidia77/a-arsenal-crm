@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import NotificationCenter from "@/components/admin/NotificationCenter";
 import GlobalSearch from "@/components/admin/GlobalSearch";
 import AddLeadDialog from "@/components/admin/AddLeadDialog";
+import PhotoLeadCapture from "@/components/admin/PhotoLeadCapture";
 
 const navItems = [
   { to: "/admin", icon: LayoutDashboard, label: "Dashboard" },
@@ -103,6 +104,7 @@ const AdminLayout = () => {
           <div className="flex-1" />
           
           <GlobalSearch />
+          <PhotoLeadCapture />
           <AddLeadDialog />
           <NotificationCenter />
         </header>
