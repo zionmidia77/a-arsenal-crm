@@ -29,6 +29,7 @@ const AddLeadDialog = () => {
         temperature: "warm",
         pipeline_stage: "new",
         notes: form.notes || null,
+        birthdate: form.birthdate || null,
       },
       {
         onSuccess: () => {
