@@ -144,6 +144,7 @@ const AdminChatHistory = () => {
                 <SelectItem value="all">Todos</SelectItem>
                 <SelectItem value="active">Ativo</SelectItem>
                 <SelectItem value="transferred">Transferido</SelectItem>
+                <SelectItem value="attended">Atendido</SelectItem>
               </SelectContent>
             </Select>
 
