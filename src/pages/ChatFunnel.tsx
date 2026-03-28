@@ -67,6 +67,7 @@ const getFlow = (interest?: string): Omit<Message, "id" | "sender">[] => {
     ...base,
     ...specific,
     { text: "Perfeito! Me diz seu nome pra eu te chamar direito 😄", inputType: "text", field: "name" },
+    { text: "Qual sua data de nascimento? 🎂 (dd/mm/aaaa)", inputType: "text", field: "birthdate" },
     { text: "E qual seu WhatsApp? Prometo que não vou lotar sua caixa 😅", inputType: "phone", field: "phone" },
     { text: "Pronto! Vou preparar as melhores opções pra você. Um especialista Arsenal vai te chamar em breve 🔥" },
   ];
@@ -166,6 +167,7 @@ const ChatFunnel = () => {
         interest: finalAnswers.interest,
         budget_range: finalAnswers.budget,
         has_trade_in: finalAnswers.hasTradeIn,
+        birthdate: finalAnswers.birthdate || null,
         source: "funnel",
         status: "lead",
         temperature: "hot",
@@ -239,6 +241,14 @@ const ChatFunnel = () => {
       newAnswers.hasTradeIn = answer.includes("Sim");
     } else if (currentFlowItem?.field === "name") {
       newAnswers.name = answer;
+    } else if (currentFlowItem?.field === "birthdate") {
+      // Parse dd/mm/yyyy to yyyy-mm-dd
+      const parts = answer.replace(/[^\d/]/g, "").split("/");
+      if (parts.length === 3 && parts[0].length <= 2 && parts[1].length <= 2) {
+        newAnswers.birthdate = `${parts[2]}-${parts[1].padStart(2, "0")}-${parts[0].padStart(2, "0")}`;
+      } else {
+        newAnswers.birthdate = answer;
+      }
     } else if (currentFlowItem?.field === "phone") {
       newAnswers.phone = answer;
     } else if (currentFlowItem?.field === "photo") {
