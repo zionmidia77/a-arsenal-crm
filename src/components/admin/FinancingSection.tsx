@@ -155,7 +155,7 @@ const FinancingSection = ({ client }: FinancingSectionProps) => {
       });
 
       const { data, error } = await supabase.functions.invoke("verify-employer", {
-        body: { image_base64: base64 },
+        body: { image_base64: base64, client_id: client.id },
       });
 
       if (error) throw error;
