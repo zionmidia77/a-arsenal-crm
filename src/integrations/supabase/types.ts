@@ -264,6 +264,42 @@ export type Database = {
           },
         ]
       }
+      monthly_goals: {
+        Row: {
+          created_at: string
+          id: string
+          month: number
+          target_contacts: number
+          target_leads: number
+          target_revenue: number
+          target_sales: number
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          month: number
+          target_contacts?: number
+          target_leads?: number
+          target_revenue?: number
+          target_sales?: number
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          month?: number
+          target_contacts?: number
+          target_leads?: number
+          target_revenue?: number
+          target_sales?: number
+          updated_at?: string
+          year?: number
+        }
+        Relationships: []
+      }
       opportunities: {
         Row: {
           acted_at: string | null

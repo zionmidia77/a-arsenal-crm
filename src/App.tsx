@@ -17,6 +17,7 @@ import AdminMessages from "./pages/admin/AdminMessages";
 import AdminPipeline from "./pages/admin/AdminPipeline";
 import AdminMetrics from "./pages/admin/AdminMetrics";
 import AdminClientDetail from "./pages/admin/AdminClientDetail";
+import AdminGoals from "./pages/admin/AdminGoals";
 import AdminCalendar from "./pages/admin/AdminCalendar";
 import MemberArea from "./pages/MemberArea";
 import Login from "./pages/auth/Login";
@@ -58,6 +59,7 @@ const App = () => (
               <Route path="messages" element={<AdminMessages />} />
               <Route path="metrics" element={<AdminMetrics />} />
               <Route path="calendar" element={<AdminCalendar />} />
+              <Route path="goals" element={<AdminGoals />} />
               <Route path="client/:id" element={<AdminClientDetail />} />
             </Route>
             <Route
