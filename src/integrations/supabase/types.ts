@@ -26,12 +26,14 @@ export type Database = {
           has_trade_in: boolean | null
           id: string
           interest: string | null
+          last_contact_at: string | null
           lead_score: number
           name: string
           notes: string | null
           phone: string | null
           pipeline_stage: Database["public"]["Enums"]["pipeline_stage"]
           referred_by: string | null
+          response_time_hours: number | null
           source: string | null
           status: Database["public"]["Enums"]["client_status"]
           temperature: Database["public"]["Enums"]["lead_temperature"]
@@ -48,12 +50,14 @@ export type Database = {
           has_trade_in?: boolean | null
           id?: string
           interest?: string | null
+          last_contact_at?: string | null
           lead_score?: number
           name: string
           notes?: string | null
           phone?: string | null
           pipeline_stage?: Database["public"]["Enums"]["pipeline_stage"]
           referred_by?: string | null
+          response_time_hours?: number | null
           source?: string | null
           status?: Database["public"]["Enums"]["client_status"]
           temperature?: Database["public"]["Enums"]["lead_temperature"]
@@ -70,12 +74,14 @@ export type Database = {
           has_trade_in?: boolean | null
           id?: string
           interest?: string | null
+          last_contact_at?: string | null
           lead_score?: number
           name?: string
           notes?: string | null
           phone?: string | null
           pipeline_stage?: Database["public"]["Enums"]["pipeline_stage"]
           referred_by?: string | null
+          response_time_hours?: number | null
           source?: string | null
           status?: Database["public"]["Enums"]["client_status"]
           temperature?: Database["public"]["Enums"]["lead_temperature"]
@@ -300,7 +306,13 @@ export type Database = {
           created_at: string
           due_date: string
           id: string
+          max_retries: number | null
+          notes: string | null
+          priority: number | null
           reason: string
+          retry_count: number | null
+          scheduled_time: string | null
+          source: string | null
           status: string
           type: Database["public"]["Enums"]["task_type"]
         }
@@ -310,7 +322,13 @@ export type Database = {
           created_at?: string
           due_date?: string
           id?: string
+          max_retries?: number | null
+          notes?: string | null
+          priority?: number | null
           reason: string
+          retry_count?: number | null
+          scheduled_time?: string | null
+          source?: string | null
           status?: string
           type?: Database["public"]["Enums"]["task_type"]
         }
@@ -320,7 +338,13 @@ export type Database = {
           created_at?: string
           due_date?: string
           id?: string
+          max_retries?: number | null
+          notes?: string | null
+          priority?: number | null
           reason?: string
+          retry_count?: number | null
+          scheduled_time?: string | null
+          source?: string | null
           status?: string
           type?: Database["public"]["Enums"]["task_type"]
         }
@@ -427,6 +451,10 @@ export type Database = {
         | "negotiating"
         | "closed_won"
         | "closed_lost"
+        | "attending"
+        | "thinking"
+        | "waiting_response"
+        | "scheduled"
       task_type: "opportunity" | "relationship" | "value" | "follow_up"
       vehicle_status: "current" | "sold" | "traded"
     }
@@ -574,6 +602,10 @@ export const Constants = {
         "negotiating",
         "closed_won",
         "closed_lost",
+        "attending",
+        "thinking",
+        "waiting_response",
+        "scheduled",
       ],
       task_type: ["opportunity", "relationship", "value", "follow_up"],
       vehicle_status: ["current", "sold", "traded"],
