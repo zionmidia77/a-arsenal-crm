@@ -42,6 +42,11 @@ const Login = () => {
     }
   };
 
+  // Redirect if already logged in
+  if (!authLoading && user) {
+    return <Navigate to="/admin" replace />;
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <motion.div
