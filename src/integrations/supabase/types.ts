@@ -193,6 +193,39 @@ export type Database = {
           },
         ]
       }
+      exclusive_offers: {
+        Row: {
+          created_at: string
+          description: string | null
+          discount_percent: number | null
+          id: string
+          is_active: boolean
+          target_segment: string
+          title: string
+          valid_until: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          discount_percent?: number | null
+          id?: string
+          is_active?: boolean
+          target_segment?: string
+          title: string
+          valid_until?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          discount_percent?: number | null
+          id?: string
+          is_active?: boolean
+          target_segment?: string
+          title?: string
+          valid_until?: string | null
+        }
+        Relationships: []
+      }
       interactions: {
         Row: {
           client_id: string
@@ -338,6 +371,74 @@ export type Database = {
           year?: number
         }
         Relationships: []
+      }
+      nps_responses: {
+        Row: {
+          client_id: string
+          created_at: string
+          feedback: string | null
+          id: string
+          score: number
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          feedback?: string | null
+          id?: string
+          score: number
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          feedback?: string | null
+          id?: string
+          score?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nps_responses_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      offer_claims: {
+        Row: {
+          claimed_at: string
+          client_id: string
+          id: string
+          offer_id: string
+        }
+        Insert: {
+          claimed_at?: string
+          client_id: string
+          id?: string
+          offer_id: string
+        }
+        Update: {
+          claimed_at?: string
+          client_id?: string
+          id?: string
+          offer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offer_claims_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offer_claims_offer_id_fkey"
+            columns: ["offer_id"]
+            isOneToOne: false
+            referencedRelation: "exclusive_offers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       opportunities: {
         Row: {
@@ -558,6 +659,7 @@ export type Database = {
       auto_checkin_schedule: { Args: never; Returns: undefined }
       auto_cool_leads: { Args: never; Returns: undefined }
       auto_escalate_stale_leads: { Args: never; Returns: undefined }
+      auto_revision_reminders: { Args: never; Returns: undefined }
       auto_upgrade_alerts: { Args: never; Returns: undefined }
       calculate_lead_score: {
         Args: { client_id_param: string }
