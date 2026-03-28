@@ -22,6 +22,7 @@ const navItems = [
   { to: "/admin/calendar", icon: CalendarDays, label: "Agenda" },
   { to: "/admin/messages", icon: MessageSquare, label: "Mensagens" },
   { to: "/admin/metrics", icon: BarChart3, label: "Métricas" },
+  { to: "/admin/goals", icon: Target, label: "Metas" },
 ];
 
 const AdminLayout = () => {
