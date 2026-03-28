@@ -5,66 +5,87 @@ import { Bell, Flame, AlertTriangle, FileCheck, ChevronRight } from "lucide-reac
 import { useOverdueTasks, useClients } from "@/hooks/useSupabase";
 import { useNavigate } from "react-router-dom";
 
+type FilterType = "all" | "docs" | "leads" | "tasks";
+
+const FILTERS: { key: FilterType; label: string; emoji: string }[] = [
+  { key: "all", label: "Todos", emoji: "📋" },
+  { key: "docs", label: "Docs", emoji: "📄" },
+  { key: "leads", label: "Leads", emoji: "🔥" },
+  { key: "tasks", label: "Tarefas", emoji: "⚠️" },
+];
+
 const NotificationCenter = () => {
   const [open, setOpen] = useState(false);
+  const [filter, setFilter] = useState<FilterType>("all");
   const navigate = useNavigate();
   const { data: overdueTasks } = useOverdueTasks();
   const { data: recentClients } = useClients();
 
-  // Get leads from last 24 hours
   const newLeads = (recentClients || []).filter(c => {
     const diff = Date.now() - new Date(c.created_at).getTime();
     return diff < 24 * 60 * 60 * 1000;
   });
 
-  // Leads with financing docs 100% complete
   const docsReadyLeads = (recentClients || []).filter(c => {
     const docs = c.financing_docs as Record<string, boolean> | null;
     if (!docs) return false;
     return docs.cnh && docs.proof_of_residence && docs.pay_stub && docs.reference;
   });
 
-  const totalNotifications = (overdueTasks?.length || 0) + newLeads.length + docsReadyLeads.length;
+  const docsNotifications = docsReadyLeads.slice(0, 10).map(c => ({
+    id: `docs-${c.id}`,
+    type: "docs" as const,
+    icon: FileCheck,
+    color: "text-green-400",
+    bg: "bg-green-500/10",
+    title: "📋 Docs completos!",
+    desc: `${c.name} — ficha pronta para enviar`,
+    action: () => { navigate(`/admin/client/${c.id}`); setOpen(false); },
+  }));
 
-  const notifications = [
-    // Docs complete — highest priority
-    ...docsReadyLeads.slice(0, 5).map(c => ({
-      id: `docs-${c.id}`,
-      icon: FileCheck,
-      color: "text-green-400",
-      bg: "bg-green-500/10",
-      title: "📋 Docs completos!",
-      desc: `${c.name} — ficha pronta para enviar`,
-      action: () => { navigate(`/admin/client/${c.id}`); setOpen(false); },
-    })),
-    ...(overdueTasks || []).slice(0, 5).map(t => ({
-      id: `task-${t.id}`,
-      icon: AlertTriangle,
-      color: "text-destructive",
-      bg: "bg-destructive/10",
-      title: `Follow-up atrasado`,
-      desc: (t.clients as any)?.name || "Cliente",
-      action: () => { navigate("/admin/tasks"); setOpen(false); },
-    })),
-    ...newLeads.slice(0, 5).map(c => ({
-      id: `lead-${c.id}`,
-      icon: Flame,
-      color: "text-primary",
-      bg: "bg-primary/10",
-      title: "Novo lead!",
-      desc: `${c.name} · ${c.interest || "sem interesse"}`,
-      action: () => { navigate(`/admin/client/${c.id}`); setOpen(false); },
-    })),
-  ];
+  const taskNotifications = (overdueTasks || []).slice(0, 10).map(t => ({
+    id: `task-${t.id}`,
+    type: "tasks" as const,
+    icon: AlertTriangle,
+    color: "text-destructive",
+    bg: "bg-destructive/10",
+    title: "Follow-up atrasado",
+    desc: (t.clients as any)?.name || "Cliente",
+    action: () => { navigate("/admin/tasks"); setOpen(false); },
+  }));
+
+  const leadNotifications = newLeads.slice(0, 10).map(c => ({
+    id: `lead-${c.id}`,
+    type: "leads" as const,
+    icon: Flame,
+    color: "text-primary",
+    bg: "bg-primary/10",
+    title: "Novo lead!",
+    desc: `${c.name} · ${c.interest || "sem interesse"}`,
+    action: () => { navigate(`/admin/client/${c.id}`); setOpen(false); },
+  }));
+
+  const allNotifications = [...docsNotifications, ...taskNotifications, ...leadNotifications];
+
+  const filtered = filter === "all"
+    ? allNotifications
+    : allNotifications.filter(n => n.type === filter);
+
+  const counts: Record<FilterType, number> = {
+    all: allNotifications.length,
+    docs: docsNotifications.length,
+    leads: leadNotifications.length,
+    tasks: taskNotifications.length,
+  };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon" className="rounded-full relative">
           <Bell className="h-4 w-4" />
-          {totalNotifications > 0 && (
+          {allNotifications.length > 0 && (
             <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center px-1 animate-pulse">
-              {totalNotifications > 9 ? "9+" : totalNotifications}
+              {allNotifications.length > 9 ? "9+" : allNotifications.length}
             </span>
           )}
         </Button>
@@ -72,15 +93,40 @@ const NotificationCenter = () => {
       <PopoverContent className="w-80 p-0" align="end">
         <div className="px-4 py-3 border-b border-border/50">
           <p className="text-sm font-display font-semibold">Notificações</p>
-          <p className="text-[10px] text-muted-foreground">{totalNotifications} pendentes</p>
+          <p className="text-[10px] text-muted-foreground">{allNotifications.length} pendentes</p>
         </div>
-        <div className="max-h-80 overflow-y-auto">
-          {notifications.length === 0 ? (
+
+        {/* Filter tabs */}
+        <div className="flex gap-1 px-3 py-2 border-b border-border/30 overflow-x-auto">
+          {FILTERS.map(f => (
+            <button
+              key={f.key}
+              onClick={() => setFilter(f.key)}
+              className={`text-[10px] px-2.5 py-1 rounded-full whitespace-nowrap transition-colors flex items-center gap-1 ${
+                filter === f.key
+                  ? "bg-primary text-primary-foreground font-medium"
+                  : "bg-secondary/60 text-muted-foreground hover:bg-secondary"
+              }`}
+            >
+              {f.emoji} {f.label}
+              {counts[f.key] > 0 && (
+                <span className={`text-[9px] min-w-[14px] h-[14px] rounded-full flex items-center justify-center ${
+                  filter === f.key ? "bg-primary-foreground/20" : "bg-primary/15 text-primary"
+                }`}>
+                  {counts[f.key]}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        <div className="max-h-72 overflow-y-auto">
+          {filtered.length === 0 ? (
             <div className="p-6 text-center text-sm text-muted-foreground">
               ✅ Nenhuma notificação
             </div>
           ) : (
-            notifications.map(n => (
+            filtered.map(n => (
               <button
                 key={n.id}
                 onClick={n.action}
@@ -98,7 +144,7 @@ const NotificationCenter = () => {
             ))
           )}
         </div>
-        {totalNotifications > 0 && (
+        {allNotifications.length > 0 && (
           <div className="px-4 py-2 border-t border-border/50">
             <Button variant="ghost" size="sm" className="w-full text-xs text-primary" onClick={() => { navigate("/admin/tasks"); setOpen(false); }}>
               Ver todas as tarefas
