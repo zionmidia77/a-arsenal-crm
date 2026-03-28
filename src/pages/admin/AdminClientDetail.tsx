@@ -3,14 +3,27 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { useClient, useClientInteractions, useClientVehicles, useCreateInteraction, useUpdateClient, useCreateTask } from "@/hooks/useSupabase";
 import {
   ArrowLeft, MessageCircle, Phone, Mail, MapPin, Calendar, Bike,
   TrendingUp, Clock, Plus, Star, CalendarPlus, Check, AlertTriangle,
-  Copy, Send, Bot, Tag, FileCheck, Trophy, Sparkles
+  Copy, Send, Bot, Tag, FileCheck, Trophy, Sparkles, CalendarIcon, Cake, Edit2
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { format, parse } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { cn } from "@/lib/utils";
+import TagManager from "@/components/admin/TagManager";
+import FinancingSection from "@/components/admin/FinancingSection";
+import ReferralSection from "@/components/admin/ReferralSection";
+import LTVOpportunities from "@/components/admin/LTVOpportunities";
+import NPSSection from "@/components/admin/NPSSection";
+import ClientReportSection from "@/components/admin/ClientReportSection";
+import ExclusiveOffersSection from "@/components/admin/ExclusiveOffersSection";
+import { useAIChat } from "@/hooks/useAIChat";
 import TagManager from "@/components/admin/TagManager";
 import FinancingSection from "@/components/admin/FinancingSection";
 import ReferralSection from "@/components/admin/ReferralSection";
