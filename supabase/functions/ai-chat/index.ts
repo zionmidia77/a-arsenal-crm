@@ -962,8 +962,9 @@ serve(async (req) => {
       ...messages,
     ];
 
-    // Track client_id created during tool calls
+    // Track client_id and vehicles found during tool calls
     let createdClientId: string | null = null;
+    let foundVehicles: unknown[] = [];
 
     // Tool calling loop (max 5 iterations for complex flows)
     for (let i = 0; i < 5; i++) {
@@ -1026,6 +1027,14 @@ serve(async (req) => {
           } catch {}
         }
 
+        // Track vehicles from search_vehicles
+        if (tc.function.name === "search_vehicles") {
+          try {
+            const parsed = JSON.parse(toolResult);
+            if (parsed.vehicles?.length) foundVehicles = parsed.vehicles;
+          } catch {}
+        }
+
         aiMessages.push({
           role: "tool",
           tool_call_id: tc.id,
@@ -1057,9 +1066,14 @@ serve(async (req) => {
       throw new Error("Failed to stream response");
     }
 
-    // If a lead was created, prepend a metadata SSE event with client_id
-    if (createdClientId) {
-      const metaEvent = `data: ${JSON.stringify({ metadata: { client_id: createdClientId } })}\n\n`;
+    // If we have metadata (client_id or vehicles), prepend SSE events
+    const hasMetadata = createdClientId || foundVehicles.length > 0;
+    if (hasMetadata) {
+      const metaPayload: Record<string, unknown> = {};
+      if (createdClientId) metaPayload.client_id = createdClientId;
+      if (foundVehicles.length > 0) metaPayload.vehicles = foundVehicles;
+
+      const metaEvent = `data: ${JSON.stringify({ metadata: metaPayload })}\n\n`;
       const encoder = new TextEncoder();
       const metaStream = new ReadableStream({
         async start(controller) {

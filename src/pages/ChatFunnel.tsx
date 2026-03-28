@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Send, ArrowLeft, Sparkles, UserCheck, Camera, FileCheck, Loader2 } from "lucide-react";
+import { Send, ArrowLeft, Sparkles, UserCheck, Camera, FileCheck, Loader2, Bike, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,6 +15,19 @@ interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   timestamp: Date;
+  vehicles?: StockVehicle[];
+}
+
+interface StockVehicle {
+  brand: string;
+  model: string;
+  year?: number;
+  km?: number;
+  color?: string;
+  price: number;
+  condition: string;
+  description?: string;
+  features?: string[];
 }
 
 // ── Typing indicator ──
@@ -147,6 +160,93 @@ const SuggestionChips = ({ onSelect }: { onSelect: (text: string) => void }) => 
   );
 };
 
+// ── Vehicle Card ──
+const VehicleCard = ({ vehicle }: { vehicle: StockVehicle }) => (
+  <div className="min-w-[220px] max-w-[240px] rounded-xl border border-border/60 bg-card/80 backdrop-blur-sm overflow-hidden shrink-0 snap-center">
+    <div className="bg-gradient-to-br from-primary/10 to-primary/5 p-4 flex items-center justify-center h-28">
+      <Bike className="w-12 h-12 text-primary/60" />
+    </div>
+    <div className="p-3 space-y-1.5">
+      <h4 className="font-semibold text-sm text-foreground leading-tight">
+        {vehicle.brand} {vehicle.model}
+      </h4>
+      <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+        {vehicle.year && <span>{vehicle.year}</span>}
+        {vehicle.km != null && <span>• {vehicle.km.toLocaleString("pt-BR")} km</span>}
+        {vehicle.color && <span>• {vehicle.color}</span>}
+      </div>
+      <span className="inline-block text-[10px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">
+        {vehicle.condition}
+      </span>
+      <p className="text-base font-bold text-primary">
+        R$ {Number(vehicle.price).toLocaleString("pt-BR")}
+      </p>
+      {vehicle.features && vehicle.features.length > 0 && (
+        <div className="flex flex-wrap gap-1 pt-0.5">
+          {vehicle.features.slice(0, 3).map((f, i) => (
+            <span key={i} className="text-[9px] px-1.5 py-0.5 rounded bg-accent/50 text-accent-foreground">
+              {f}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  </div>
+);
+
+// ── Vehicle Carousel ──
+const VehicleCarousel = ({ vehicles }: { vehicles: StockVehicle[] }) => {
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  const scroll = (direction: "left" | "right") => {
+    scrollContainerRef.current?.scrollBy({
+      left: direction === "left" ? -240 : 240,
+      behavior: "smooth",
+    });
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="mb-4 pl-10"
+    >
+      <div className="flex items-center gap-1 mb-2 text-xs text-muted-foreground">
+        <Bike className="w-3.5 h-3.5 text-primary" />
+        <span className="font-medium">Motos do estoque</span>
+        <span>• {vehicles.length} opções</span>
+      </div>
+      <div className="relative">
+        {vehicles.length > 2 && (
+          <>
+            <button
+              onClick={() => scroll("left")}
+              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full bg-background/90 border border-border/50 flex items-center justify-center shadow-sm hover:bg-accent transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => scroll("right")}
+              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full bg-background/90 border border-border/50 flex items-center justify-center shadow-sm hover:bg-accent transition-colors"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </>
+        )}
+        <div
+          ref={scrollContainerRef}
+          className="flex gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-2 px-1"
+          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+        >
+          {vehicles.map((v, i) => (
+            <VehicleCard key={`${v.brand}-${v.model}-${i}`} vehicle={v} />
+          ))}
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
 // ── "Last seen" helper ──
 const useLastSeen = () => {
   const [lastSeen, setLastSeen] = useState<string>("online agora");
@@ -186,6 +286,7 @@ const ChatFunnel = () => {
   const [isTransferred, setIsTransferred] = useState(false);
   const [messageCount, setMessageCount] = useState(0);
   const [isAnalyzingDoc, setIsAnalyzingDoc] = useState(false);
+  const [pendingVehicles, setPendingVehicles] = useState<StockVehicle[] | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -393,12 +494,16 @@ const ChatFunnel = () => {
             try {
               const parsed = JSON.parse(jsonStr);
 
-              // Check for metadata event (client_id from lead creation)
-              if (parsed.metadata?.client_id) {
-                const newClientId = parsed.metadata.client_id;
-                setClientId(newClientId);
-                // Update conversation with linked client_id
-                saveConversation(newMessages, newClientId);
+              // Check for metadata event (client_id, vehicles)
+              if (parsed.metadata) {
+                if (parsed.metadata.client_id) {
+                  const newClientId = parsed.metadata.client_id;
+                  setClientId(newClientId);
+                  saveConversation(newMessages, newClientId);
+                }
+                if (parsed.metadata.vehicles?.length) {
+                  setPendingVehicles(parsed.metadata.vehicles);
+                }
                 continue;
               }
 
@@ -438,14 +543,24 @@ const ChatFunnel = () => {
         setIsLoading(false);
         inputRef.current?.focus();
 
-        // Save conversation after each exchange
+        // Attach pending vehicles to the last assistant message
         setMessages(prev => {
+          if (pendingVehicles && pendingVehicles.length > 0) {
+            const updated = prev.map((m, i) =>
+              i === prev.length - 1 && m.role === "assistant"
+                ? { ...m, vehicles: pendingVehicles }
+                : m
+            );
+            setPendingVehicles(null);
+            saveConversation(updated);
+            return updated;
+          }
           saveConversation(prev);
           return prev;
         });
       }
     },
-    [messages, isLoading, isTransferred, clientId, scrollToBottom, saveConversation]
+    [messages, isLoading, isTransferred, clientId, scrollToBottom, saveConversation, pendingVehicles]
   );
 
   const handleSubmit = (e?: React.FormEvent) => {
@@ -659,7 +774,12 @@ const ChatFunnel = () => {
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-6">
         <AnimatePresence mode="popLayout">
           {messages.map((msg) => (
-            <ChatBubble key={msg.id} msg={msg} />
+            <div key={msg.id}>
+              <ChatBubble msg={msg} />
+              {msg.vehicles && msg.vehicles.length > 0 && (
+                <VehicleCarousel vehicles={msg.vehicles} />
+              )}
+            </div>
           ))}
         </AnimatePresence>
 
