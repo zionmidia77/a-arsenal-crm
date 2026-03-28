@@ -112,6 +112,22 @@ const AdminLeads = () => {
 
   const hasActiveFilters = filter !== "all" || stageFilter !== "all" || sourceFilter !== "all" || tagFilter !== "all" || dateFrom || dateTo;
 
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const exitSelectMode = () => {
+    setSelectMode(false);
+    setSelectedIds(new Set());
+  };
+
+  const selectedLeads = (clients || []).filter((c) => selectedIds.has(c.id));
+
   const clientIdsWithTag = tagFilter !== "all" && tagAssignments
     ? tagAssignments.filter(a => a.tag_id === tagFilter).map(a => a.client_id)
     : null;
