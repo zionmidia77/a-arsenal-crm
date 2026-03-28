@@ -302,6 +302,8 @@ const AdminDashboard = () => {
               <motion.div
                 key={client.id}
                 variants={fadeUp}
+                whileHover={{ scale: 1.02, x: 4, transition: { duration: 0.15 } }}
+                whileTap={{ scale: 0.98 }}
                 className="glass-card-hover px-4 py-3 flex items-center gap-3 cursor-pointer"
                 onClick={() => navigate(`/admin/client/${client.id}`)}
               >
