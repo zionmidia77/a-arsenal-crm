@@ -224,22 +224,56 @@ export const useDashboardStats = () => {
     queryKey: ["dashboard-stats"],
     queryFn: async () => {
       const today = new Date().toISOString().split("T")[0];
-      const [clients, hotLeads, activeTasks, overdueTasks, opportunities, todayTasks] = await Promise.all([
+      const [clients, hotLeads, activeTasks, overdueTasks, opportunities, todayTasks, closedWon, closedLost] = await Promise.all([
         supabase.from("clients").select("id", { count: "exact", head: true }),
         supabase.from("clients").select("id", { count: "exact", head: true }).eq("temperature", "hot"),
         supabase.from("clients").select("id", { count: "exact", head: true }).eq("status", "active"),
         supabase.from("tasks").select("id", { count: "exact", head: true }).eq("status", "pending").lt("due_date", today),
         supabase.from("opportunities").select("id", { count: "exact", head: true }).eq("status", "pending"),
         supabase.from("tasks").select("id", { count: "exact", head: true }).eq("status", "pending").eq("due_date", today),
+        supabase.from("clients").select("id", { count: "exact", head: true }).eq("pipeline_stage", "closed_won"),
+        supabase.from("clients").select("id", { count: "exact", head: true }).eq("pipeline_stage", "closed_lost"),
       ]);
+      const total = clients.count || 0;
+      const won = closedWon.count || 0;
+      const lost = closedLost.count || 0;
       return {
-        totalLeads: clients.count || 0,
+        totalLeads: total,
         hotLeads: hotLeads.count || 0,
         activeClients: activeTasks.count || 0,
         overdueTasks: overdueTasks.count || 0,
         opportunities: opportunities.count || 0,
         todayTasks: todayTasks.count || 0,
+        closedWon: won,
+        closedLost: lost,
+        conversionRate: total > 0 ? Math.round((won / total) * 100) : 0,
       };
+    },
+  });
+};
+
+// ============ CHART DATA ============
+export const useLeadsChartData = () => {
+  return useQuery({
+    queryKey: ["leads-chart"],
+    queryFn: async () => {
+      const days = 7;
+      const result = [];
+      const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+      for (let i = days - 1; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        const dateStr = date.toISOString().split("T")[0];
+        const nextDate = new Date(date);
+        nextDate.setDate(nextDate.getDate() + 1);
+        const { count } = await supabase
+          .from("clients")
+          .select("id", { count: "exact", head: true })
+          .gte("created_at", dateStr)
+          .lt("created_at", nextDate.toISOString().split("T")[0]);
+        result.push({ day: dayNames[date.getDay()], leads: count || 0 });
+      }
+      return result;
     },
   });
 };
