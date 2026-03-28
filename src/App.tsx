@@ -12,6 +12,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminLeads from "./pages/admin/AdminLeads";
 import AdminTasks from "./pages/admin/AdminTasks";
 import AdminMessages from "./pages/admin/AdminMessages";
+import AdminPipeline from "./pages/admin/AdminPipeline";
 import AdminClientDetail from "./pages/admin/AdminClientDetail";
 import NotFound from "./pages/NotFound";
 
@@ -31,6 +32,7 @@ const App = () => (
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
             <Route path="leads" element={<AdminLeads />} />
+            <Route path="pipeline" element={<AdminPipeline />} />
             <Route path="tasks" element={<AdminTasks />} />
             <Route path="messages" element={<AdminMessages />} />
             <Route path="client/:id" element={<AdminClientDetail />} />

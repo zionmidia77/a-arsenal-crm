@@ -1,6 +1,6 @@
 import { Outlet, useLocation } from "react-router-dom";
 import { NavLink } from "@/components/NavLink";
-import { LayoutDashboard, Users, ListChecks, MessageSquare, Menu, X, Bike, ChevronLeft } from "lucide-react";
+import { LayoutDashboard, Users, ListChecks, MessageSquare, Menu, X, Bike, ChevronLeft, Kanban } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import BottomTabBar from "@/components/BottomTabBar";
@@ -8,6 +8,7 @@ import BottomTabBar from "@/components/BottomTabBar";
 const navItems = [
   { to: "/admin", icon: LayoutDashboard, label: "Dashboard" },
   { to: "/admin/leads", icon: Users, label: "Leads" },
+  { to: "/admin/pipeline", icon: Kanban, label: "Pipeline" },
   { to: "/admin/tasks", icon: ListChecks, label: "Tarefas" },
   { to: "/admin/messages", icon: MessageSquare, label: "Mensagens" },
 ];
@@ -19,7 +20,6 @@ const AdminLayout = () => {
 
   return (
     <div className="min-h-screen bg-background flex">
-      {/* Mobile overlay */}
       {open && (
         <div
           className="fixed inset-0 bg-background/80 backdrop-blur-sm z-30 md:hidden"
@@ -27,7 +27,6 @@ const AdminLayout = () => {
         />
       )}
 
-      {/* Sidebar - desktop only */}
       <aside className={`fixed md:sticky top-0 left-0 h-screen w-64 bg-card/50 backdrop-blur-xl border-r border-border/50 z-40 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${open ? "translate-x-0" : "-translate-x-full"} md:translate-x-0 flex flex-col`}>
         <div className="px-5 py-5 flex items-center gap-2.5 border-b border-border/50">
           <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center">
@@ -63,7 +62,6 @@ const AdminLayout = () => {
         </div>
       </aside>
 
-      {/* Main */}
       <div className="flex-1 flex flex-col min-w-0">
         <header className="flex items-center gap-3 px-4 py-3 border-b border-border/50 md:hidden backdrop-blur-xl bg-background/80 sticky top-0 z-20">
           <Button variant="ghost" size="icon" onClick={() => setOpen(!open)} className="rounded-full">
@@ -79,7 +77,6 @@ const AdminLayout = () => {
         </main>
       </div>
 
-      {/* Bottom tab bar - mobile only, hide on client detail */}
       {!isClientDetail && <BottomTabBar />}
     </div>
   );
