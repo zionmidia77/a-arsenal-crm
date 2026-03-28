@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import {
   Users, Flame, AlertTriangle, TrendingUp, CalendarCheck,
-  MessageCircle, Eye, ChevronRight, BarChart3, Target, Trophy
+  MessageCircle, Eye, ChevronRight, BarChart3, Target, Trophy, Activity
 } from "lucide-react";
 import { AreaChart, Area, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import { useDashboardStats, useClients, useOverdueTasks, useAllPendingTasks, useLeadsChartData } from "@/hooks/useSupabase";
@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import EmptyState from "@/components/EmptyState";
+import ActivityFeed from "@/components/admin/ActivityFeed";
 
 const tempEmoji: Record<string, string> = { hot: "🔥", warm: "🟡", cold: "🔵", frozen: "⚪" };
 const tempBg: Record<string, string> = { hot: "bg-primary/10", warm: "bg-warning/10", cold: "bg-info/10", frozen: "bg-muted" };
