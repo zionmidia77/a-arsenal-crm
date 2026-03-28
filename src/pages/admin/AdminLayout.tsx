@@ -1,8 +1,9 @@
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import { NavLink } from "@/components/NavLink";
 import { LayoutDashboard, Users, ListChecks, MessageSquare, Menu, X, Bike, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import BottomTabBar from "@/components/BottomTabBar";
 
 const navItems = [
   { to: "/admin", icon: LayoutDashboard, label: "Dashboard" },
@@ -13,6 +14,8 @@ const navItems = [
 
 const AdminLayout = () => {
   const [open, setOpen] = useState(false);
+  const location = useLocation();
+  const isClientDetail = location.pathname.includes("/admin/client/");
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -24,7 +27,7 @@ const AdminLayout = () => {
         />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar - desktop only */}
       <aside className={`fixed md:sticky top-0 left-0 h-screen w-64 bg-card/50 backdrop-blur-xl border-r border-border/50 z-40 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${open ? "translate-x-0" : "-translate-x-full"} md:translate-x-0 flex flex-col`}>
         <div className="px-5 py-5 flex items-center gap-2.5 border-b border-border/50">
           <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center">
@@ -49,7 +52,6 @@ const AdminLayout = () => {
           ))}
         </nav>
 
-        {/* Back to site */}
         <div className="p-3 border-t border-border/50">
           <NavLink
             to="/"
@@ -72,10 +74,13 @@ const AdminLayout = () => {
             <span className="font-display font-bold text-sm">Arsenal <span className="text-primary">CRM</span></span>
           </div>
         </header>
-        <main className="flex-1 overflow-y-auto">
+        <main className={`flex-1 overflow-y-auto ${!isClientDetail ? "pb-20 md:pb-0" : ""}`}>
           <Outlet />
         </main>
       </div>
+
+      {/* Bottom tab bar - mobile only, hide on client detail */}
+      {!isClientDetail && <BottomTabBar />}
     </div>
   );
 };
