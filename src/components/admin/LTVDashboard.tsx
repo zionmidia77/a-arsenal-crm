@@ -297,37 +297,60 @@ const LTVDashboard = () => {
                     const age = client.birthdate
                       ? new Date().getFullYear() - new Date(client.birthdate + "T12:00:00").getFullYear()
                       : null;
+                    const isCongratulated = data.congratulatedIds.has(client.id);
                     return (
                       <motion.div
                         key={client.id}
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
-                        className="flex items-center gap-2 p-2 rounded-lg bg-background/40 border border-pink-400/10"
+                        className={`flex items-center gap-2 p-2 rounded-lg border ${
+                          isCongratulated
+                            ? "bg-emerald-400/5 border-emerald-400/20"
+                            : "bg-background/40 border-pink-400/10"
+                        }`}
                       >
-                        <div className="w-8 h-8 rounded-full bg-pink-400/20 flex items-center justify-center text-sm shrink-0">
-                          🎂
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm shrink-0 ${
+                          isCongratulated ? "bg-emerald-400/20" : "bg-pink-400/20"
+                        }`}>
+                          {isCongratulated ? "✅" : "🎂"}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-medium truncate">{client.name}</p>
-                          {age && (
+                          {isCongratulated ? (
+                            <p className="text-[10px] text-emerald-400 font-medium">Já parabenizado ✓</p>
+                          ) : age ? (
                             <p className="text-[10px] text-muted-foreground">Fazendo {age} anos</p>
-                          )}
+                          ) : null}
                         </div>
                         <div className="flex gap-1 shrink-0">
-                          {client.phone && (
-                            <Button
-                              size="sm"
-                              className="h-7 rounded-full text-[10px] gap-1 bg-green-600 hover:bg-green-700 text-white border-0"
-                              onClick={() =>
-                                window.open(
-                                  `https://wa.me/55${client.phone!.replace(/\D/g, "")}?text=${encodeURIComponent(
-                                    `Parabéns pelo seu aniversário, ${client.name}! 🎂🎉 Aqui é da Arsenal Motors, desejamos tudo de melhor pra você! 🥳`
-                                  )}`
-                                )
-                              }
-                            >
-                              <MessageCircle className="w-3 h-3" /> Parabéns
-                            </Button>
+                          {!isCongratulated && (
+                            <>
+                              {client.phone && (
+                                <Button
+                                  size="sm"
+                                  className="h-7 rounded-full text-[10px] gap-1 bg-green-600 hover:bg-green-700 text-white border-0"
+                                  onClick={() => {
+                                    window.open(
+                                      `https://wa.me/55${client.phone!.replace(/\D/g, "")}?text=${encodeURIComponent(
+                                        `Parabéns pelo seu aniversário, ${client.name}! 🎂🎉 Aqui é da Arsenal Motors, desejamos tudo de melhor pra você! 🥳`
+                                      )}`
+                                    );
+                                    markCongratulated.mutate({ id: client.id, name: client.name });
+                                  }}
+                                >
+                                  <MessageCircle className="w-3 h-3" /> Parabéns
+                                </Button>
+                              )}
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 rounded-full text-[10px] gap-1 border-emerald-400/30 text-emerald-400"
+                                onClick={() => markCongratulated.mutate({ id: client.id, name: client.name })}
+                                disabled={markCongratulated.isPending}
+                              >
+                                <CheckCircle2 className="w-3 h-3" /> Feito
+                              </Button>
+                            </>
                           )}
                           <Button
                             size="sm"
