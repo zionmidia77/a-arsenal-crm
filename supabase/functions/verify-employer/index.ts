@@ -194,6 +194,41 @@ Responda APENAS com JSON:
       }
     }
 
+    // Step 3: Save verification to database if client_id provided
+    if (client_id && verification) {
+      try {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+        const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+        const sb = createClient(supabaseUrl, supabaseKey);
+
+        await sb.from("employer_verifications").insert({
+          client_id,
+          cnpj: extracted.employer_cnpj?.replace(/[^\d]/g, "") || null,
+          employer_name: extracted.employer_name || null,
+          company_name: verification.company_name || null,
+          trading_name: verification.trading_name || null,
+          sector: verification.sector || null,
+          size: verification.size || null,
+          status: verification.status || null,
+          location: verification.location || null,
+          address: verification.address || null,
+          founded_year: verification.founded_year || null,
+          legal_nature: verification.legal_nature || null,
+          share_capital: verification.share_capital || null,
+          reliability_score: verification.reliability_score ? Number(verification.reliability_score) : null,
+          verified: verification.verified || false,
+          cnpj_validated: verification.cnpj_validated || false,
+          source: verification.source || null,
+          risk_flags: verification.risk_flags || [],
+          positive_flags: verification.positive_flags || [],
+          extracted_data: extracted,
+        });
+        console.log("Verification saved for client:", client_id);
+      } catch (saveErr) {
+        console.error("Error saving verification:", saveErr);
+      }
+    }
+
     return new Response(
       JSON.stringify({ extracted, verification }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
