@@ -1066,9 +1066,14 @@ serve(async (req) => {
       throw new Error("Failed to stream response");
     }
 
-    // If a lead was created, prepend a metadata SSE event with client_id
-    if (createdClientId) {
-      const metaEvent = `data: ${JSON.stringify({ metadata: { client_id: createdClientId } })}\n\n`;
+    // If we have metadata (client_id or vehicles), prepend SSE events
+    const hasMetadata = createdClientId || foundVehicles.length > 0;
+    if (hasMetadata) {
+      const metaPayload: Record<string, unknown> = {};
+      if (createdClientId) metaPayload.client_id = createdClientId;
+      if (foundVehicles.length > 0) metaPayload.vehicles = foundVehicles;
+
+      const metaEvent = `data: ${JSON.stringify({ metadata: metaPayload })}\n\n`;
       const encoder = new TextEncoder();
       const metaStream = new ReadableStream({
         async start(controller) {
