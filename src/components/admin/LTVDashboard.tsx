@@ -1,12 +1,13 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
-import { Cake, PhoneCall, ArrowUpCircle, Sparkles, ChevronRight, ChevronDown, ChevronUp, TrendingUp, MessageCircle, Gift, Eye } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { Cake, PhoneCall, ArrowUpCircle, Sparkles, ChevronRight, ChevronDown, ChevronUp, TrendingUp, MessageCircle, Gift, Eye, CheckCircle2 } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
+import { toast } from "sonner";
 
 const useLTVStats = () =>
   useQuery({
@@ -60,6 +61,16 @@ const useLTVStats = () =>
         .eq("type", "birthday")
         .eq("status", "pending");
 
+      // Check who was already congratulated today
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      const { data: congratulated } = await supabase
+        .from("interactions")
+        .select("client_id")
+        .eq("type", "system")
+        .ilike("content", "%parabéns enviado%")
+        .gte("created_at", todayStart.toISOString());
+
       // NPS trend - last 6 months
       const sixMonthsAgo = new Date();
       sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
@@ -95,12 +106,15 @@ const useLTVStats = () =>
       const allScores = (npsData || []).map((r) => r.score);
       const npsAvg = allScores.length > 0 ? Math.round((allScores.reduce((a, b) => a + b, 0) / allScores.length) * 10) / 10 : null;
 
+      const congratulatedIds = new Set((congratulated || []).map(c => c.client_id));
+
       return {
         birthdaysToday,
         birthdaysThisMonth,
         checkinTasks: checkinTasks || [],
         upgrades: upgrades || [],
         pendingBdayOpps: bdayOpps?.length || 0,
+        congratulatedIds,
         npsTrend,
         npsAvg,
         npsTotal: allScores.length,
@@ -115,8 +129,41 @@ const fadeUp = {
 
 const LTVDashboard = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { data, isLoading } = useLTVStats();
   const [showBirthdays, setShowBirthdays] = useState(true);
+
+  const markCongratulated = useMutation({
+    mutationFn: async (client: { id: string; name: string }) => {
+      // Insert interaction
+      await supabase.from("interactions").insert({
+        client_id: client.id,
+        type: "system" as const,
+        content: `🎂 Parabéns enviado para ${client.name} (aniversário)`,
+        created_by: "user",
+      });
+      // Mark birthday opportunity as acted (if exists)
+      await supabase
+        .from("opportunities")
+        .update({ status: "acted", acted_at: new Date().toISOString() })
+        .eq("client_id", client.id)
+        .eq("type", "birthday")
+        .eq("status", "pending");
+      // Complete birthday task (if exists)
+      await supabase
+        .from("tasks")
+        .update({ status: "completed", completed_at: new Date().toISOString() })
+        .eq("client_id", client.id)
+        .eq("type", "relationship")
+        .eq("status", "pending")
+        .ilike("reason", "%aniversário%");
+    },
+    onSuccess: (_, client) => {
+      toast.success(`✅ ${client.name} marcado como parabenizado!`);
+      queryClient.invalidateQueries({ queryKey: ["ltv-dashboard-stats"] });
+    },
+    onError: () => toast.error("Erro ao marcar como parabenizado"),
+  });
 
   if (isLoading) {
     return (
@@ -222,13 +269,26 @@ const LTVDashboard = () => {
             <span className="text-xs font-medium text-pink-400 flex-1 text-left">
               🎂 Aniversariantes hoje ({data.birthdaysToday.length})
             </span>
-            <motion.span
-              className="text-[9px] font-bold bg-pink-500 text-white px-1.5 py-0.5 rounded-full"
-              animate={{ scale: [1, 1.1, 1] }}
-              transition={{ duration: 2, repeat: Infinity }}
-            >
-              Ação pendente
-            </motion.span>
+            {(() => {
+              const pending = data.birthdaysToday.filter(c => !data.congratulatedIds.has(c.id)).length;
+              const done = data.birthdaysToday.length - pending;
+              if (pending === 0) {
+                return (
+                  <span className="text-[9px] font-bold bg-emerald-500 text-white px-1.5 py-0.5 rounded-full">
+                    ✓ Todos parabenizados
+                  </span>
+                );
+              }
+              return (
+                <motion.span
+                  className="text-[9px] font-bold bg-pink-500 text-white px-1.5 py-0.5 rounded-full"
+                  animate={{ scale: [1, 1.1, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                >
+                  {done > 0 ? `${done}/${data.birthdaysToday.length} feitos` : "Ação pendente"}
+                </motion.span>
+              );
+            })()}
             {showBirthdays ? (
               <ChevronUp className="w-3.5 h-3.5 text-pink-400" />
             ) : (
@@ -250,37 +310,60 @@ const LTVDashboard = () => {
                     const age = client.birthdate
                       ? new Date().getFullYear() - new Date(client.birthdate + "T12:00:00").getFullYear()
                       : null;
+                    const isCongratulated = data.congratulatedIds.has(client.id);
                     return (
                       <motion.div
                         key={client.id}
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
-                        className="flex items-center gap-2 p-2 rounded-lg bg-background/40 border border-pink-400/10"
+                        className={`flex items-center gap-2 p-2 rounded-lg border ${
+                          isCongratulated
+                            ? "bg-emerald-400/5 border-emerald-400/20"
+                            : "bg-background/40 border-pink-400/10"
+                        }`}
                       >
-                        <div className="w-8 h-8 rounded-full bg-pink-400/20 flex items-center justify-center text-sm shrink-0">
-                          🎂
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm shrink-0 ${
+                          isCongratulated ? "bg-emerald-400/20" : "bg-pink-400/20"
+                        }`}>
+                          {isCongratulated ? "✅" : "🎂"}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-medium truncate">{client.name}</p>
-                          {age && (
+                          {isCongratulated ? (
+                            <p className="text-[10px] text-emerald-400 font-medium">Já parabenizado ✓</p>
+                          ) : age ? (
                             <p className="text-[10px] text-muted-foreground">Fazendo {age} anos</p>
-                          )}
+                          ) : null}
                         </div>
                         <div className="flex gap-1 shrink-0">
-                          {client.phone && (
-                            <Button
-                              size="sm"
-                              className="h-7 rounded-full text-[10px] gap-1 bg-green-600 hover:bg-green-700 text-white border-0"
-                              onClick={() =>
-                                window.open(
-                                  `https://wa.me/55${client.phone!.replace(/\D/g, "")}?text=${encodeURIComponent(
-                                    `Parabéns pelo seu aniversário, ${client.name}! 🎂🎉 Aqui é da Arsenal Motors, desejamos tudo de melhor pra você! 🥳`
-                                  )}`
-                                )
-                              }
-                            >
-                              <MessageCircle className="w-3 h-3" /> Parabéns
-                            </Button>
+                          {!isCongratulated && (
+                            <>
+                              {client.phone && (
+                                <Button
+                                  size="sm"
+                                  className="h-7 rounded-full text-[10px] gap-1 bg-green-600 hover:bg-green-700 text-white border-0"
+                                  onClick={() => {
+                                    window.open(
+                                      `https://wa.me/55${client.phone!.replace(/\D/g, "")}?text=${encodeURIComponent(
+                                        `Parabéns pelo seu aniversário, ${client.name}! 🎂🎉 Aqui é da Arsenal Motors, desejamos tudo de melhor pra você! 🥳`
+                                      )}`
+                                    );
+                                    markCongratulated.mutate({ id: client.id, name: client.name });
+                                  }}
+                                >
+                                  <MessageCircle className="w-3 h-3" /> Parabéns
+                                </Button>
+                              )}
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 rounded-full text-[10px] gap-1 border-emerald-400/30 text-emerald-400"
+                                onClick={() => markCongratulated.mutate({ id: client.id, name: client.name })}
+                                disabled={markCongratulated.isPending}
+                              >
+                                <CheckCircle2 className="w-3 h-3" /> Feito
+                              </Button>
+                            </>
                           )}
                           <Button
                             size="sm"
