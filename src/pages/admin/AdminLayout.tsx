@@ -1,10 +1,11 @@
 import { Outlet, useLocation } from "react-router-dom";
 import { NavLink } from "@/components/NavLink";
-import { LayoutDashboard, Users, ListChecks, MessageSquare, Menu, X, Bike, ChevronLeft, Kanban } from "lucide-react";
+import { LayoutDashboard, Users, ListChecks, MessageSquare, Menu, X, Bike, ChevronLeft, Kanban, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import BottomTabBar from "@/components/BottomTabBar";
 import { useRealtimeLeads } from "@/hooks/useRealtimeLeads";
+import { useAuth } from "@/hooks/useAuth";
 
 const navItems = [
   { to: "/admin", icon: LayoutDashboard, label: "Dashboard" },
