@@ -70,6 +70,7 @@ const AdminClientDetail = () => {
   const [showAIChat, setShowAIChat] = useState(false);
   const [aiInput, setAIInput] = useState("");
   const [scheduleDate, setScheduleDate] = useState(new Date().toISOString().split("T")[0]);
+  const aiChat = useAIChat();
   const [scheduleReason, setScheduleReason] = useState("");
 
   if (isLoading) {
