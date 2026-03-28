@@ -106,12 +106,15 @@ const useLTVStats = () =>
       const allScores = (npsData || []).map((r) => r.score);
       const npsAvg = allScores.length > 0 ? Math.round((allScores.reduce((a, b) => a + b, 0) / allScores.length) * 10) / 10 : null;
 
+      const congratulatedIds = new Set((congratulated || []).map(c => c.client_id));
+
       return {
         birthdaysToday,
         birthdaysThisMonth,
         checkinTasks: checkinTasks || [],
         upgrades: upgrades || [],
         pendingBdayOpps: bdayOpps?.length || 0,
+        congratulatedIds,
         npsTrend,
         npsAvg,
         npsTotal: allScores.length,
