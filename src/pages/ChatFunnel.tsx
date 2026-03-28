@@ -250,12 +250,21 @@ const ChatFunnel = () => {
     scrollToBottom();
 
     if (nextStep >= flow.length) {
-      // Last message - save lead
+      // Beyond last message - save lead
       setStep(nextStep);
       await saveLeadToDatabase(newAnswers);
       setTimeout(() => navigate("/dashboard"), 2500);
     } else {
+      // Check if this is the LAST interactive step (next message is the final non-interactive one)
+      const isLastInteraction = nextStep === flow.length - 1 && !flow[nextStep].options && !flow[nextStep].inputType;
+      if (isLastInteraction) {
+        // Save lead BEFORE showing final message
+        await saveLeadToDatabase(newAnswers);
+      }
       sendBotMessage(nextStep, flow);
+      if (isLastInteraction) {
+        setTimeout(() => navigate("/dashboard"), 3500);
+      }
     }
   };
 
