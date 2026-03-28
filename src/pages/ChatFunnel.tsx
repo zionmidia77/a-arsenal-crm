@@ -240,6 +240,14 @@ const ChatFunnel = () => {
       newAnswers.hasTradeIn = answer.includes("Sim");
     } else if (currentFlowItem?.field === "name") {
       newAnswers.name = answer;
+    } else if (currentFlowItem?.field === "birthdate") {
+      // Parse dd/mm/yyyy to yyyy-mm-dd
+      const parts = answer.replace(/[^\d/]/g, "").split("/");
+      if (parts.length === 3 && parts[0].length <= 2 && parts[1].length <= 2) {
+        newAnswers.birthdate = `${parts[2]}-${parts[1].padStart(2, "0")}-${parts[0].padStart(2, "0")}`;
+      } else {
+        newAnswers.birthdate = answer;
+      }
     } else if (currentFlowItem?.field === "phone") {
       newAnswers.phone = answer;
     } else if (currentFlowItem?.field === "photo") {
