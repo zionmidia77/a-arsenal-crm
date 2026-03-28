@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,7 +6,7 @@ import { Switch } from "@/components/ui/switch";
 import {
   FileCheck, Upload, CheckCircle2, Circle, AlertTriangle, Send,
   MessageCircle, Crown, Shield, Briefcase, DollarSign, Loader2, Edit2, Save,
-  Building2, Search, ShieldCheck, ShieldAlert, ChevronDown, ChevronUp,
+  Building2, Search, ShieldCheck, ShieldAlert, ChevronDown, ChevronUp, History, Clock,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUpdateClient } from "@/hooks/useSupabase";
@@ -70,6 +70,8 @@ const FinancingSection = ({ client }: FinancingSectionProps) => {
   const [verification, setVerification] = useState<any>(null);
   const [extractedPayStub, setExtractedPayStub] = useState<any>(null);
   const [showVerification, setShowVerification] = useState(true);
+  const [verificationHistory, setVerificationHistory] = useState<any[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
   const [editFields, setEditFields] = useState({
     phone: client.phone || "",
     employer: client.employer || "",
@@ -81,6 +83,45 @@ const FinancingSection = ({ client }: FinancingSectionProps) => {
     reference_phone: client.reference_phone || "",
     down_payment_amount: client.down_payment_amount || "",
   });
+
+  // Load verification history
+  useEffect(() => {
+    const loadHistory = async () => {
+      const { data } = await supabase
+        .from("employer_verifications")
+        .select("*")
+        .eq("client_id", client.id)
+        .order("created_at", { ascending: false });
+      if (data) {
+        setVerificationHistory(data);
+        // Show latest verification if exists and no current one
+        if (data.length > 0 && !verification) {
+          const latest = data[0];
+          setVerification({
+            company_name: latest.company_name,
+            trading_name: latest.trading_name,
+            sector: latest.sector,
+            size: latest.size,
+            status: latest.status,
+            location: latest.location,
+            address: latest.address,
+            verified: latest.verified,
+            cnpj_validated: latest.cnpj_validated,
+            reliability_score: latest.reliability_score,
+            source: latest.source,
+            risk_flags: latest.risk_flags || [],
+            positive_flags: latest.positive_flags || [],
+            legal_nature: latest.legal_nature,
+            share_capital: latest.share_capital,
+          });
+          if (latest.extracted_data && Object.keys(latest.extracted_data).length > 0) {
+            setExtractedPayStub(latest.extracted_data);
+          }
+        }
+      }
+    };
+    loadHistory();
+  }, [client.id]);
 
   const docs: FinancingDocs = client.financing_docs || { cnh: false, proof_of_residence: false, pay_stub: false, reference: false };
   const docsCompleted = Object.values(docs).filter(Boolean).length;
@@ -114,7 +155,7 @@ const FinancingSection = ({ client }: FinancingSectionProps) => {
       });
 
       const { data, error } = await supabase.functions.invoke("verify-employer", {
-        body: { image_base64: base64 },
+        body: { image_base64: base64, client_id: client.id },
       });
 
       if (error) throw error;
@@ -144,7 +185,14 @@ const FinancingSection = ({ client }: FinancingSectionProps) => {
       if (data?.verification) {
         setVerification(data.verification);
         setShowVerification(true);
-        toast.success("Empresa verificada com IA!");
+        toast.success("Empresa verificada com sucesso!");
+        // Reload history
+        const { data: histData } = await supabase
+          .from("employer_verifications")
+          .select("*")
+          .eq("client_id", client.id)
+          .order("created_at", { ascending: false });
+        if (histData) setVerificationHistory(histData);
       }
     } catch (err: any) {
       console.error("Verify error:", err);
@@ -571,6 +619,84 @@ const FinancingSection = ({ client }: FinancingSectionProps) => {
                   )}
                 </div>
               )}
+            </div>
+          )}
+        </motion.div>
+      )}
+
+      {/* Verification History */}
+      {verificationHistory.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="glass-card p-4"
+        >
+          <button
+            onClick={() => setShowHistory(!showHistory)}
+            className="w-full flex items-center justify-between"
+          >
+            <p className="text-sm font-medium flex items-center gap-2">
+              <History className="w-4 h-4 text-primary" /> Histórico de Verificações
+              <span className="text-[10px] text-muted-foreground font-mono">({verificationHistory.length})</span>
+            </p>
+            {showHistory ? <ChevronUp className="w-3.5 h-3.5 text-muted-foreground" /> : <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />}
+          </button>
+
+          {showHistory && (
+            <div className="mt-3 space-y-2">
+              {verificationHistory.map((v: any) => (
+                <div
+                  key={v.id}
+                  className={`rounded-lg p-3 border cursor-pointer transition-colors hover:bg-secondary/50 ${
+                    v.verified ? "border-green-500/20 bg-green-500/5" : "border-amber-500/20 bg-amber-500/5"
+                  }`}
+                  onClick={() => {
+                    setVerification({
+                      company_name: v.company_name,
+                      trading_name: v.trading_name,
+                      sector: v.sector,
+                      size: v.size,
+                      status: v.status,
+                      location: v.location,
+                      address: v.address,
+                      verified: v.verified,
+                      cnpj_validated: v.cnpj_validated,
+                      reliability_score: v.reliability_score,
+                      source: v.source,
+                      risk_flags: v.risk_flags || [],
+                      positive_flags: v.positive_flags || [],
+                    });
+                    if (v.extracted_data) setExtractedPayStub(v.extracted_data);
+                    setShowVerification(true);
+                  }}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      {v.verified ? (
+                        <ShieldCheck className="w-3.5 h-3.5 text-green-400" />
+                      ) : (
+                        <ShieldAlert className="w-3.5 h-3.5 text-amber-400" />
+                      )}
+                      <span className="text-xs font-medium">{v.company_name || v.employer_name || "Empresa"}</span>
+                      {v.cnpj && <span className="text-[9px] font-mono text-muted-foreground">{v.cnpj}</span>}
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      {v.reliability_score && (
+                        <span className={`text-[10px] font-bold font-mono ${
+                          v.reliability_score >= 7 ? "text-green-400" : v.reliability_score >= 4 ? "text-amber-400" : "text-red-400"
+                        }`}>{v.reliability_score}/10</span>
+                      )}
+                      <div className="flex items-center gap-0.5 text-muted-foreground">
+                        <Clock className="w-3 h-3" />
+                        <span className="text-[9px]">
+                          {new Date(v.created_at).toLocaleDateString("pt-BR")}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  {v.source && <p className="text-[9px] text-muted-foreground mt-1">{v.source}</p>}
+                </div>
+              ))}
             </div>
           )}
         </motion.div>
