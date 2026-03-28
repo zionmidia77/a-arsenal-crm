@@ -84,6 +84,45 @@ const FinancingSection = ({ client }: FinancingSectionProps) => {
     down_payment_amount: client.down_payment_amount || "",
   });
 
+  // Load verification history
+  useEffect(() => {
+    const loadHistory = async () => {
+      const { data } = await supabase
+        .from("employer_verifications")
+        .select("*")
+        .eq("client_id", client.id)
+        .order("created_at", { ascending: false });
+      if (data) {
+        setVerificationHistory(data);
+        // Show latest verification if exists and no current one
+        if (data.length > 0 && !verification) {
+          const latest = data[0];
+          setVerification({
+            company_name: latest.company_name,
+            trading_name: latest.trading_name,
+            sector: latest.sector,
+            size: latest.size,
+            status: latest.status,
+            location: latest.location,
+            address: latest.address,
+            verified: latest.verified,
+            cnpj_validated: latest.cnpj_validated,
+            reliability_score: latest.reliability_score,
+            source: latest.source,
+            risk_flags: latest.risk_flags || [],
+            positive_flags: latest.positive_flags || [],
+            legal_nature: latest.legal_nature,
+            share_capital: latest.share_capital,
+          });
+          if (latest.extracted_data && Object.keys(latest.extracted_data).length > 0) {
+            setExtractedPayStub(latest.extracted_data);
+          }
+        }
+      }
+    };
+    loadHistory();
+  }, [client.id]);
+
   const docs: FinancingDocs = client.financing_docs || { cnh: false, proof_of_residence: false, pay_stub: false, reference: false };
   const docsCompleted = Object.values(docs).filter(Boolean).length;
   const docsTotal = DOC_LABELS.length;
