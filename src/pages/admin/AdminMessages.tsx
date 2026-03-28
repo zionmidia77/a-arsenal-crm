@@ -15,6 +15,7 @@ const categoryBadge: Record<string, string> = {
   lead: "bg-blue-400/15 text-blue-400",
   relacionamento: "bg-pink-400/15 text-pink-400",
   oportunidade: "bg-amber-400/15 text-amber-400",
+  aniversario: "bg-fuchsia-400/15 text-fuchsia-400",
 };
 
 const stagger = { animate: { transition: { staggerChildren: 0.05 } } };
@@ -172,6 +173,7 @@ const AdminMessages = () => {
                   <SelectItem value="lead">Lead</SelectItem>
                   <SelectItem value="relacionamento">Relacionamento</SelectItem>
                   <SelectItem value="oportunidade">Oportunidade</SelectItem>
+                  <SelectItem value="aniversario">🎂 Aniversário</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -279,9 +281,9 @@ const AdminMessages = () => {
       </div>
 
       <motion.div variants={fadeUp} className="flex gap-2 overflow-x-auto">
-        {["all", "lead", "relacionamento", "oportunidade"].map((f) => (
+        {["all", "lead", "relacionamento", "oportunidade", "aniversario"].map((f) => (
           <Button key={f} variant={filter === f ? "default" : "outline"} size="sm" onClick={() => setFilter(f)} className="rounded-full shrink-0 text-xs capitalize">
-            {f === "all" ? "Todas" : f}
+            {f === "all" ? "Todas" : f === "aniversario" ? "🎂 Aniversário" : f}
           </Button>
         ))}
       </motion.div>
