@@ -40,6 +40,43 @@ const AdminLayout = () => {
     }
   }, []);
 
+  // Real-time notification for transferred conversations
+  useEffect(() => {
+    const channel = supabase
+      .channel('chat-transfers')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'chat_conversations',
+          filter: 'status=eq.transferred',
+        },
+        (payload) => {
+          toast.info("🔔 Nova conversa transferida do chat IA!", {
+            description: "Um lead qualificado foi transferido para atendimento humano.",
+            action: {
+              label: "Ver",
+              onClick: () => window.location.href = "/admin/chat-history",
+            },
+            duration: 10000,
+          });
+
+          if ("Notification" in window && Notification.permission === "granted") {
+            new Notification("Arsenal CRM - Conversa Transferida", {
+              body: "Um lead foi transferido do chat IA para atendimento humano.",
+              icon: "/favicon.ico",
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   return (
     <div className="min-h-screen bg-background flex">
       {open && (
