@@ -17,6 +17,8 @@ import AdminMessages from "./pages/admin/AdminMessages";
 import AdminPipeline from "./pages/admin/AdminPipeline";
 import AdminMetrics from "./pages/admin/AdminMetrics";
 import AdminClientDetail from "./pages/admin/AdminClientDetail";
+import AdminCalendar from "./pages/admin/AdminCalendar";
+import MemberArea from "./pages/MemberArea";
 import Login from "./pages/auth/Login";
 import Signup from "./pages/auth/Signup";
 import ForgotPassword from "./pages/auth/ForgotPassword";
