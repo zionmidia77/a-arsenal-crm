@@ -31,6 +31,7 @@ const PhotoLeadCapture = () => {
   const [editData, setEditData] = useState<ExtractedData | null>(null);
   const [result, setResult] = useState<{ action: string; client: any } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
   const qc = useQueryClient();
 
   const reset = () => {
