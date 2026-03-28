@@ -2,7 +2,8 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MessageCircle, Copy, Check, Search, Eye, SortAsc, SortDesc, Filter, CalendarIcon, X } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { MessageCircle, Copy, Check, Search, Eye, SortAsc, SortDesc, Filter, CalendarIcon, X, GitMerge, CheckSquare } from "lucide-react";
 import { useClients, useTags } from "@/hooks/useSupabase";
 import { useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
+import MergeLeadsDialog from "@/components/admin/MergeLeadsDialog";
 
 const tempStyles: Record<string, string> = {
   hot: "border-l-primary bg-primary/5",
