@@ -1,10 +1,9 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { NavLink } from "@/components/NavLink";
-import { LayoutDashboard, Users, ListChecks, MessageSquare, Menu, X, Bike, ChevronLeft, Kanban, LogOut, BarChart3, CalendarDays, Target } from "lucide-react";
+import { LayoutDashboard, Users, ListChecks, MessageSquare, Menu, X, Bike, ChevronLeft, Kanban, LogOut, BarChart3, CalendarDays, Target, MessagesSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
 import BottomTabBar from "@/components/BottomTabBar";
 import { useRealtimeLeads } from "@/hooks/useRealtimeLeads";
 import { useAuth } from "@/hooks/useAuth";
@@ -13,6 +12,8 @@ import GlobalSearch from "@/components/admin/GlobalSearch";
 import AddLeadDialog from "@/components/admin/AddLeadDialog";
 import PhotoLeadCapture from "@/components/admin/PhotoLeadCapture";
 import AdminBreadcrumb from "@/components/admin/AdminBreadcrumb";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const navItems = [
   { to: "/admin", icon: LayoutDashboard, label: "Dashboard" },
@@ -21,6 +22,7 @@ const navItems = [
   { to: "/admin/tasks", icon: ListChecks, label: "Tarefas" },
   { to: "/admin/calendar", icon: CalendarDays, label: "Agenda" },
   { to: "/admin/messages", icon: MessageSquare, label: "Mensagens" },
+  { to: "/admin/chat-history", icon: MessagesSquare, label: "Conversas IA" },
   { to: "/admin/metrics", icon: BarChart3, label: "Métricas" },
   { to: "/admin/goals", icon: Target, label: "Metas" },
 ];
@@ -36,6 +38,43 @@ const AdminLayout = () => {
     if ("Notification" in window && Notification.permission === "default") {
       Notification.requestPermission();
     }
+  }, []);
+
+  // Real-time notification for transferred conversations
+  useEffect(() => {
+    const channel = supabase
+      .channel('chat-transfers')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'chat_conversations',
+          filter: 'status=eq.transferred',
+        },
+        (payload) => {
+          toast.info("🔔 Nova conversa transferida do chat IA!", {
+            description: "Um lead qualificado foi transferido para atendimento humano.",
+            action: {
+              label: "Ver",
+              onClick: () => window.location.href = "/admin/chat-history",
+            },
+            duration: 10000,
+          });
+
+          if ("Notification" in window && Notification.permission === "granted") {
+            new Notification("Arsenal CRM - Conversa Transferida", {
+              body: "Um lead foi transferido do chat IA para atendimento humano.",
+              icon: "/favicon.ico",
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   return (
