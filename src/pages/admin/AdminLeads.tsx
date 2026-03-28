@@ -2,10 +2,17 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MessageCircle, Copy, Check, Search, Eye, SortAsc, SortDesc } from "lucide-react";
-import { useClients } from "@/hooks/useSupabase";
+import { MessageCircle, Copy, Check, Search, Eye, SortAsc, SortDesc, Filter, CalendarIcon, X } from "lucide-react";
+import { useClients, useTags } from "@/hooks/useSupabase";
 import { useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
+import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
 
 const tempStyles: Record<string, string> = {
@@ -35,6 +42,10 @@ const sourceBadge: Record<string, string> = {
   manual: "bg-muted/15 text-muted-foreground",
 };
 
+const sourceLabel: Record<string, string> = {
+  funnel: "Funil", whatsapp: "WhatsApp", facebook: "Facebook", manual: "Manual",
+};
+
 const stagger = { animate: { transition: { staggerChildren: 0.05 } } };
 const fadeUp = { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0, transition: { duration: 0.4 } } };
 
@@ -44,14 +55,31 @@ const AdminLeads = () => {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | "hot" | "warm" | "cold">("all");
   const [stageFilter, setStageFilter] = useState<string>("all");
+  const [sourceFilter, setSourceFilter] = useState<string>("all");
+  const [tagFilter, setTagFilter] = useState<string>("all");
+  const [dateFrom, setDateFrom] = useState<Date | undefined>();
+  const [dateTo, setDateTo] = useState<Date | undefined>();
   const [search, setSearch] = useState("");
   const [sortField, setSortField] = useState<SortField>("created_at");
   const [sortAsc, setSortAsc] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const navigate = useNavigate();
 
   const { data: clients, isLoading } = useClients(
     filter !== "all" ? { temperature: filter } : undefined
   );
+
+  const { data: tags } = useTags();
+
+  // Fetch tag assignments for filtering
+  const { data: tagAssignments } = useQuery({
+    queryKey: ["all-tag-assignments"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("client_tag_assignments").select("client_id, tag_id");
+      if (error) throw error;
+      return data;
+    },
+  });
 
   const copyMsg = (client: Tables<"clients">) => {
     const firstName = client.name.split(" ")[0];
@@ -67,9 +95,38 @@ const AdminLeads = () => {
     else { setSortField(field); setSortAsc(false); }
   };
 
+  const clearFilters = () => {
+    setFilter("all");
+    setStageFilter("all");
+    setSourceFilter("all");
+    setTagFilter("all");
+    setDateFrom(undefined);
+    setDateTo(undefined);
+    setSearch("");
+  };
+
+  const hasActiveFilters = filter !== "all" || stageFilter !== "all" || sourceFilter !== "all" || tagFilter !== "all" || dateFrom || dateTo;
+
+  const clientIdsWithTag = tagFilter !== "all" && tagAssignments
+    ? tagAssignments.filter(a => a.tag_id === tagFilter).map(a => a.client_id)
+    : null;
+
   const filtered = (clients || [])
     .filter(l => !search || l.name.toLowerCase().includes(search.toLowerCase()) || l.phone?.includes(search) || l.interest?.toLowerCase().includes(search.toLowerCase()))
     .filter(l => stageFilter === "all" || l.pipeline_stage === stageFilter)
+    .filter(l => sourceFilter === "all" || l.source === sourceFilter)
+    .filter(l => !clientIdsWithTag || clientIdsWithTag.includes(l.id))
+    .filter(l => {
+      if (!dateFrom && !dateTo) return true;
+      const created = new Date(l.created_at);
+      if (dateFrom && created < dateFrom) return false;
+      if (dateTo) {
+        const end = new Date(dateTo);
+        end.setHours(23, 59, 59);
+        if (created > end) return false;
+      }
+      return true;
+    })
     .sort((a, b) => {
       let cmp = 0;
       if (sortField === "lead_score") cmp = a.lead_score - b.lead_score;
@@ -97,7 +154,99 @@ const AdminLeads = () => {
             {f === "all" ? "Todos" : f === "hot" ? "🔥 Quentes" : f === "warm" ? "🟡 Mornos" : "🔵 Frios"}
           </Button>
         ))}
+        <Button
+          variant={showAdvanced ? "secondary" : "ghost"}
+          size="sm"
+          onClick={() => setShowAdvanced(!showAdvanced)}
+          className="rounded-full shrink-0 text-xs gap-1 ml-auto"
+        >
+          <Filter className="w-3 h-3" />
+          Filtros
+          {hasActiveFilters && <span className="w-2 h-2 rounded-full bg-primary" />}
+        </Button>
       </motion.div>
+
+      {/* Advanced filters */}
+      {showAdvanced && (
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: "auto" }}
+          exit={{ opacity: 0, height: 0 }}
+          className="glass-card p-4 space-y-3"
+        >
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-medium text-muted-foreground">Filtros avançados</p>
+            {hasActiveFilters && (
+              <Button variant="ghost" size="sm" onClick={clearFilters} className="text-xs h-6 text-destructive">
+                <X className="w-3 h-3 mr-1" /> Limpar
+              </Button>
+            )}
+          </div>
+
+          {/* Source filter */}
+          <div>
+            <p className="text-[10px] text-muted-foreground mb-1.5">Fonte</p>
+            <div className="flex gap-1.5 flex-wrap">
+              {["all", "funnel", "whatsapp", "facebook", "manual"].map(s => (
+                <Button key={s} variant={sourceFilter === s ? "default" : "outline"} size="sm"
+                  onClick={() => setSourceFilter(s)} className="rounded-full text-[10px] h-7">
+                  {s === "all" ? "Todas" : sourceLabel[s] || s}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          {/* Tag filter */}
+          {tags && tags.length > 0 && (
+            <div>
+              <p className="text-[10px] text-muted-foreground mb-1.5">Tags</p>
+              <div className="flex gap-1.5 flex-wrap">
+                <Button variant={tagFilter === "all" ? "default" : "outline"} size="sm"
+                  onClick={() => setTagFilter("all")} className="rounded-full text-[10px] h-7">
+                  Todas
+                </Button>
+                {tags.map(tag => (
+                  <Button key={tag.id} variant={tagFilter === tag.id ? "default" : "outline"} size="sm"
+                    onClick={() => setTagFilter(tagFilter === tag.id ? "all" : tag.id)}
+                    className="rounded-full text-[10px] h-7 gap-1">
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: tag.color }} />
+                    {tag.name}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Date range */}
+          <div>
+            <p className="text-[10px] text-muted-foreground mb-1.5">Período</p>
+            <div className="flex gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className={cn("rounded-full text-[10px] h-7 gap-1", !dateFrom && "text-muted-foreground")}>
+                    <CalendarIcon className="w-3 h-3" />
+                    {dateFrom ? format(dateFrom, "dd/MM/yy") : "De"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar mode="single" selected={dateFrom} onSelect={setDateFrom} initialFocus className="p-3 pointer-events-auto" />
+                </PopoverContent>
+              </Popover>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className={cn("rounded-full text-[10px] h-7 gap-1", !dateTo && "text-muted-foreground")}>
+                    <CalendarIcon className="w-3 h-3" />
+                    {dateTo ? format(dateTo, "dd/MM/yy") : "Até"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar mode="single" selected={dateTo} onSelect={setDateTo} initialFocus className="p-3 pointer-events-auto" />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       {/* Stage filter */}
       <motion.div variants={fadeUp} className="flex gap-1.5 overflow-x-auto pb-1">
