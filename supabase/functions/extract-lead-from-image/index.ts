@@ -516,6 +516,10 @@ serve(async (req) => {
         if (extracted.email && !existingClient.email) updates.email = extracted.email;
         if (extracted.interest && !existingClient.interest) updates.interest = extracted.interest;
         if (extracted.budget_range && !existingClient.budget_range) updates.budget_range = extracted.budget_range;
+        if (extracted.birthdate && !existingClient.birthdate) updates.birthdate = extracted.birthdate;
+        if (extracted.employer && !existingClient.employer) updates.employer = extracted.employer;
+        if (extracted.position && !existingClient.position) updates.position = extracted.position;
+        if (extracted.salary && !existingClient.salary) updates.salary = extracted.salary;
         if (extracted.notes) {
           updates.notes =
             (existingClient.notes ? `${existingClient.notes}\n---\n` : "") +
