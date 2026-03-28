@@ -1,13 +1,18 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MessageSquare, User, Clock, ArrowRight, UserCheck, X } from "lucide-react";
-import { format } from "date-fns";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { MessageSquare, User, Clock, UserCheck, X, Search, CalendarIcon, Filter } from "lucide-react";
+import { format, isAfter, isBefore, startOfDay, endOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 
 interface ConversationMessage {
   role: "user" | "assistant";
@@ -29,6 +34,10 @@ interface Conversation {
 
 const AdminChatHistory = () => {
   const [selectedConvo, setSelectedConvo] = useState<Conversation | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [dateFrom, setDateFrom] = useState<Date | undefined>();
+  const [dateTo, setDateTo] = useState<Date | undefined>();
 
   const { data: conversations = [], isLoading } = useQuery({
     queryKey: ["chat-conversations"],
@@ -37,12 +46,43 @@ const AdminChatHistory = () => {
         .from("chat_conversations")
         .select("*, clients(name, phone)")
         .order("updated_at", { ascending: false })
-        .limit(50);
+        .limit(100);
       if (error) throw error;
       return (data || []) as unknown as Conversation[];
     },
     refetchInterval: 10000,
   });
+
+  const filteredConversations = useMemo(() => {
+    return conversations.filter((convo) => {
+      // Status filter
+      if (statusFilter !== "all" && convo.status !== statusFilter) return false;
+
+      // Search by client name
+      if (searchQuery.trim()) {
+        const name = (convo.clients?.name || "Visitante").toLowerCase();
+        const phone = (convo.clients?.phone || "").toLowerCase();
+        const q = searchQuery.toLowerCase();
+        if (!name.includes(q) && !phone.includes(q)) return false;
+      }
+
+      // Date range filter
+      const convoDate = new Date(convo.created_at);
+      if (dateFrom && isBefore(convoDate, startOfDay(dateFrom))) return false;
+      if (dateTo && isAfter(convoDate, endOfDay(dateTo))) return false;
+
+      return true;
+    });
+  }, [conversations, statusFilter, searchQuery, dateFrom, dateTo]);
+
+  const hasActiveFilters = statusFilter !== "all" || searchQuery.trim() || dateFrom || dateTo;
+
+  const clearFilters = () => {
+    setStatusFilter("all");
+    setSearchQuery("");
+    setDateFrom(undefined);
+    setDateTo(undefined);
+  };
 
   const statusColor = (s: string) => {
     switch (s) {
@@ -61,21 +101,82 @@ const AdminChatHistory = () => {
         </div>
         <Badge variant="outline" className="gap-1">
           <MessageSquare className="w-3 h-3" />
-          {conversations.length} conversas
+          {filteredConversations.length} conversa{filteredConversations.length !== 1 ? "s" : ""}
         </Badge>
       </div>
+
+      {/* Filters */}
+      <Card>
+        <CardContent className="p-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative flex-1 min-w-[180px]">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por nome ou telefone..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-8 h-9 text-sm"
+              />
+            </div>
+
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[140px] h-9 text-sm">
+                <Filter className="w-3 h-3 mr-1.5" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="active">Ativo</SelectItem>
+                <SelectItem value="transferred">Transferido</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className={cn("h-9 text-sm gap-1.5", dateFrom && "text-primary border-primary/30")}>
+                  <CalendarIcon className="w-3 h-3" />
+                  {dateFrom ? format(dateFrom, "dd/MM") : "De"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar mode="single" selected={dateFrom} onSelect={setDateFrom} initialFocus className={cn("p-3 pointer-events-auto")} locale={ptBR} />
+              </PopoverContent>
+            </Popover>
+
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className={cn("h-9 text-sm gap-1.5", dateTo && "text-primary border-primary/30")}>
+                  <CalendarIcon className="w-3 h-3" />
+                  {dateTo ? format(dateTo, "dd/MM") : "Até"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar mode="single" selected={dateTo} onSelect={setDateTo} initialFocus className={cn("p-3 pointer-events-auto")} locale={ptBR} />
+              </PopoverContent>
+            </Popover>
+
+            {hasActiveFilters && (
+              <Button variant="ghost" size="sm" className="h-9 text-xs gap-1 text-muted-foreground" onClick={clearFilters}>
+                <X className="w-3 h-3" /> Limpar
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Conversation list */}
         <div className="lg:col-span-1 space-y-2">
           {isLoading ? (
             <div className="text-center text-muted-foreground py-8">Carregando...</div>
-          ) : conversations.length === 0 ? (
-            <div className="text-center text-muted-foreground py-8">Nenhuma conversa ainda</div>
+          ) : filteredConversations.length === 0 ? (
+            <div className="text-center text-muted-foreground py-8">
+              {hasActiveFilters ? "Nenhuma conversa encontrada com esses filtros" : "Nenhuma conversa ainda"}
+            </div>
           ) : (
             <ScrollArea className="h-[600px]">
               <div className="space-y-2 pr-2">
-                {conversations.map((convo) => {
+                {filteredConversations.map((convo) => {
                   const msgCount = Array.isArray(convo.messages) ? convo.messages.length : 0;
                   const lastMsg = Array.isArray(convo.messages) ? convo.messages[convo.messages.length - 1] : null;
                   const clientName = convo.clients?.name || "Visitante";
