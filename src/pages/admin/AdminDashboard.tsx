@@ -167,16 +167,22 @@ const AdminDashboard = () => {
 
         {/* Overdue alerts */}
         {(overdueTasks?.length || 0) > 0 && (
-          <div className="bg-destructive/10 rounded-xl p-3 border border-destructive/20">
+          <motion.div
+            className="bg-destructive/10 rounded-xl p-3 border border-destructive/20"
+            animate={{ boxShadow: ["0 0 0 0 hsl(var(--destructive) / 0)", "0 0 12px 2px hsl(var(--destructive) / 0.15)", "0 0 0 0 hsl(var(--destructive) / 0)"] }}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+          >
             <div className="flex items-center gap-2 mb-2">
-              <AlertTriangle className="w-4 h-4 text-destructive" />
+              <motion.div animate={{ rotate: [0, -15, 15, 0] }} transition={{ duration: 0.6, repeat: Infinity, repeatDelay: 2 }}>
+                <AlertTriangle className="w-4 h-4 text-destructive" />
+              </motion.div>
               <span className="text-xs font-medium text-destructive">Follow-ups atrasados ({overdueTasks?.length})</span>
             </div>
             <div className="space-y-1.5">
               {overdueTasks?.slice(0, 3).map(task => {
                 const clientData = task.clients as any;
                 return (
-                  <div key={task.id} className="flex items-center gap-2">
+                  <motion.div key={task.id} className="flex items-center gap-2" whileHover={{ x: 4, transition: { duration: 0.15 } }}>
                     <span className="text-[10px] text-destructive/70">{task.due_date}</span>
                     <span className="text-xs font-medium truncate flex-1">{clientData?.name}</span>
                     {clientData?.phone && (
@@ -184,11 +190,11 @@ const AdminDashboard = () => {
                         <MessageCircle className="w-2.5 h-2.5" /> Chamar
                       </Button>
                     )}
-                  </div>
+                  </motion.div>
                 );
               })}
             </div>
-          </div>
+          </motion.div>
         )}
 
         {/* Hot leads to act on */}
