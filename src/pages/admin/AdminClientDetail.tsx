@@ -7,12 +7,14 @@ import { useClient, useClientInteractions, useClientVehicles, useCreateInteracti
 import {
   ArrowLeft, MessageCircle, Phone, Mail, MapPin, Calendar, Bike,
   TrendingUp, Clock, Plus, Star, CalendarPlus, Check, AlertTriangle,
-  Copy, Send, Bot, Tag, FileCheck
+  Copy, Send, Bot, Tag, FileCheck, Trophy, Sparkles
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import TagManager from "@/components/admin/TagManager";
 import FinancingSection from "@/components/admin/FinancingSection";
+import ReferralSection from "@/components/admin/ReferralSection";
+import LTVOpportunities from "@/components/admin/LTVOpportunities";
 import { useAIChat } from "@/hooks/useAIChat";
 
 const tempBadge: Record<string, string> = {
@@ -462,6 +464,16 @@ const AdminClientDetail = () => {
           <FileCheck className="w-4 h-4 text-primary" /> Qualificação para Financiamento
         </h2>
         <FinancingSection client={client} />
+      </motion.div>
+
+      {/* ✨ LTV Opportunities */}
+      <motion.div variants={fadeUp}>
+        <LTVOpportunities clientId={client.id} clientName={client.name} clientPhone={client.phone} />
+      </motion.div>
+
+      {/* 🏆 Referral Program */}
+      <motion.div variants={fadeUp}>
+        <ReferralSection client={client} />
       </motion.div>
 
       {/* Vehicles */}
