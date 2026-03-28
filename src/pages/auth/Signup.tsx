@@ -10,6 +10,7 @@ import { motion } from "framer-motion";
 
 const Signup = () => {
   const { signUp } = useAuth();
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
