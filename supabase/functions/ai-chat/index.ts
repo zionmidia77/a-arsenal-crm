@@ -732,6 +732,9 @@ serve(async (req) => {
       ...messages,
     ];
 
+    // Track client_id created during tool calls
+    let createdClientId: string | null = null;
+
     // Tool calling loop (max 5 iterations for complex flows)
     for (let i = 0; i < 5; i++) {
       const toolResponse = await fetch(
