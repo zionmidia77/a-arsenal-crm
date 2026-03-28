@@ -59,6 +59,10 @@ const AddLeadDialog = () => {
           <Input placeholder="Nome do cliente *" value={form.name} onChange={e => update("name", e.target.value)} className="rounded-xl bg-secondary border-border/50 h-10" />
           <Input placeholder="Telefone (WhatsApp)" value={form.phone} onChange={e => update("phone", e.target.value)} className="rounded-xl bg-secondary border-border/50 h-10" />
           
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">Data de nascimento</label>
+            <Input type="date" value={form.birthdate} onChange={e => update("birthdate", e.target.value)} className="rounded-xl bg-secondary border-border/50 h-10" />
+          </div>
           <Select value={form.interest} onValueChange={v => update("interest", v)}>
             <SelectTrigger className="rounded-xl bg-secondary border-border/50 h-10">
               <SelectValue placeholder="Interesse" />
