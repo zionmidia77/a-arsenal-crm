@@ -34,7 +34,7 @@ const AddLeadDialog = () => {
       {
         onSuccess: () => {
           toast.success("Lead adicionado!");
-          setForm({ name: "", phone: "", interest: "", budget_range: "", source: "", notes: "" });
+          setForm({ name: "", phone: "", interest: "", budget_range: "", source: "", notes: "", birthdate: "" });
           setOpen(false);
         },
         onError: () => toast.error("Erro ao adicionar lead"),
