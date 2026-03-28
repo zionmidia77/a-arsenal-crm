@@ -466,6 +466,16 @@ const AdminClientDetail = () => {
         <FinancingSection client={client} />
       </motion.div>
 
+      {/* ✨ LTV Opportunities */}
+      <motion.div variants={fadeUp}>
+        <LTVOpportunities clientId={client.id} clientName={client.name} clientPhone={client.phone} />
+      </motion.div>
+
+      {/* 🏆 Referral Program */}
+      <motion.div variants={fadeUp}>
+        <ReferralSection client={client} />
+      </motion.div>
+
       {/* Vehicles */}
       {vehicles && vehicles.length > 0 && (
         <motion.div variants={fadeUp}>
