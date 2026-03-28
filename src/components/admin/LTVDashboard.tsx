@@ -293,7 +293,56 @@ const LTVDashboard = () => {
         </div>
       )}
 
-      {!hasItems && (
+      {/* NPS Trend Chart */}
+      <div className="rounded-xl p-3 border border-border/50 bg-secondary/20">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 text-emerald-400" />
+            <span className="text-xs font-medium">Tendência NPS</span>
+          </div>
+          {data.npsAvg !== null && (
+            <div className="flex items-center gap-2">
+              <span className={`text-lg font-display font-bold ${
+                data.npsAvg >= 9 ? "text-emerald-400" : data.npsAvg >= 7 ? "text-amber-400" : "text-red-400"
+              }`}>
+                {data.npsAvg}
+              </span>
+              <span className="text-[9px] text-muted-foreground">
+                média ({data.npsTotal} respostas)
+              </span>
+            </div>
+          )}
+        </div>
+
+        {data.npsTrend.length > 0 ? (
+          <ResponsiveContainer width="100%" height={120}>
+            <LineChart data={data.npsTrend} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+              <XAxis dataKey="month" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+              <YAxis domain={[0, 10]} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+              <Tooltip
+                contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, fontSize: 11 }}
+                formatter={(value: number) => [`${value}`, "NPS médio"]}
+                labelFormatter={(label) => `${label}`}
+              />
+              <ReferenceLine y={7} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" strokeOpacity={0.3} />
+              <Line
+                type="monotone"
+                dataKey="avg"
+                stroke="hsl(var(--primary))"
+                strokeWidth={2.5}
+                dot={{ r: 4, fill: "hsl(var(--primary))", strokeWidth: 0 }}
+                activeDot={{ r: 6, fill: "hsl(var(--primary))" }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        ) : (
+          <p className="text-[10px] text-muted-foreground text-center py-6">
+            Nenhuma resposta NPS registrada ainda
+          </p>
+        )}
+      </div>
+
+      {!hasItems && data.npsTrend.length === 0 && (
         <p className="text-xs text-muted-foreground text-center py-3">
           ✅ Nenhuma automação LTV pendente. Tudo em dia!
         </p>
