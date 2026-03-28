@@ -1,79 +1,97 @@
 import { motion } from "framer-motion";
 import {
   BarChart3, TrendingUp, Clock, Users, Target, Flame,
-  ArrowUpRight, ArrowDownRight
+  ArrowDownRight, ArrowUpRight, Zap, CalendarDays, Award, Filter
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, AreaChart, Area, FunnelChart, Funnel, LabelList
+  PieChart, Pie, Cell, AreaChart, Area, CartesianGrid, Legend
 } from "recharts";
 import { useAllClients } from "@/hooks/useSupabase";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-const stagger = { animate: { transition: { staggerChildren: 0.06 } } };
-const fadeUp = { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0, transition: { duration: 0.4 } } };
+const stagger = { animate: { transition: { staggerChildren: 0.05 } } };
+const fadeUp = { initial: { opacity: 0, y: 12 }, animate: { opacity: 1, y: 0, transition: { duration: 0.35 } } };
 
-const STAGE_ORDER = ["new", "contacted", "interested", "attending", "thinking", "waiting_response", "scheduled", "negotiating", "closed_won", "closed_lost"];
+const STAGE_ORDER = ["new", "contacted", "interested", "attending", "thinking", "waiting_response", "scheduled", "negotiating", "closed_won"];
 const STAGE_LABELS: Record<string, string> = {
   new: "Novo", contacted: "Contatado", interested: "Interessado",
   attending: "Atendimento", thinking: "Pensando", waiting_response: "Aguardando",
-  scheduled: "Agendado", negotiating: "Negociação", closed_won: "Fechado", closed_lost: "Perdido",
+  scheduled: "Agendado", negotiating: "Negociação", closed_won: "Fechado ✅", closed_lost: "Perdido ❌",
 };
 
-const COLORS = [
-  "hsl(217 91% 60%)", "hsl(38 92% 50%)", "hsl(0 72% 51%)",
-  "hsl(262 83% 58%)", "hsl(142 71% 45%)", "hsl(180 70% 50%)",
-  "hsl(330 70% 50%)", "hsl(45 93% 47%)",
+const FUNNEL_COLORS = [
+  "hsl(217 91% 60%)", "hsl(38 92% 50%)", "hsl(25 95% 53%)",
+  "hsl(262 83% 58%)", "hsl(45 93% 47%)", "hsl(180 70% 50%)",
+  "hsl(220 70% 55%)", "hsl(142 71% 45%)", "hsl(120 60% 45%)",
 ];
+
+const SOURCE_COLORS: Record<string, string> = {
+  whatsapp: "hsl(142 70% 45%)",
+  facebook: "hsl(217 89% 61%)",
+  marketplace: "hsl(262 83% 58%)",
+  indicação: "hsl(38 92% 50%)",
+  loja: "hsl(0 72% 51%)",
+  telefone: "hsl(180 70% 50%)",
+  funnel: "hsl(340 75% 55%)",
+  manual: "hsl(0 0% 55%)",
+  desconhecido: "hsl(0 0% 40%)",
+};
 
 const AdminMetrics = () => {
   const { data: clients, isLoading } = useAllClients();
+  const [period, setPeriod] = useState<"7" | "14" | "30">("14");
 
   const metrics = useMemo(() => {
     if (!clients) return null;
 
-    // Leads by source
+    const now = new Date();
+    const days = parseInt(period);
+
+    // ── Leads by source ──
     const sourceMap: Record<string, number> = {};
     clients.forEach(c => {
       const src = c.source || "desconhecido";
       sourceMap[src] = (sourceMap[src] || 0) + 1;
     });
     const bySource = Object.entries(sourceMap)
-      .map(([name, value]) => ({ name, value }))
+      .map(([name, value]) => ({ name, value, fill: SOURCE_COLORS[name] || "hsl(0 0% 45%)" }))
       .sort((a, b) => b.value - a.value);
 
-    // Funnel stages
+    // ── Funnel stages with conversion rates ──
     const stageMap: Record<string, number> = {};
     clients.forEach(c => { stageMap[c.pipeline_stage] = (stageMap[c.pipeline_stage] || 0) + 1; });
-    const funnelData = STAGE_ORDER
-      .filter(s => s !== "closed_lost")
-      .map(s => ({ name: STAGE_LABELS[s] || s, value: stageMap[s] || 0 }));
+    const funnelData = STAGE_ORDER.map((s, i) => {
+      const value = stageMap[s] || 0;
+      const prevValue = i > 0 ? (stageMap[STAGE_ORDER[i - 1]] || 0) : value;
+      const conversionRate = prevValue > 0 ? Math.round((value / prevValue) * 100) : 0;
+      return { key: s, name: STAGE_LABELS[s] || s, value, conversionRate };
+    });
 
-    // Temperature distribution
+    // ── Temperature distribution ──
     const tempMap: Record<string, number> = { hot: 0, warm: 0, cold: 0, frozen: 0 };
     clients.forEach(c => { tempMap[c.temperature] = (tempMap[c.temperature] || 0) + 1; });
     const tempData = [
-      { name: "Quente", value: tempMap.hot, color: "hsl(0 72% 51%)" },
-      { name: "Morno", value: tempMap.warm, color: "hsl(38 92% 50%)" },
-      { name: "Frio", value: tempMap.cold, color: "hsl(217 91% 60%)" },
-      { name: "Inativo", value: tempMap.frozen, color: "hsl(0 0% 50%)" },
+      { name: "🔥 Quente", value: tempMap.hot, color: "hsl(0 72% 51%)" },
+      { name: "🟡 Morno", value: tempMap.warm, color: "hsl(38 92% 50%)" },
+      { name: "🔵 Frio", value: tempMap.cold, color: "hsl(217 91% 60%)" },
+      { name: "⬜ Inativo", value: tempMap.frozen, color: "hsl(0 0% 45%)" },
     ];
 
-    // Response time
+    // ── Response time ──
     const withResponse = clients.filter(c => c.response_time_hours != null);
     const avgResponse = withResponse.length > 0
       ? Math.round(withResponse.reduce((a, c) => a + (c.response_time_hours || 0), 0) / withResponse.length)
       : null;
 
-    // Leads per day (last 14 days)
+    // ── Leads per day (dynamic period) ──
     const dailyMap: Record<string, number> = {};
-    const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
-    for (let i = 13; i >= 0; i--) {
-      const d = new Date();
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(now);
       d.setDate(d.getDate() - i);
-      const key = d.toISOString().split("T")[0];
-      dailyMap[key] = 0;
+      dailyMap[d.toISOString().split("T")[0]] = 0;
     }
     clients.forEach(c => {
       const day = c.created_at.split("T")[0];
@@ -81,82 +99,162 @@ const AdminMetrics = () => {
     });
     const dailyData = Object.entries(dailyMap).map(([date, count]) => {
       const d = new Date(date + "T12:00:00");
-      return { day: `${d.getDate()}/${d.getMonth() + 1}`, leads: count };
+      return { day: `${d.getDate()}/${d.getMonth() + 1}`, leads: count, date };
     });
 
-    // Conversion
+    // ── This week vs last week ──
+    const startOfThisWeek = new Date(now);
+    startOfThisWeek.setDate(now.getDate() - now.getDay());
+    startOfThisWeek.setHours(0, 0, 0, 0);
+    const startOfLastWeek = new Date(startOfThisWeek);
+    startOfLastWeek.setDate(startOfLastWeek.getDate() - 7);
+
+    const thisWeekLeads = clients.filter(c => new Date(c.created_at) >= startOfThisWeek).length;
+    const lastWeekLeads = clients.filter(c => {
+      const d = new Date(c.created_at);
+      return d >= startOfLastWeek && d < startOfThisWeek;
+    }).length;
+    const weekTrend = lastWeekLeads > 0
+      ? Math.round(((thisWeekLeads - lastWeekLeads) / lastWeekLeads) * 100)
+      : thisWeekLeads > 0 ? 100 : 0;
+
+    // ── Core stats ──
     const total = clients.length;
     const won = stageMap["closed_won"] || 0;
     const lost = stageMap["closed_lost"] || 0;
     const conversionRate = total > 0 ? Math.round((won / total) * 100) : 0;
     const lossRate = total > 0 ? Math.round((lost / total) * 100) : 0;
-
-    // Avg lead score
     const avgScore = total > 0 ? Math.round(clients.reduce((a, c) => a + c.lead_score, 0) / total) : 0;
 
-    return { bySource, funnelData, tempData, avgResponse, dailyData, total, won, lost, conversionRate, lossRate, avgScore };
-  }, [clients]);
+    // ── Top sources (for pie) ──
+    const topSources = bySource.slice(0, 6);
+
+    // ── Leads by day of week ──
+    const dayOfWeekMap: Record<string, number> = { Dom: 0, Seg: 0, Ter: 0, Qua: 0, Qui: 0, Sex: 0, Sáb: 0 };
+    const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+    clients.forEach(c => {
+      const d = new Date(c.created_at);
+      dayOfWeekMap[dayNames[d.getDay()]]++;
+    });
+    const dayOfWeekData = dayNames.map(name => ({ name, leads: dayOfWeekMap[name] }));
+    const bestDay = dayOfWeekData.reduce((a, b) => a.leads > b.leads ? a : b, dayOfWeekData[0]);
+
+    return {
+      bySource, funnelData, tempData, avgResponse, dailyData,
+      total, won, lost, conversionRate, lossRate, avgScore,
+      thisWeekLeads, lastWeekLeads, weekTrend,
+      topSources, dayOfWeekData, bestDay,
+    };
+  }, [clients, period]);
 
   if (isLoading || !metrics) {
     return (
       <div className="p-5 space-y-4">
         <Skeleton className="h-8 w-48" />
-        {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-48 rounded-2xl" />)}
+        <div className="grid grid-cols-2 gap-3">
+          {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-28 rounded-2xl" />)}
+        </div>
+        {[1, 2, 3].map(i => <Skeleton key={i} className="h-52 rounded-2xl" />)}
       </div>
     );
   }
 
   const statCards = [
-    { label: "Total de leads", value: metrics.total, icon: Users, color: "text-info", bg: "bg-info/10" },
-    { label: "Taxa de conversão", value: `${metrics.conversionRate}%`, icon: Target, color: "text-success", bg: "bg-success/10", sub: `${metrics.won} fechados` },
-    { label: "Taxa de perda", value: `${metrics.lossRate}%`, icon: ArrowDownRight, color: "text-destructive", bg: "bg-destructive/10", sub: `${metrics.lost} perdidos` },
-    { label: "Score médio", value: metrics.avgScore, icon: TrendingUp, color: "text-primary", bg: "bg-primary/10" },
+    { label: "Total de leads", value: metrics.total, icon: Users, color: "text-blue-400", bg: "bg-blue-500/10" },
+    { label: "Conversão", value: `${metrics.conversionRate}%`, icon: Target, color: "text-green-400", bg: "bg-green-500/10", sub: `${metrics.won} fechados` },
+    { label: "Perda", value: `${metrics.lossRate}%`, icon: ArrowDownRight, color: "text-red-400", bg: "bg-red-500/10", sub: `${metrics.lost} perdidos` },
+    { label: "Score médio", value: metrics.avgScore, icon: Award, color: "text-primary", bg: "bg-primary/10" },
   ];
 
   return (
-    <motion.div variants={stagger} initial="initial" animate="animate" className="p-5 md:p-6 space-y-5 max-w-4xl">
-      <motion.div variants={fadeUp}>
-        <h1 className="text-2xl font-display font-bold">Métricas</h1>
-        <p className="text-sm text-muted-foreground">Análise completa do funil e desempenho</p>
+    <motion.div variants={stagger} initial="initial" animate="animate" className="p-5 md:p-6 space-y-5 max-w-5xl">
+      {/* Header */}
+      <motion.div variants={fadeUp} className="flex items-end justify-between">
+        <div>
+          <h1 className="text-2xl font-display font-bold">Métricas Avançadas</h1>
+          <p className="text-sm text-muted-foreground">Análise completa de desempenho e conversão</p>
+        </div>
+        <Tabs value={period} onValueChange={v => setPeriod(v as any)}>
+          <TabsList className="h-8">
+            <TabsTrigger value="7" className="text-xs h-6 px-2">7d</TabsTrigger>
+            <TabsTrigger value="14" className="text-xs h-6 px-2">14d</TabsTrigger>
+            <TabsTrigger value="30" className="text-xs h-6 px-2">30d</TabsTrigger>
+          </TabsList>
+        </Tabs>
       </motion.div>
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {statCards.map((s, i) => (
-          <motion.div key={i} variants={fadeUp} className="glass-card p-4">
-            <div className={`w-9 h-9 rounded-xl ${s.bg} flex items-center justify-center mb-3`}>
+          <motion.div key={i} variants={fadeUp} className="glass-card p-4 relative overflow-hidden">
+            <div className={`w-8 h-8 rounded-xl ${s.bg} flex items-center justify-center mb-2`}>
               <s.icon className={`w-4 h-4 ${s.color}`} />
             </div>
             <p className="text-2xl font-display font-bold tabular-nums">{s.value}</p>
-            <p className="text-xs text-muted-foreground">{s.label}</p>
-            {s.sub && <p className="text-[10px] text-muted-foreground mt-0.5">{s.sub}</p>}
+            <p className="text-[11px] text-muted-foreground">{s.label}</p>
+            {s.sub && <p className="text-[10px] text-muted-foreground/60 mt-0.5">{s.sub}</p>}
           </motion.div>
         ))}
       </div>
 
-      {/* Response time */}
-      {metrics.avgResponse !== null && (
-        <motion.div variants={fadeUp} className="glass-card gradient-border p-4 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-warning/10 flex items-center justify-center">
-            <Clock className="w-5 h-5 text-warning" />
+      {/* Week trend + Response time */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <motion.div variants={fadeUp} className="glass-card p-4 flex items-center gap-4">
+          <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${metrics.weekTrend >= 0 ? 'bg-green-500/10' : 'bg-red-500/10'}`}>
+            {metrics.weekTrend >= 0
+              ? <ArrowUpRight className="w-5 h-5 text-green-400" />
+              : <ArrowDownRight className="w-5 h-5 text-red-400" />
+            }
           </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Tempo médio de resposta</p>
-            <p className="text-xl font-display font-bold">{metrics.avgResponse}h</p>
+          <div className="flex-1">
+            <p className="text-[11px] text-muted-foreground">Tendência semanal</p>
+            <p className={`text-xl font-display font-bold ${metrics.weekTrend >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+              {metrics.weekTrend >= 0 ? '+' : ''}{metrics.weekTrend}%
+            </p>
+            <p className="text-[10px] text-muted-foreground/60">
+              {metrics.thisWeekLeads} esta semana · {metrics.lastWeekLeads} anterior
+            </p>
           </div>
         </motion.div>
-      )}
+
+        <motion.div variants={fadeUp} className="glass-card p-4 flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center">
+            <Clock className="w-5 h-5 text-amber-400" />
+          </div>
+          <div className="flex-1">
+            <p className="text-[11px] text-muted-foreground">Tempo médio de resposta</p>
+            <p className="text-xl font-display font-bold">
+              {metrics.avgResponse !== null ? `${metrics.avgResponse}h` : 'N/A'}
+            </p>
+            <p className="text-[10px] text-muted-foreground/60">
+              {metrics.avgResponse !== null && metrics.avgResponse <= 2
+                ? '🟢 Excelente'
+                : metrics.avgResponse !== null && metrics.avgResponse <= 6
+                  ? '🟡 Pode melhorar'
+                  : '🔴 Muito lento'}
+            </p>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Best day insight */}
+      <motion.div variants={fadeUp} className="glass-card p-3 flex items-center gap-3 border-l-4 border-l-primary">
+        <Zap className="w-4 h-4 text-primary shrink-0" />
+        <p className="text-xs text-muted-foreground">
+          <span className="font-medium text-foreground">Insight:</span> Seu melhor dia para leads é <span className="font-bold text-primary">{metrics.bestDay.name}</span> com {metrics.bestDay.leads} leads.
+        </p>
+      </motion.div>
 
       {/* Daily leads chart */}
       <motion.div variants={fadeUp} className="glass-card p-5">
         <div className="flex items-center gap-2 mb-4">
           <BarChart3 className="w-4 h-4 text-primary" />
-          <span className="text-sm font-medium">Leads últimos 14 dias</span>
-          <span className="text-xs text-muted-foreground ml-auto">
+          <span className="text-sm font-medium">Leads por dia</span>
+          <span className="text-xs text-muted-foreground ml-auto tabular-nums">
             Total: {metrics.dailyData.reduce((a, b) => a + b.leads, 0)}
           </span>
         </div>
-        <ResponsiveContainer width="100%" height={160}>
+        <ResponsiveContainer width="100%" height={180}>
           <AreaChart data={metrics.dailyData}>
             <defs>
               <linearGradient id="lgMetrics" x1="0" y1="0" x2="0" y2="1">
@@ -164,91 +262,196 @@ const AdminMetrics = () => {
                 <stop offset="100%" stopColor="hsl(0 72% 51%)" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: 'hsl(0 0% 50%)' }} interval={1} />
-            <Tooltip contentStyle={{ background: 'hsl(0 0% 9%)', border: '1px solid hsl(0 0% 15%)', borderRadius: '12px', fontSize: '12px' }} />
-            <Area type="monotone" dataKey="leads" stroke="hsl(0 72% 51%)" strokeWidth={2} fill="url(#lgMetrics)" />
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(0 0% 15%)" />
+            <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: 'hsl(0 0% 50%)' }} interval={Math.ceil(parseInt(period) / 10)} />
+            <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: 'hsl(0 0% 50%)' }} width={25} allowDecimals={false} />
+            <Tooltip
+              contentStyle={{ background: 'hsl(0 0% 9%)', border: '1px solid hsl(0 0% 15%)', borderRadius: '12px', fontSize: '12px' }}
+              labelStyle={{ color: 'hsl(0 0% 70%)' }}
+            />
+            <Area type="monotone" dataKey="leads" stroke="hsl(0 72% 51%)" strokeWidth={2} fill="url(#lgMetrics)" dot={{ r: 2, fill: 'hsl(0 72% 51%)' }} />
           </AreaChart>
         </ResponsiveContainer>
       </motion.div>
 
-      {/* Leads by source */}
+      {/* Funnel de Conversão */}
       <motion.div variants={fadeUp} className="glass-card p-5">
         <p className="text-sm font-medium mb-4 flex items-center gap-2">
-          <Users className="w-4 h-4 text-info" /> Leads por origem
+          <Target className="w-4 h-4 text-green-400" /> Funil de conversão
         </p>
-        <ResponsiveContainer width="100%" height={200}>
-          <BarChart data={metrics.bySource} layout="vertical">
-            <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'hsl(0 0% 50%)' }} />
-            <YAxis type="category" dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'hsl(0 0% 70%)' }} width={90} />
-            <Tooltip contentStyle={{ background: 'hsl(0 0% 9%)', border: '1px solid hsl(0 0% 15%)', borderRadius: '12px', fontSize: '12px' }} />
-            <Bar dataKey="value" fill="hsl(0 72% 51%)" radius={[0, 6, 6, 0]} barSize={20} />
-          </BarChart>
-        </ResponsiveContainer>
-      </motion.div>
-
-      {/* Temperature distribution */}
-      <motion.div variants={fadeUp} className="glass-card p-5">
-        <p className="text-sm font-medium mb-4 flex items-center gap-2">
-          <Flame className="w-4 h-4 text-primary" /> Distribuição por temperatura
-        </p>
-        <div className="flex items-center gap-6">
-          <ResponsiveContainer width={140} height={140}>
-            <PieChart>
-              <Pie
-                data={metrics.tempData}
-                cx="50%"
-                cy="50%"
-                innerRadius={40}
-                outerRadius={65}
-                paddingAngle={3}
-                dataKey="value"
-              >
-                {metrics.tempData.map((entry, i) => (
-                  <Cell key={i} fill={entry.color} />
-                ))}
-              </Pie>
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="flex-1 space-y-2">
-            {metrics.tempData.map((t, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: t.color }} />
-                <span className="text-xs flex-1">{t.name}</span>
-                <span className="text-xs font-bold tabular-nums">{t.value}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Pipeline Funnel */}
-      <motion.div variants={fadeUp} className="glass-card p-5">
-        <p className="text-sm font-medium mb-4 flex items-center gap-2">
-          <Target className="w-4 h-4 text-success" /> Funil de conversão
-        </p>
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           {metrics.funnelData.map((stage, i) => {
             const maxVal = Math.max(...metrics.funnelData.map(s => s.value), 1);
-            const width = Math.max((stage.value / maxVal) * 100, 8);
+            const width = Math.max((stage.value / maxVal) * 100, 6);
             return (
-              <div key={i} className="flex items-center gap-3">
-                <span className="text-[10px] text-muted-foreground w-24 text-right shrink-0">{stage.name}</span>
-                <div className="flex-1 h-7 bg-secondary/50 rounded-lg overflow-hidden">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${width}%` }}
-                    transition={{ duration: 0.6, delay: i * 0.08 }}
-                    className="h-full rounded-lg flex items-center px-2"
-                    style={{ backgroundColor: COLORS[i % COLORS.length] + "40" }}
-                  >
-                    <span className="text-[10px] font-bold tabular-nums">{stage.value}</span>
-                  </motion.div>
+              <div key={i} className="group">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-muted-foreground w-24 text-right shrink-0 truncate">{stage.name}</span>
+                  <div className="flex-1 h-8 bg-secondary/30 rounded-lg overflow-hidden relative">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${width}%` }}
+                      transition={{ duration: 0.5, delay: i * 0.06 }}
+                      className="h-full rounded-lg flex items-center justify-between px-2.5"
+                      style={{ backgroundColor: FUNNEL_COLORS[i % FUNNEL_COLORS.length] + "35" }}
+                    >
+                      <span className="text-[11px] font-bold tabular-nums">{stage.value}</span>
+                    </motion.div>
+                  </div>
+                  {i > 0 && (
+                    <span className={`text-[10px] font-medium tabular-nums w-10 text-right shrink-0 ${
+                      stage.conversionRate >= 50 ? 'text-green-400' : stage.conversionRate >= 25 ? 'text-amber-400' : 'text-red-400'
+                    }`}>
+                      {stage.conversionRate}%
+                    </span>
+                  )}
+                  {i === 0 && <span className="w-10 shrink-0" />}
                 </div>
+                {i > 0 && i < metrics.funnelData.length && (
+                  <div className="ml-[104px] h-1.5 flex items-center">
+                    <div className="w-px h-full bg-border/30" />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        <p className="text-[10px] text-muted-foreground mt-3 text-right">% = taxa de passagem da etapa anterior</p>
+      </motion.div>
+
+      {/* Leads by source + Temperature (side by side on desktop) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {/* Leads por origem */}
+        <motion.div variants={fadeUp} className="glass-card p-5">
+          <p className="text-sm font-medium mb-4 flex items-center gap-2">
+            <Users className="w-4 h-4 text-blue-400" /> Leads por origem
+          </p>
+          <ResponsiveContainer width="100%" height={Math.max(metrics.bySource.length * 36, 120)}>
+            <BarChart data={metrics.bySource} layout="vertical" margin={{ left: 0 }}>
+              <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'hsl(0 0% 50%)' }} />
+              <YAxis type="category" dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'hsl(0 0% 70%)' }} width={85} />
+              <Tooltip contentStyle={{ background: 'hsl(0 0% 9%)', border: '1px solid hsl(0 0% 15%)', borderRadius: '12px', fontSize: '12px' }} />
+              <Bar dataKey="value" radius={[0, 6, 6, 0]} barSize={22}>
+                {metrics.bySource.map((entry, i) => (
+                  <Cell key={i} fill={entry.fill} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </motion.div>
+
+        {/* Temperatura */}
+        <motion.div variants={fadeUp} className="glass-card p-5">
+          <p className="text-sm font-medium mb-4 flex items-center gap-2">
+            <Flame className="w-4 h-4 text-primary" /> Temperatura dos leads
+          </p>
+          <div className="flex items-center gap-4">
+            <ResponsiveContainer width={130} height={130}>
+              <PieChart>
+                <Pie
+                  data={metrics.tempData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={38}
+                  outerRadius={60}
+                  paddingAngle={3}
+                  dataKey="value"
+                  strokeWidth={0}
+                >
+                  {metrics.tempData.map((entry, i) => (
+                    <Cell key={i} fill={entry.color} />
+                  ))}
+                </Pie>
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="flex-1 space-y-3">
+              {metrics.tempData.map((t, i) => {
+                const pct = metrics.total > 0 ? Math.round((t.value / metrics.total) * 100) : 0;
+                return (
+                  <div key={i} className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: t.color }} />
+                    <span className="text-xs flex-1">{t.name}</span>
+                    <span className="text-xs font-bold tabular-nums">{t.value}</span>
+                    <span className="text-[10px] text-muted-foreground tabular-nums w-8 text-right">{pct}%</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Day of week heatmap */}
+      <motion.div variants={fadeUp} className="glass-card p-5">
+        <p className="text-sm font-medium mb-4 flex items-center gap-2">
+          <CalendarDays className="w-4 h-4 text-purple-400" /> Leads por dia da semana
+        </p>
+        <div className="flex gap-2">
+          {metrics.dayOfWeekData.map((d, i) => {
+            const maxLeads = Math.max(...metrics.dayOfWeekData.map(x => x.leads), 1);
+            const intensity = d.leads / maxLeads;
+            const isBest = d.name === metrics.bestDay.name;
+            return (
+              <div key={i} className="flex-1 flex flex-col items-center gap-1.5">
+                <div
+                  className={`w-full aspect-square rounded-xl flex items-center justify-center text-xs font-bold tabular-nums transition-all ${
+                    isBest ? 'ring-2 ring-primary ring-offset-1 ring-offset-background' : ''
+                  }`}
+                  style={{
+                    backgroundColor: `hsl(0 72% 51% / ${Math.max(intensity * 0.6, 0.05)})`,
+                  }}
+                >
+                  {d.leads}
+                </div>
+                <span className={`text-[10px] ${isBest ? 'text-primary font-bold' : 'text-muted-foreground'}`}>{d.name}</span>
               </div>
             );
           })}
         </div>
       </motion.div>
+
+      {/* Source Pie Chart */}
+      <motion.div variants={fadeUp} className="glass-card p-5">
+        <p className="text-sm font-medium mb-4 flex items-center gap-2">
+          <Filter className="w-4 h-4 text-cyan-400" /> Distribuição por canal
+        </p>
+        <div className="flex items-center gap-4">
+          <ResponsiveContainer width={150} height={150}>
+            <PieChart>
+              <Pie
+                data={metrics.topSources}
+                cx="50%"
+                cy="50%"
+                outerRadius={68}
+                dataKey="value"
+                strokeWidth={0}
+                paddingAngle={2}
+              >
+                {metrics.topSources.map((entry, i) => (
+                  <Cell key={i} fill={entry.fill} />
+                ))}
+              </Pie>
+              <Tooltip contentStyle={{ background: 'hsl(0 0% 9%)', border: '1px solid hsl(0 0% 15%)', borderRadius: '12px', fontSize: '12px' }} />
+            </PieChart>
+          </ResponsiveContainer>
+          <div className="flex-1 space-y-2">
+            {metrics.topSources.map((s, i) => {
+              const pct = metrics.total > 0 ? Math.round((s.value / metrics.total) * 100) : 0;
+              return (
+                <div key={i} className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: s.fill }} />
+                  <span className="text-xs flex-1 capitalize">{s.name}</span>
+                  <span className="text-xs font-bold tabular-nums">{s.value}</span>
+                  <span className="text-[10px] text-muted-foreground tabular-nums w-8 text-right">{pct}%</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Bottom spacer for mobile nav */}
+      <div className="h-4" />
     </motion.div>
   );
 };
