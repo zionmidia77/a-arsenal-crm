@@ -206,8 +206,8 @@ const PhotoLeadCapture = () => {
                 className="border-2 border-dashed border-border/60 rounded-2xl p-8 text-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all"
               >
                 <Upload className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
-                <p className="text-sm font-medium">Arraste uma imagem aqui</p>
-                <p className="text-xs text-muted-foreground mt-1">ou clique para selecionar</p>
+                <p className="text-sm font-medium">Arraste uma imagem ou clique para selecionar da galeria</p>
+                <p className="text-xs text-muted-foreground mt-1">PNG, JPG até 10MB</p>
                 <input
                   ref={fileRef}
                   type="file"
@@ -216,13 +216,30 @@ const PhotoLeadCapture = () => {
                   onChange={(e) => { if (e.target.files?.[0]) handleFile(e.target.files[0]); e.target.value = ''; }}
                 />
               </div>
-              <Button
-                variant="outline"
-                className="w-full rounded-xl"
-                onClick={() => fileRef.current?.click()}
-              >
-                <Camera className="w-4 h-4 mr-2" /> Tirar foto com câmera
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1 rounded-xl"
+                  onClick={() => fileRef.current?.click()}
+                >
+                  <Upload className="w-4 h-4 mr-2" /> Galeria
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1 rounded-xl"
+                  onClick={() => cameraRef.current?.click()}
+                >
+                  <Camera className="w-4 h-4 mr-2" /> Câmera
+                </Button>
+                <input
+                  ref={cameraRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={(e) => { if (e.target.files?.[0]) handleFile(e.target.files[0]); e.target.value = ''; }}
+                />
+              </div>
             </motion.div>
           )}
 
