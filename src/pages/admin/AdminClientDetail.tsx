@@ -7,10 +7,12 @@ import { useClient, useClientInteractions, useClientVehicles, useCreateInteracti
 import {
   ArrowLeft, MessageCircle, Phone, Mail, MapPin, Calendar, Bike,
   TrendingUp, Clock, Plus, Star, CalendarPlus, Check, AlertTriangle,
-  Copy, Send
+  Copy, Send, Bot, Tag
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import TagManager from "@/components/admin/TagManager";
+import { useAIChat } from "@/hooks/useAIChat";
 
 const tempBadge: Record<string, string> = {
   hot: "bg-primary/15 text-primary",
