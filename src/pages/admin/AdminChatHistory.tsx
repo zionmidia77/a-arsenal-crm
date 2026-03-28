@@ -73,7 +73,7 @@ const AdminChatHistory = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("chat_conversations")
-        .select("*, clients(name, phone)")
+        .select("*, clients(name, phone, email, city, interest, budget_range, temperature, pipeline_stage, has_trade_in, has_clean_credit, has_down_payment, down_payment_amount, salary, employer, financing_status, lead_score, source, notes, birthdate)")
         .order("updated_at", { ascending: false })
         .limit(100);
       if (error) throw error;
