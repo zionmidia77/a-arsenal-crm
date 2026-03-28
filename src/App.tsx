@@ -12,6 +12,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminLeads from "./pages/admin/AdminLeads";
 import AdminTasks from "./pages/admin/AdminTasks";
 import AdminMessages from "./pages/admin/AdminMessages";
+import AdminClientDetail from "./pages/admin/AdminClientDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="leads" element={<AdminLeads />} />
             <Route path="tasks" element={<AdminTasks />} />
             <Route path="messages" element={<AdminMessages />} />
+            <Route path="client/:id" element={<AdminClientDetail />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
