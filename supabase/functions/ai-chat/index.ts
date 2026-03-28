@@ -1027,6 +1027,14 @@ serve(async (req) => {
           } catch {}
         }
 
+        // Track vehicles from search_vehicles
+        if (tc.function.name === "search_vehicles") {
+          try {
+            const parsed = JSON.parse(toolResult);
+            if (parsed.vehicles?.length) foundVehicles = parsed.vehicles;
+          } catch {}
+        }
+
         aiMessages.push({
           role: "tool",
           tool_call_id: tc.id,
