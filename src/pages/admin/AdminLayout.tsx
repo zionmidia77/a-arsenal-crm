@@ -11,6 +11,7 @@ import NotificationCenter from "@/components/admin/NotificationCenter";
 import GlobalSearch from "@/components/admin/GlobalSearch";
 import AddLeadDialog from "@/components/admin/AddLeadDialog";
 import PhotoLeadCapture from "@/components/admin/PhotoLeadCapture";
+import AdminBreadcrumb from "@/components/admin/AdminBreadcrumb";
 
 const navItems = [
   { to: "/admin", icon: LayoutDashboard, label: "Dashboard" },
@@ -109,6 +110,7 @@ const AdminLayout = () => {
           <NotificationCenter />
         </header>
         <main className={`flex-1 overflow-y-auto ${!isClientDetail ? "pb-20 md:pb-0" : ""}`}>
+          <AdminBreadcrumb />
           <Outlet />
         </main>
       </div>
