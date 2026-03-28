@@ -27,6 +27,12 @@ const AdminLayout = () => {
   const { signOut, user } = useAuth();
   useRealtimeLeads();
 
+  useEffect(() => {
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+  }, []);
+
   return (
     <div className="min-h-screen bg-background flex">
       {open && (
