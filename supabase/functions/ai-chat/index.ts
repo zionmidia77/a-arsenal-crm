@@ -456,13 +456,28 @@ async function executeTool(
         // Also calculate other options
         const options = [12, 24, 36, 48].map(n => {
           const m = financed * (rate * Math.pow(1 + rate, n)) / (Math.pow(1 + rate, n) - 1);
-          return { installments: n, monthly_payment: Math.round(m * 100) / 100 };
+          return { installments: n, monthly_payment: Math.round(m * 100) / 100, total: Math.round(m * n * 100) / 100, total_interest: Math.round((m * n - financed) * 100) / 100 };
+        });
+
+        // Save simulation to financing_simulations table
+        const selectedMonthly = Math.round(monthly * 100) / 100;
+        await supabase.from("financing_simulations").insert({
+          client_id: args.client_id as string,
+          moto_value: vehicleValue,
+          down_payment: downPayment,
+          financed_amount: financed,
+          months: numInstallments,
+          monthly_payment: selectedMonthly,
+          total_interest: Math.round((monthly * numInstallments - financed) * 100) / 100,
+          interest_rate: 0.0189,
+          source: "ai-chat",
+          status: "pending",
         });
 
         await supabase.from("interactions").insert({
           client_id: args.client_id as string,
           type: "system",
-          content: `Simulação de financiamento: Veículo R$ ${vehicleValue.toLocaleString()}, Entrada R$ ${downPayment.toLocaleString()}, ${numInstallments}x de R$ ${Math.round(monthly * 100) / 100}`,
+          content: `Simulação de financiamento: Veículo R$ ${vehicleValue.toLocaleString()}, Entrada R$ ${downPayment.toLocaleString()}, ${numInstallments}x de R$ ${selectedMonthly}`,
           created_by: "ai-consultant",
         });
 
@@ -474,10 +489,11 @@ async function executeTool(
             financed_amount: financed,
             selected_plan: {
               installments: numInstallments,
-              monthly_payment: Math.round(monthly * 100) / 100,
+              monthly_payment: selectedMonthly,
             },
             all_options: options,
             rate_info: "Taxa de 1.89% a.m. (sujeita a análise de crédito)",
+            display_hint: "Mostre em tabela markdown com colunas: Parcelas | Valor | Total. Inclua a entrada e taxa abaixo da tabela.",
           },
         });
       }
