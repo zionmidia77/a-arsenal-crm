@@ -427,6 +427,10 @@ export type Database = {
         | "negotiating"
         | "closed_won"
         | "closed_lost"
+        | "attending"
+        | "thinking"
+        | "waiting_response"
+        | "scheduled"
       task_type: "opportunity" | "relationship" | "value" | "follow_up"
       vehicle_status: "current" | "sold" | "traded"
     }
@@ -574,6 +578,10 @@ export const Constants = {
         "negotiating",
         "closed_won",
         "closed_lost",
+        "attending",
+        "thinking",
+        "waiting_response",
+        "scheduled",
       ],
       task_type: ["opportunity", "relationship", "value", "follow_up"],
       vehicle_status: ["current", "sold", "traded"],
