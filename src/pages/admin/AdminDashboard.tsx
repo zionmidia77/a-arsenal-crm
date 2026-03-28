@@ -252,6 +252,9 @@ const AdminDashboard = () => {
         )}
       </motion.div>
 
+      {/* LTV Automations Dashboard */}
+      <LTVDashboard />
+
       {/* Chart - Real Data */}
       <motion.div variants={fadeUp} className="glass-card p-5">
         <div className="flex items-center gap-2 mb-4">
