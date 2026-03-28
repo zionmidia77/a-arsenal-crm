@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { MessageCircle, Copy, Check, Search, Eye, SortAsc, SortDesc, Filter, CalendarIcon, X, GitMerge, CheckSquare } from "lucide-react";
+import { MessageCircle, Copy, Check, Search, Eye, SortAsc, SortDesc, Filter, CalendarIcon, X, GitMerge, CheckSquare, Phone, CalendarPlus } from "lucide-react";
 import { useClients, useTags } from "@/hooks/useSupabase";
 import { useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -366,18 +366,25 @@ const AdminLeads = () => {
                 <span className="text-[9px] text-muted-foreground font-mono ml-auto">{client.lead_score}pts</span>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex gap-1.5 flex-wrap">
                 {client.phone && (
-                  <Button size="sm" className="rounded-full text-xs gap-1.5 flex-1 h-9" onClick={() => window.open(`https://wa.me/55${client.phone?.replace(/\D/g, "")}`)}>
-                    <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
-                  </Button>
+                  <>
+                    <Button size="sm" className="rounded-full text-xs gap-1 flex-1 h-8" onClick={() => window.open(`https://wa.me/55${client.phone?.replace(/\D/g, "")}`)}>
+                      <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
+                    </Button>
+                    <Button size="sm" variant="outline" className="rounded-full text-xs gap-1 h-8" onClick={() => window.open(`tel:${client.phone?.replace(/\D/g, "")}`)}>
+                      <Phone className="w-3.5 h-3.5" /> Ligar
+                    </Button>
+                  </>
                 )}
-                <Button size="sm" variant="outline" className="rounded-full text-xs gap-1.5 h-9" onClick={() => navigate(`/admin/client/${client.id}`)}>
+                <Button size="sm" variant="outline" className="rounded-full text-xs gap-1 h-8" onClick={() => navigate(`/admin/calendar?client=${client.id}&name=${encodeURIComponent(client.name)}`)}>
+                  <CalendarPlus className="w-3.5 h-3.5" /> Agendar
+                </Button>
+                <Button size="sm" variant="ghost" className="rounded-full text-xs gap-1 h-8" onClick={() => navigate(`/admin/client/${client.id}`)}>
                   <Eye className="w-3.5 h-3.5" /> Ver
                 </Button>
-                <Button size="sm" variant="outline" className="rounded-full text-xs gap-1.5 h-9" onClick={() => copyMsg(client)}>
+                <Button size="sm" variant="ghost" className="rounded-full text-xs gap-1 h-8 px-2" onClick={() => copyMsg(client)}>
                   {copiedId === client.id ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                  {copiedId === client.id ? "!" : "Msg"}
                 </Button>
               </div>
             </motion.div>
