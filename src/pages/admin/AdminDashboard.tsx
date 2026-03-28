@@ -66,6 +66,24 @@ const AdminDashboard = () => {
   const { data: overdueTasks } = useOverdueTasks();
   const { data: pendingTasks } = useAllPendingTasks();
   const { data: chartData } = useLeadsChartData();
+  const [dismissedBirthday, setDismissedBirthday] = useState(false);
+
+  // Birthday query
+  const { data: birthdayClients } = useQuery({
+    queryKey: ["birthday-today"],
+    queryFn: async () => {
+      const { data } = await supabase.from("clients").select("id, name, phone, birthdate");
+      if (!data) return [];
+      const today = new Date();
+      const m = today.getMonth() + 1;
+      const d = today.getDate();
+      return data.filter(c => {
+        if (!c.birthdate) return false;
+        const bd = new Date(c.birthdate + "T12:00:00");
+        return bd.getMonth() + 1 === m && bd.getDate() === d;
+      });
+    },
+  });
 
   const hotLeads = (recentClients || []).filter(c => c.temperature === "hot").slice(0, 5);
   const todayTasks = (pendingTasks || []).filter(t => t.due_date === new Date().toISOString().split("T")[0]);
