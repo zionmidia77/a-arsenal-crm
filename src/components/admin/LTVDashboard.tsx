@@ -59,12 +59,50 @@ const useLTVStats = () =>
         .eq("type", "birthday")
         .eq("status", "pending");
 
+      // NPS trend - last 6 months
+      const sixMonthsAgo = new Date();
+      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+      const { data: npsData } = await supabase
+        .from("nps_responses")
+        .select("score, created_at")
+        .gte("created_at", sixMonthsAgo.toISOString())
+        .order("created_at", { ascending: true });
+
+      // Group NPS by month
+      const npsMonthly: Record<string, { total: number; count: number }> = {};
+      (npsData || []).forEach((r) => {
+        const d = new Date(r.created_at);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+        if (!npsMonthly[key]) npsMonthly[key] = { total: 0, count: 0 };
+        npsMonthly[key].total += r.score;
+        npsMonthly[key].count += 1;
+      });
+
+      const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+      const npsTrend = Object.entries(npsMonthly)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([key, val]) => {
+          const [, m] = key.split("-");
+          return {
+            month: monthNames[parseInt(m) - 1],
+            avg: Math.round((val.total / val.count) * 10) / 10,
+            count: val.count,
+          };
+        });
+
+      // Overall NPS average
+      const allScores = (npsData || []).map((r) => r.score);
+      const npsAvg = allScores.length > 0 ? Math.round((allScores.reduce((a, b) => a + b, 0) / allScores.length) * 10) / 10 : null;
+
       return {
         birthdaysToday,
         birthdaysThisMonth,
         checkinTasks: checkinTasks || [],
         upgrades: upgrades || [],
         pendingBdayOpps: bdayOpps?.length || 0,
+        npsTrend,
+        npsAvg,
+        npsTotal: allScores.length,
       };
     },
   });
