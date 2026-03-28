@@ -210,6 +210,33 @@ const tools = [
   {
     type: "function",
     function: {
+      name: "send_whatsapp_proposal",
+      description:
+        "Generate and send a financing proposal via WhatsApp when the client approves the simulation. Creates a formatted proposal message with all details and generates a wa.me link. Call this ONLY after the client says they want to proceed with the financing.",
+      parameters: {
+        type: "object",
+        properties: {
+          client_id: { type: "string", description: "Client UUID" },
+          client_name: { type: "string", description: "Client's name" },
+          client_phone: { type: "string", description: "Client's phone number" },
+          vehicle_description: { type: "string", description: "Vehicle brand + model + year" },
+          vehicle_value: { type: "number", description: "Total vehicle value in BRL" },
+          down_payment: { type: "number", description: "Down payment amount in BRL" },
+          installments: { type: "number", description: "Number of installments chosen" },
+          monthly_payment: { type: "number", description: "Monthly payment amount in BRL" },
+          has_trade_in: { type: "boolean", description: "Client has a trade-in vehicle" },
+          trade_in_description: { type: "string", description: "Trade-in vehicle description if applicable" },
+          trade_in_value: { type: "number", description: "Estimated trade-in value if applicable" },
+          additional_notes: { type: "string", description: "Any additional notes about the deal" },
+        },
+        required: ["client_id", "client_name", "client_phone", "vehicle_description", "vehicle_value", "installments", "monthly_payment"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "log_interaction",
       description: "Log an important interaction/event in the client timeline",
       parameters: {
@@ -469,6 +496,95 @@ async function executeTool(
         });
       }
 
+      case "send_whatsapp_proposal": {
+        const clientName = args.client_name as string;
+        const phone = (args.client_phone as string).replace(/\D/g, "");
+        const vehicle = args.vehicle_description as string;
+        const value = args.vehicle_value as number;
+        const dp = (args.down_payment as number) || 0;
+        const inst = args.installments as number;
+        const monthly = args.monthly_payment as number;
+        const hasTradeIn = args.has_trade_in as boolean;
+        const tradeDesc = (args.trade_in_description as string) || "";
+        const tradeValue = (args.trade_in_value as number) || 0;
+        const notes = (args.additional_notes as string) || "";
+
+        // Format the proposal message
+        const today = new Date().toLocaleDateString("pt-BR");
+        let proposalMsg = `🏍️ *PROPOSTA ARSENAL MOTORS*\n`;
+        proposalMsg += `📅 ${today}\n\n`;
+        proposalMsg += `Olá, *${clientName}*! Segue sua proposta:\n\n`;
+        proposalMsg += `🏷️ *Veículo:* ${vehicle}\n`;
+        proposalMsg += `💰 *Valor:* R$ ${value.toLocaleString("pt-BR")}\n`;
+        if (dp > 0) {
+          proposalMsg += `💵 *Entrada:* R$ ${dp.toLocaleString("pt-BR")}\n`;
+        }
+        if (hasTradeIn && tradeDesc) {
+          proposalMsg += `🔄 *Troca:* ${tradeDesc}`;
+          if (tradeValue > 0) proposalMsg += ` (avaliação: R$ ${tradeValue.toLocaleString("pt-BR")})`;
+          proposalMsg += `\n`;
+        }
+        proposalMsg += `📊 *Financiamento:* ${inst}x de R$ ${monthly.toLocaleString("pt-BR")}\n`;
+        proposalMsg += `📈 *Taxa:* 1.89% a.m. (sujeita a análise)\n\n`;
+        if (notes) proposalMsg += `📝 ${notes}\n\n`;
+        proposalMsg += `✅ *Próximos passos:*\n`;
+        proposalMsg += `1. Análise de crédito (resposta em até 2h)\n`;
+        proposalMsg += `2. Documentação\n`;
+        proposalMsg += `3. Retirada da moto! 🎉\n\n`;
+        proposalMsg += `_Arsenal Motors — Sua moto dos sonhos está aqui!_\n`;
+        proposalMsg += `📞 Horário: Seg-Sáb 8h às 18h`;
+
+        // Generate WhatsApp link
+        const phoneFormatted = phone.startsWith("55") ? phone : `55${phone}`;
+        const waLink = `https://wa.me/${phoneFormatted}?text=${encodeURIComponent(proposalMsg)}`;
+
+        // Save proposal as message sent
+        await supabase.from("messages_sent").insert({
+          client_id: args.client_id as string,
+          message_content: proposalMsg,
+          channel: "whatsapp",
+        });
+
+        // Update pipeline stage
+        await supabase
+          .from("clients")
+          .update({
+            pipeline_stage: "negotiating",
+            temperature: "hot",
+            has_down_payment: dp > 0,
+            down_payment_amount: dp > 0 ? dp : null,
+            payment_type: "financing",
+            last_contact_at: new Date().toISOString(),
+          })
+          .eq("id", args.client_id);
+
+        // Log interaction
+        await supabase.from("interactions").insert({
+          client_id: args.client_id as string,
+          type: "whatsapp",
+          content: `Proposta de financiamento enviada via WhatsApp: ${vehicle} — ${inst}x de R$ ${monthly}`,
+          created_by: "ai-consultant",
+        });
+
+        // Create follow-up task
+        await supabase.from("tasks").insert({
+          client_id: args.client_id as string,
+          type: "follow_up",
+          reason: `📋 Acompanhar proposta enviada: ${vehicle} — ${inst}x de R$ ${monthly}`,
+          due_date: new Date(Date.now() + 86400000).toISOString().split("T")[0],
+          priority: 9,
+          source: "ai-chat",
+          status: "pending",
+        });
+
+        return JSON.stringify({
+          success: true,
+          whatsapp_link: waLink,
+          message: `Proposta gerada! Link do WhatsApp pronto. Diga ao cliente que a proposta será enviada no WhatsApp dele. Inclua o link na sua resposta assim: [📲 Abrir proposta no WhatsApp](${waLink})`,
+          proposal_summary: `${vehicle} — Entrada R$ ${dp.toLocaleString("pt-BR")} + ${inst}x de R$ ${monthly}`,
+        });
+      }
+
       case "log_interaction": {
         const { error } = await supabase.from("interactions").insert({
           client_id: args.client_id as string,
@@ -571,9 +687,19 @@ Cada dado no CRM é uma oportunidade:
 Quando o cliente quer financiar:
 1. Pergunte valor de entrada
 2. Pergunte se nome está limpo
-3. Use simulate_financing para mostrar opções
-4. Diga: "Com entrada de R$ X, fica 48x de R$ Y. Quer que eu faça a análise de crédito?"
-5. Se aprovar → schedule_visit para finalizar
+3. Use simulate_financing para mostrar opções de parcela
+4. Apresente: "Com entrada de R$ X, fica 48x de R$ Y"
+5. Se o cliente APROVAR/TOPAR → use send_whatsapp_proposal IMEDIATAMENTE
+6. Diga: "Pronto! Mandei a proposta completa no seu WhatsApp 📲"
+7. Em seguida → schedule_visit para finalizar
+
+## ENVIO DE PROPOSTA VIA WHATSAPP
+- Quando o cliente demonstrar interesse na simulação (disse "quero", "pode ser", "tá bom", "manda", "vamos", "fecha", "gostei"), use send_whatsapp_proposal
+- NÃO espere o cliente pedir explicitamente — seja proativo!
+- Após enviar, SEMPRE inclua o link do WhatsApp na resposta usando markdown: [📲 Abrir proposta no WhatsApp](link)
+- O link abre o WhatsApp do cliente com a proposta formatada pronta pra enviar
+- Isso move o lead para "Negociando" no pipeline automaticamente
+- Uma tarefa de follow-up é criada automaticamente para o dia seguinte
 
 ## INFORMAÇÕES DA LOJA
 - Arsenal Motors — Motos novas e seminovas
