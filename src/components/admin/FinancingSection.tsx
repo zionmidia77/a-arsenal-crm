@@ -145,8 +145,17 @@ const FinancingSection = ({ client }: FinancingSectionProps) => {
     }
   };
 
+  const verifying = verifyStep >= 0;
+
+  const VERIFY_STEPS = [
+    { label: "Enviando imagem", icon: Upload, emoji: "📤" },
+    { label: "Extraindo dados do holerite", icon: Search, emoji: "🔍" },
+    { label: "Verificando empresa na Receita Federal", icon: Shield, emoji: "🏛️" },
+    { label: "Salvando resultados", icon: Save, emoji: "💾" },
+  ];
+
   const verifyEmployer = async (file: File) => {
-    setVerifying(true);
+    setVerifyStep(0);
     try {
       const base64 = await new Promise<string>((resolve) => {
         const reader = new FileReader();
@@ -154,15 +163,18 @@ const FinancingSection = ({ client }: FinancingSectionProps) => {
         reader.readAsDataURL(file);
       });
 
+      setVerifyStep(1);
+
       const { data, error } = await supabase.functions.invoke("verify-employer", {
         body: { image_base64: base64, client_id: client.id },
       });
 
       if (error) throw error;
 
+      setVerifyStep(2);
+
       if (data?.extracted) {
         setExtractedPayStub(data.extracted);
-        // Auto-fill fields from pay stub
         const ext = data.extracted;
         const updates: any = { id: client.id };
         if (ext.employer_name && !client.employer) updates.employer = ext.employer_name;
@@ -182,11 +194,12 @@ const FinancingSection = ({ client }: FinancingSectionProps) => {
         }
       }
 
+      setVerifyStep(3);
+
       if (data?.verification) {
         setVerification(data.verification);
         setShowVerification(true);
         toast.success("Empresa verificada com sucesso!");
-        // Reload history
         const { data: histData } = await supabase
           .from("employer_verifications")
           .select("*")
@@ -194,11 +207,14 @@ const FinancingSection = ({ client }: FinancingSectionProps) => {
           .order("created_at", { ascending: false });
         if (histData) setVerificationHistory(histData);
       }
+
+      // Brief pause to show completed state
+      await new Promise(r => setTimeout(r, 800));
     } catch (err: any) {
       console.error("Verify error:", err);
       toast.error("Erro ao verificar empresa: " + (err.message || "tente novamente"));
     } finally {
-      setVerifying(false);
+      setVerifyStep(-1);
     }
   };
 
