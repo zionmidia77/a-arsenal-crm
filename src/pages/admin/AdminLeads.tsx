@@ -2,7 +2,8 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MessageCircle, Copy, Check, Search, Eye, SortAsc, SortDesc, Filter, CalendarIcon, X } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { MessageCircle, Copy, Check, Search, Eye, SortAsc, SortDesc, Filter, CalendarIcon, X, GitMerge, CheckSquare } from "lucide-react";
 import { useClients, useTags } from "@/hooks/useSupabase";
 import { useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
+import MergeLeadsDialog from "@/components/admin/MergeLeadsDialog";
 
 const tempStyles: Record<string, string> = {
   hot: "border-l-primary bg-primary/5",
@@ -63,6 +65,9 @@ const AdminLeads = () => {
   const [sortField, setSortField] = useState<SortField>("created_at");
   const [sortAsc, setSortAsc] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [mergeOpen, setMergeOpen] = useState(false);
   const navigate = useNavigate();
 
   const { data: clients, isLoading } = useClients(
@@ -107,6 +112,22 @@ const AdminLeads = () => {
 
   const hasActiveFilters = filter !== "all" || stageFilter !== "all" || sourceFilter !== "all" || tagFilter !== "all" || dateFrom || dateTo;
 
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const exitSelectMode = () => {
+    setSelectMode(false);
+    setSelectedIds(new Set());
+  };
+
+  const selectedLeads = (clients || []).filter((c) => selectedIds.has(c.id));
+
   const clientIdsWithTag = tagFilter !== "all" && tagAssignments
     ? tagAssignments.filter(a => a.tag_id === tagFilter).map(a => a.client_id)
     : null;
@@ -137,10 +158,42 @@ const AdminLeads = () => {
 
   return (
     <motion.div variants={stagger} initial="initial" animate="animate" className="p-5 md:p-6 space-y-5 max-w-4xl">
-      <motion.div variants={fadeUp}>
-        <h1 className="text-2xl font-display font-bold">Leads</h1>
-        <p className="text-sm text-muted-foreground">{clients?.length || 0} leads capturados</p>
+      <motion.div variants={fadeUp} className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-display font-bold">Leads</h1>
+          <p className="text-sm text-muted-foreground">{clients?.length || 0} leads capturados</p>
+        </div>
+        <Button
+          variant={selectMode ? "default" : "outline"}
+          size="sm"
+          className="rounded-full text-xs gap-1.5 h-9"
+          onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)}
+        >
+          <CheckSquare className="w-3.5 h-3.5" />
+          {selectMode ? "Cancelar" : "Selecionar"}
+        </Button>
       </motion.div>
+
+      {/* Merge action bar */}
+      {selectMode && selectedIds.size >= 2 && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center gap-3 p-3 rounded-xl bg-primary/10 border border-primary/30"
+        >
+          <GitMerge className="w-4 h-4 text-primary shrink-0" />
+          <span className="text-sm font-medium flex-1">
+            {selectedIds.size} leads selecionados
+          </span>
+          <Button
+            size="sm"
+            className="rounded-full text-xs gap-1.5 h-8 glow-red"
+            onClick={() => setMergeOpen(true)}
+          >
+            <GitMerge className="w-3.5 h-3.5" /> Mesclar
+          </Button>
+        </motion.div>
+      )}
 
       <motion.div variants={fadeUp} className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -276,9 +329,16 @@ const AdminLeads = () => {
       ) : (
         <div className="space-y-3">
           {filtered.map((client) => (
-            <motion.div key={client.id} variants={fadeUp} className={`glass-card-hover p-4 border-l-4 ${tempStyles[client.temperature]}`}>
+            <motion.div key={client.id} variants={fadeUp} className={`glass-card-hover p-4 border-l-4 ${tempStyles[client.temperature]} ${selectedIds.has(client.id) ? "ring-1 ring-primary/50 bg-primary/5" : ""}`}>
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-3">
+                  {selectMode && (
+                    <Checkbox
+                      checked={selectedIds.has(client.id)}
+                      onCheckedChange={() => toggleSelect(client.id)}
+                      className="mt-0.5"
+                    />
+                  )}
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${tempBadge[client.temperature]}`}>
                     {client.name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}
                   </div>
@@ -327,6 +387,13 @@ const AdminLeads = () => {
           )}
         </div>
       )}
+
+      <MergeLeadsDialog
+        open={mergeOpen}
+        onOpenChange={setMergeOpen}
+        selectedLeads={selectedLeads}
+        onComplete={exitSelectMode}
+      />
     </motion.div>
   );
 };
