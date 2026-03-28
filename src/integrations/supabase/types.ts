@@ -554,8 +554,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      auto_birthday_alerts: { Args: never; Returns: undefined }
+      auto_checkin_schedule: { Args: never; Returns: undefined }
       auto_cool_leads: { Args: never; Returns: undefined }
       auto_escalate_stale_leads: { Args: never; Returns: undefined }
+      auto_upgrade_alerts: { Args: never; Returns: undefined }
       calculate_lead_score: {
         Args: { client_id_param: string }
         Returns: number
