@@ -607,7 +607,7 @@ async function executeTool(
             };
           }),
           total: data.length,
-          display_hint: "Apresente cada moto em formato visual com emojis: 🏍️ Marca Modelo Ano, condição, km, cor, preço em negrito. Use simulate_financing para cada opção relevante.",
+          display_hint: "Apresente cada veículo em formato visual com emojis: 🚗 ou 🏍️ Marca Modelo Ano, condição, km, cor, preço em negrito. Use simulate_financing para cada opção relevante.",
         });
       }
 
