@@ -696,7 +696,7 @@ async function executeTool(
           store_visit: "Visita à loja",
           video_call: "Videochamada",
           phone_call: "Ligação",
-          evaluation: "Avaliação de moto",
+          evaluation: "Avaliação de veículo",
         };
         const label = visitLabels[args.visit_type as string] || "Agendamento";
 
