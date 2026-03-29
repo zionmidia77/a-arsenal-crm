@@ -329,6 +329,127 @@ const LTVDashboard = () => {
         </div>
       </div>
 
+      {/* === LTV METRICS SECTION === */}
+      <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-4">
+        <div className="flex items-center gap-2">
+          <BarChart3 className="w-4 h-4 text-primary" />
+          <p className="text-xs font-display font-semibold">Métricas de LTV</p>
+        </div>
+
+        {/* Key metrics row */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="rounded-xl bg-background/60 p-3 border border-border/30">
+            <div className="flex items-center gap-1.5 mb-1">
+              <DollarSign className="w-3.5 h-3.5 text-success" />
+              <span className="text-[10px] text-muted-foreground">LTV Médio</span>
+            </div>
+            <p className="text-xl font-display font-bold text-success">
+              {data.avgLTV > 0 ? `R$ ${(data.avgLTV / 1000).toFixed(1)}k` : "—"}
+            </p>
+            <p className="text-[9px] text-muted-foreground">{data.clientsWithVehicles} clientes com veículos</p>
+          </div>
+          <div className="rounded-xl bg-background/60 p-3 border border-border/30">
+            <div className="flex items-center gap-1.5 mb-1">
+              <RefreshCw className="w-3.5 h-3.5 text-info" />
+              <span className="text-[10px] text-muted-foreground">Taxa de Recompra</span>
+            </div>
+            <p className="text-xl font-display font-bold text-info">
+              {data.repurchaseRate > 0 ? `${data.repurchaseRate.toFixed(0)}%` : "0%"}
+            </p>
+            <p className="text-[9px] text-muted-foreground">{data.repeatBuyers} compraram 2x+</p>
+          </div>
+          <div className="rounded-xl bg-background/60 p-3 border border-border/30">
+            <div className="flex items-center gap-1.5 mb-1">
+              <Clock className="w-3.5 h-3.5 text-warning" />
+              <span className="text-[10px] text-muted-foreground">Tempo p/ 2ª Compra</span>
+            </div>
+            <p className="text-xl font-display font-bold text-warning">
+              {data.avgDaysToSecond > 0 ? `${Math.round(data.avgDaysToSecond)}d` : "—"}
+            </p>
+            <p className="text-[9px] text-muted-foreground">média em dias</p>
+          </div>
+          <div className="rounded-xl bg-background/60 p-3 border border-border/30">
+            <div className="flex items-center gap-1.5 mb-1">
+              <Users className="w-3.5 h-3.5 text-primary" />
+              <span className="text-[10px] text-muted-foreground">Retenção</span>
+            </div>
+            <p className="text-xl font-display font-bold text-primary">
+              {data.retentionRate.toFixed(0)}%
+            </p>
+            <p className="text-[9px] text-muted-foreground">{data.activeClients} ativos / {data.totalClients} total</p>
+          </div>
+        </div>
+
+        {/* Revenue summary */}
+        {data.totalRevenue > 0 && (
+          <div className="rounded-xl bg-gradient-to-r from-success/10 to-primary/10 p-3 border border-success/20">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[10px] text-muted-foreground">Receita Total Estimada</p>
+                <p className="text-2xl font-display font-bold text-success">
+                  R$ {(data.totalRevenue / 1000).toFixed(0)}k
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] text-muted-foreground">Vendas fechadas</p>
+                <p className="text-lg font-display font-bold">{data.closedWon}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Lifecycle funnel */}
+        {data.lifecycleStages.length > 0 && (
+          <div>
+            <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-2">
+              Ciclo de Vida dos Clientes
+            </p>
+            <div className="space-y-1.5">
+              {data.lifecycleStages.map((stage) => {
+                const maxVal = Math.max(...data.lifecycleStages.map(s => s.value));
+                const pct = maxVal > 0 ? (stage.value / maxVal) * 100 : 0;
+                return (
+                  <div key={stage.name} className="flex items-center gap-2">
+                    <span className="text-[10px] text-muted-foreground w-20 shrink-0">{stage.name}</span>
+                    <div className="flex-1 h-5 bg-secondary/50 rounded-full overflow-hidden">
+                      <motion.div
+                        className="h-full rounded-full flex items-center justify-end px-2"
+                        style={{ backgroundColor: stage.color }}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${Math.max(pct, 8)}%` }}
+                        transition={{ duration: 0.8, ease: "easeOut" }}
+                      >
+                        <span className="text-[9px] font-bold text-white">{stage.value}</span>
+                      </motion.div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Revenue trend chart */}
+        {data.revenueTrend.length > 1 && (
+          <div>
+            <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-2">
+              Receita Mensal (últimos 6 meses)
+            </p>
+            <ResponsiveContainer width="100%" height={100}>
+              <BarChart data={data.revenueTrend} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                <XAxis dataKey="month" tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} />
+                <Tooltip
+                  contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, fontSize: 11 }}
+                  formatter={(value: number) => [`R$ ${(value/1000).toFixed(1)}k`, "Receita"]}
+                />
+                <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </div>
+
       {/* Stat Cards */}
       <div className="grid grid-cols-3 gap-3">
         {cards.map((card, i) => (
