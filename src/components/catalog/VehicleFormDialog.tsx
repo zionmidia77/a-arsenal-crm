@@ -255,7 +255,15 @@ const VehicleFormDialog = ({ open, onOpenChange, vehicle, onSuccess }: Props) =>
               brand={form.brand}
               model={form.model}
               year={form.year}
-              onFipeValue={(value) => update("fipe_value", value)}
+              vehicleType={form.fipe_vehicle_type || "carros"}
+              onVehicleTypeChange={(type) => update("fipe_vehicle_type", type)}
+              onFipeValue={(value, codes) => {
+                update("fipe_value", value);
+                update("fipe_brand_code", codes.brandCode);
+                update("fipe_model_code", codes.modelCode);
+                update("fipe_year_code", codes.yearCode);
+                update("fipe_vehicle_type", codes.vehicleType);
+              }}
             />
 
             {form.fipe_value && (
