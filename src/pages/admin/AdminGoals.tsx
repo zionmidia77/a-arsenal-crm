@@ -296,6 +296,26 @@ const AdminGoals = () => {
     setEditOpen(true);
   };
 
+  // Growth comparison helper
+  const growthPct = (current: number, previous: number) => {
+    if (previous === 0) return current > 0 ? 100 : 0;
+    return Math.round(((current - previous) / previous) * 100);
+  };
+
+  const GrowthBadge = ({ current, previous, label }: { current: number; previous: number; label?: string }) => {
+    const pct = growthPct(current, previous);
+    const isUp = pct > 0;
+    const isDown = pct < 0;
+    return (
+      <span className={`inline-flex items-center gap-0.5 text-xs font-medium ${isUp ? "text-green-400" : isDown ? "text-destructive" : "text-muted-foreground"}`}>
+        {isUp ? <ArrowUpRight className="w-3 h-3" /> : isDown ? <ArrowDownRight className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
+        {Math.abs(pct)}%{label ? ` ${label}` : ""}
+      </span>
+    );
+  };
+
+  const ltvPct = (targets as any).target_ltv > 0 ? Math.round((ltv.avgRevenue / (targets as any).target_ltv) * 100) : 0;
+
   const salesPct = targets.target_sales > 0 ? Math.round((actual.sales / targets.target_sales) * 100) : 0;
   const overallPct = Math.round(
     ((actual.sales / Math.max(targets.target_sales, 1)) * 50 +
