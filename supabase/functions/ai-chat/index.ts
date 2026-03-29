@@ -721,7 +721,7 @@ async function executeTool(
           proposalMsg += `\n`;
         }
         proposalMsg += `📊 *Financiamento:* ${inst}x de R$ ${monthly.toLocaleString("pt-BR")}\n`;
-        proposalMsg += `📈 *Taxa:* 1.89% a.m. (sujeita a análise)\n\n`;
+        proposalMsg += `📈 *Banco:* Aqui Financiamentos (Moto Leve)\n\n`;
         if (notes) proposalMsg += `📝 ${notes}\n\n`;
         proposalMsg += `✅ *Próximos passos:*\n`;
         proposalMsg += `1. Análise de crédito (resposta em até 2h)\n`;
