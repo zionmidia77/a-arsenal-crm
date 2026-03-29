@@ -1,12 +1,20 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
-import { Cake, PhoneCall, ArrowUpCircle, Sparkles, ChevronRight, ChevronDown, ChevronUp, TrendingUp, MessageCircle, Gift, Eye, CheckCircle2 } from "lucide-react";
+import {
+  Cake, PhoneCall, ArrowUpCircle, Sparkles, ChevronRight, ChevronDown, ChevronUp,
+  TrendingUp, MessageCircle, Gift, Eye, CheckCircle2, DollarSign, Users, RefreshCw,
+  Clock, BarChart3
+} from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
+import { Progress } from "@/components/ui/progress";
+import {
+  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine,
+  BarChart, Bar, PieChart, Pie, Cell
+} from "recharts";
 import { toast } from "sonner";
 
 const useLTVStats = () =>
@@ -108,6 +116,87 @@ const useLTVStats = () =>
 
       const congratulatedIds = new Set((congratulated || []).map(c => c.client_id));
 
+      // === LTV METRICS ===
+      // All clients for lifecycle analysis
+      const { data: allClients } = await supabase
+        .from("clients")
+        .select("id, name, status, pipeline_stage, created_at, updated_at");
+      const clients = allClients || [];
+
+      // All financing simulations (revenue proxy)
+      const { data: allSims } = await supabase
+        .from("financing_simulations")
+        .select("client_id, moto_value, created_at")
+        .eq("status", "approved");
+
+      // All vehicles (purchased)
+      const { data: allVehicles } = await supabase
+        .from("vehicles")
+        .select("client_id, estimated_value, created_at, status");
+
+      // Calculate LTV metrics
+      const totalClients = clients.length;
+      const activeClients = clients.filter(c => c.status === "active").length;
+      const closedWon = clients.filter(c => c.pipeline_stage === "closed_won").length;
+
+      // Revenue per client from vehicles
+      const vehiclesByClient: Record<string, { count: number; totalValue: number; dates: string[] }> = {};
+      (allVehicles || []).forEach(v => {
+        if (!vehiclesByClient[v.client_id]) vehiclesByClient[v.client_id] = { count: 0, totalValue: 0, dates: [] };
+        vehiclesByClient[v.client_id].count += 1;
+        vehiclesByClient[v.client_id].totalValue += Number(v.estimated_value || 0);
+        vehiclesByClient[v.client_id].dates.push(v.created_at);
+      });
+
+      // Average LTV (avg revenue per client with vehicles)
+      const clientsWithVehicles = Object.keys(vehiclesByClient).length;
+      const totalRevenue = Object.values(vehiclesByClient).reduce((s, v) => s + v.totalValue, 0);
+      const avgLTV = clientsWithVehicles > 0 ? totalRevenue / clientsWithVehicles : 0;
+
+      // Repurchase rate (clients with 2+ vehicles)
+      const repeatBuyers = Object.values(vehiclesByClient).filter(v => v.count >= 2).length;
+      const repurchaseRate = clientsWithVehicles > 0 ? (repeatBuyers / clientsWithVehicles) * 100 : 0;
+
+      // Average time to second purchase
+      let avgDaysToSecond = 0;
+      let secondPurchaseCount = 0;
+      Object.values(vehiclesByClient).forEach(v => {
+        if (v.dates.length >= 2) {
+          const sorted = v.dates.map(d => new Date(d).getTime()).sort();
+          const daysDiff = (sorted[1] - sorted[0]) / (1000 * 60 * 60 * 24);
+          avgDaysToSecond += daysDiff;
+          secondPurchaseCount += 1;
+        }
+      });
+      avgDaysToSecond = secondPurchaseCount > 0 ? avgDaysToSecond / secondPurchaseCount : 0;
+
+      // Lifecycle stages distribution
+      const lifecycleStages = [
+        { name: "Novos", value: clients.filter(c => c.pipeline_stage === "new").length, color: "hsl(var(--info))" },
+        { name: "Em contato", value: clients.filter(c => ["contacted", "interested", "attending"].includes(c.pipeline_stage)).length, color: "hsl(var(--warning))" },
+        { name: "Negociando", value: clients.filter(c => ["negotiating", "scheduled"].includes(c.pipeline_stage)).length, color: "hsl(var(--primary))" },
+        { name: "Fechados", value: closedWon, color: "hsl(var(--success))" },
+        { name: "Perdidos", value: clients.filter(c => c.pipeline_stage === "closed_lost").length, color: "hsl(var(--muted-foreground))" },
+      ].filter(s => s.value > 0);
+
+      // Monthly revenue trend (from vehicles created_at)
+      const revenueByMonth: Record<string, number> = {};
+      (allVehicles || []).forEach(v => {
+        const d = new Date(v.created_at);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+        revenueByMonth[key] = (revenueByMonth[key] || 0) + Number(v.estimated_value || 0);
+      });
+      const revenueTrend = Object.entries(revenueByMonth)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .slice(-6)
+        .map(([key, val]) => ({
+          month: monthNames[parseInt(key.split("-")[1]) - 1],
+          revenue: val,
+        }));
+
+      // Client retention (active vs churned)
+      const retentionRate = totalClients > 0 ? ((totalClients - clients.filter(c => c.status === "lost").length) / totalClients) * 100 : 100;
+
       return {
         birthdaysToday,
         birthdaysThisMonth,
@@ -118,6 +207,19 @@ const useLTVStats = () =>
         npsTrend,
         npsAvg,
         npsTotal: allScores.length,
+        // LTV metrics
+        avgLTV,
+        totalRevenue,
+        repurchaseRate,
+        repeatBuyers,
+        clientsWithVehicles,
+        avgDaysToSecond,
+        lifecycleStages,
+        revenueTrend,
+        retentionRate,
+        totalClients,
+        activeClients,
+        closedWon,
       };
     },
   });
@@ -225,6 +327,127 @@ const LTVDashboard = () => {
           <p className="text-sm font-display font-semibold">Automações LTV</p>
           <p className="text-[11px] text-muted-foreground">Relacionamento & retenção de clientes</p>
         </div>
+      </div>
+
+      {/* === LTV METRICS SECTION === */}
+      <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-4">
+        <div className="flex items-center gap-2">
+          <BarChart3 className="w-4 h-4 text-primary" />
+          <p className="text-xs font-display font-semibold">Métricas de LTV</p>
+        </div>
+
+        {/* Key metrics row */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="rounded-xl bg-background/60 p-3 border border-border/30">
+            <div className="flex items-center gap-1.5 mb-1">
+              <DollarSign className="w-3.5 h-3.5 text-success" />
+              <span className="text-[10px] text-muted-foreground">LTV Médio</span>
+            </div>
+            <p className="text-xl font-display font-bold text-success">
+              {data.avgLTV > 0 ? `R$ ${(data.avgLTV / 1000).toFixed(1)}k` : "—"}
+            </p>
+            <p className="text-[9px] text-muted-foreground">{data.clientsWithVehicles} clientes com veículos</p>
+          </div>
+          <div className="rounded-xl bg-background/60 p-3 border border-border/30">
+            <div className="flex items-center gap-1.5 mb-1">
+              <RefreshCw className="w-3.5 h-3.5 text-info" />
+              <span className="text-[10px] text-muted-foreground">Taxa de Recompra</span>
+            </div>
+            <p className="text-xl font-display font-bold text-info">
+              {data.repurchaseRate > 0 ? `${data.repurchaseRate.toFixed(0)}%` : "0%"}
+            </p>
+            <p className="text-[9px] text-muted-foreground">{data.repeatBuyers} compraram 2x+</p>
+          </div>
+          <div className="rounded-xl bg-background/60 p-3 border border-border/30">
+            <div className="flex items-center gap-1.5 mb-1">
+              <Clock className="w-3.5 h-3.5 text-warning" />
+              <span className="text-[10px] text-muted-foreground">Tempo p/ 2ª Compra</span>
+            </div>
+            <p className="text-xl font-display font-bold text-warning">
+              {data.avgDaysToSecond > 0 ? `${Math.round(data.avgDaysToSecond)}d` : "—"}
+            </p>
+            <p className="text-[9px] text-muted-foreground">média em dias</p>
+          </div>
+          <div className="rounded-xl bg-background/60 p-3 border border-border/30">
+            <div className="flex items-center gap-1.5 mb-1">
+              <Users className="w-3.5 h-3.5 text-primary" />
+              <span className="text-[10px] text-muted-foreground">Retenção</span>
+            </div>
+            <p className="text-xl font-display font-bold text-primary">
+              {data.retentionRate.toFixed(0)}%
+            </p>
+            <p className="text-[9px] text-muted-foreground">{data.activeClients} ativos / {data.totalClients} total</p>
+          </div>
+        </div>
+
+        {/* Revenue summary */}
+        {data.totalRevenue > 0 && (
+          <div className="rounded-xl bg-gradient-to-r from-success/10 to-primary/10 p-3 border border-success/20">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[10px] text-muted-foreground">Receita Total Estimada</p>
+                <p className="text-2xl font-display font-bold text-success">
+                  R$ {(data.totalRevenue / 1000).toFixed(0)}k
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] text-muted-foreground">Vendas fechadas</p>
+                <p className="text-lg font-display font-bold">{data.closedWon}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Lifecycle funnel */}
+        {data.lifecycleStages.length > 0 && (
+          <div>
+            <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-2">
+              Ciclo de Vida dos Clientes
+            </p>
+            <div className="space-y-1.5">
+              {data.lifecycleStages.map((stage) => {
+                const maxVal = Math.max(...data.lifecycleStages.map(s => s.value));
+                const pct = maxVal > 0 ? (stage.value / maxVal) * 100 : 0;
+                return (
+                  <div key={stage.name} className="flex items-center gap-2">
+                    <span className="text-[10px] text-muted-foreground w-20 shrink-0">{stage.name}</span>
+                    <div className="flex-1 h-5 bg-secondary/50 rounded-full overflow-hidden">
+                      <motion.div
+                        className="h-full rounded-full flex items-center justify-end px-2"
+                        style={{ backgroundColor: stage.color }}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${Math.max(pct, 8)}%` }}
+                        transition={{ duration: 0.8, ease: "easeOut" }}
+                      >
+                        <span className="text-[9px] font-bold text-white">{stage.value}</span>
+                      </motion.div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Revenue trend chart */}
+        {data.revenueTrend.length > 1 && (
+          <div>
+            <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-2">
+              Receita Mensal (últimos 6 meses)
+            </p>
+            <ResponsiveContainer width="100%" height={100}>
+              <BarChart data={data.revenueTrend} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                <XAxis dataKey="month" tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} />
+                <Tooltip
+                  contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, fontSize: 11 }}
+                  formatter={(value: number) => [`R$ ${(value/1000).toFixed(1)}k`, "Receita"]}
+                />
+                <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
       </div>
 
       {/* Stat Cards */}
