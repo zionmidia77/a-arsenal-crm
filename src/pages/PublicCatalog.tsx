@@ -433,7 +433,7 @@ const PublicCatalog = () => {
               { icon: Gauge, label: "Quilometragem", value: v.km != null ? `${v.km.toLocaleString("pt-BR")} km` : "—" },
               { icon: Palette, label: "Cor", value: v.color || "—" },
               { icon: Fuel, label: "Combustível", value: v.fuel || "—" },
-              { icon: Info, label: "Condição", value: v.condition === "new" ? "0km" : "Seminova" },
+              { icon: Info, label: "Condição", value: v.condition === "new" ? "0km" : "Seminovo" },
             ];
 
             return (
