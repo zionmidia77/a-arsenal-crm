@@ -767,7 +767,7 @@ async function executeTool(
         proposalMsg += `1. Análise de crédito (resposta em até 2h)\n`;
         proposalMsg += `2. Documentação\n`;
         proposalMsg += `3. Retirada do veículo! 🎉\n\n`;
-        proposalMsg += `_Arsenal Motors — Sua moto dos sonhos está aqui!_\n`;
+        proposalMsg += `_Arsenal Motors — Seu veículo dos sonhos está aqui!_\n`;
         proposalMsg += `📞 Horário: Seg-Sáb 8h às 18h`;
 
         // Generate WhatsApp link
