@@ -136,7 +136,7 @@ const CardCarousel = ({ photos, alt }: { photos: string[]; alt: string }) => {
 
   return (
     <>
-      <div className="relative w-full h-full group/carousel">
+      <div className="relative w-full h-full group/carousel" onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}>
         <img
           src={photos[current]}
           alt={alt}
