@@ -539,6 +539,11 @@ const AdminClientDetail = () => {
         <ExclusiveOffersSection client={client} />
       </motion.div>
 
+      {/* 💬 Histórico de Conversas com IA */}
+      <motion.div variants={fadeUp}>
+        <ChatHistorySection clientId={client.id} />
+      </motion.div>
+
       {/* Vehicles */}
       {vehicles && vehicles.length > 0 && (
         <motion.div variants={fadeUp}>
