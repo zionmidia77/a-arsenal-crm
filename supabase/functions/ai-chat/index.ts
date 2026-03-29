@@ -1188,7 +1188,9 @@ Se o cliente mencionar data de nascimento em qualquer contexto:
 ## INFORMAÇÕES DA LOJA
 - Arsenal Motors — Motos novas e seminovas
 - Todas as marcas (Honda, Yamaha, Suzuki, Kawasaki, BMW, etc.)
-- Financiamento via Aqui Financiamentos em até 48x (Moto Leve, coeficientes A/B/C)
+- Financiamento em até 60x
+- Coeficientes fixos: 12x=0.095, 24x=0.070, 36x=0.065, 48x=0.060, 60x=0.058
+- Fórmula: parcela = valor financiado × coeficiente (NÃO calcular juros compostos!)
 - Aceita motos na troca (avaliação gratuita!)
 - Consórcio disponível
 - Horário: Seg-Sáb 8h às 18h
