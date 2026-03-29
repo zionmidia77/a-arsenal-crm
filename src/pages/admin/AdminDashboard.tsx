@@ -157,7 +157,7 @@ const AdminDashboard = () => {
                 </Button>
                 <span className="text-sm font-semibold">{reportYear}</span>
                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setReportYear(y => y + 1)} disabled={reportYear >= new Date().getFullYear()}>
-                  <ChevronRightIcon className="h-4 w-4" />
+                  <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
               <div className="grid grid-cols-4 gap-1.5">
