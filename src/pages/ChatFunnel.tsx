@@ -852,6 +852,94 @@ const ChatFunnel = () => {
     }
   }, [clientId, isLoading, isTransferred, scrollToBottom, saveConversation]);
 
+  // Audio recording
+  const startRecording = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "audio/mp4" });
+      audioChunksRef.current = [];
+      mediaRecorderRef.current = mediaRecorder;
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        stream.getTracks().forEach(t => t.stop());
+        if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+        setRecordingDuration(0);
+
+        const blob = new Blob(audioChunksRef.current, { type: mediaRecorder.mimeType });
+        if (blob.size < 1000) { toast.error("Áudio muito curto"); return; }
+
+        setIsTranscribing(true);
+        try {
+          const reader = new FileReader();
+          const base64 = await new Promise<string>((resolve, reject) => {
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+
+          const resp = await fetch(
+            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/transcribe-audio`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+              },
+              body: JSON.stringify({ audio_base64: base64 }),
+            }
+          );
+
+          if (!resp.ok) throw new Error("Erro na transcrição");
+          const result = await resp.json();
+          const text = result.transcription?.trim();
+
+          if (text && text !== "[áudio inaudível]") {
+            sendMessage(text);
+          } else {
+            toast.error("Não consegui entender o áudio. Tente novamente.");
+          }
+        } catch (err) {
+          console.error("Transcription error:", err);
+          toast.error("Erro ao transcrever áudio");
+        } finally {
+          setIsTranscribing(false);
+        }
+      };
+
+      mediaRecorder.start(250);
+      setIsRecording(true);
+      setRecordingDuration(0);
+      recordingTimerRef.current = setInterval(() => setRecordingDuration(d => d + 1), 1000);
+    } catch (err) {
+      console.error("Mic error:", err);
+      toast.error("Permita o acesso ao microfone para enviar áudios");
+    }
+  }, [sendMessage]);
+
+  const stopRecording = useCallback(() => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      mediaRecorderRef.current.stop();
+    }
+    setIsRecording(false);
+  }, []);
+
+  const cancelRecording = useCallback(() => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      mediaRecorderRef.current.stream.getTracks().forEach(t => t.stop());
+      mediaRecorderRef.current.stop();
+      audioChunksRef.current = [];
+    }
+    if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+    setIsRecording(false);
+    setRecordingDuration(0);
+  }, []);
+
+  const formatDuration = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
+
   // Show transfer button after 4+ user messages (lead likely qualified)
   const showTransferButton = messageCount >= 4 && !isTransferred;
 
