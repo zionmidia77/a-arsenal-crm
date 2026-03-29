@@ -588,6 +588,16 @@ const AdminGoals = () => {
                 className="rounded-xl bg-secondary border-border/50"
               />
             </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Meta de LTV médio (R$)</label>
+              <Input
+                type="number"
+                value={editGoals.target_ltv}
+                onChange={(e) => setEditGoals({ ...editGoals, target_ltv: parseFloat(e.target.value) || 0 })}
+                className="rounded-xl bg-secondary border-border/50"
+                placeholder="Ex: 25000"
+              />
+            </div>
             <Button className="w-full rounded-xl glow-red" onClick={handleSaveGoals}>
               Salvar metas
             </Button>
