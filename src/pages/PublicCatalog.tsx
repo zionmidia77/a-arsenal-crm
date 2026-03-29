@@ -208,9 +208,9 @@ const PublicCatalog = () => {
       {/* Header */}
       <header className="bg-primary text-primary-foreground py-8 px-4">
         <div className="max-w-6xl mx-auto text-center">
-          <h1 className="text-3xl md:text-4xl font-bold mb-2">🏍️ Arsenal Motors</h1>
-          <p className="text-primary-foreground/80 text-lg">Motos novas e seminovas com as melhores condições</p>
-          <p className="text-sm mt-2 text-primary-foreground/60">{vehicles.length} motos disponíveis</p>
+          <h1 className="text-3xl md:text-4xl font-bold mb-2">🚗 Arsenal Motors</h1>
+          <p className="text-primary-foreground/80 text-lg">Veículos novos e seminovos com as melhores condições</p>
+          <p className="text-sm mt-2 text-primary-foreground/60">{vehicles.length} veículos disponíveis</p>
         </div>
       </header>
 
