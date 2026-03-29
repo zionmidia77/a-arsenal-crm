@@ -621,6 +621,7 @@ const ChatFunnel = () => {
                 }
                 if (parsed.metadata.vehicles?.length) {
                   setPendingVehicles(parsed.metadata.vehicles);
+                  pendingVehiclesRef.current = parsed.metadata.vehicles;
                 }
                 continue;
               }
