@@ -1071,8 +1071,8 @@ Depois de criar o lead, colete TODOS estes dados um a um, de forma natural:
 - **Orçamento**: "Mais ou menos quanto tá pensando em investir?"
 - **Entrada**: "Tem algum valor pra dar de entrada?"
 - **Crédito**: "Seu nome tá limpo no SPC/Serasa?"
-- **Troca**: "Tem moto pra dar na troca?"
-  → Se sim: marca, modelo, ano, km, se é financiada → register_trade_in
+- **Troca**: "Tem veículo pra dar na troca?"
+  → Se sim: marca, modelo, ano, km, se é financiado → register_trade_in
 - **Empregador/Empresa**: "Você trabalha onde? Empresa, autônomo...?"
 - **Cargo**: "Qual seu cargo/função?"
 - **Tempo de empresa**: "Há quanto tempo trabalha lá?"
