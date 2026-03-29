@@ -3,8 +3,10 @@ import { useState, useEffect, useRef } from "react";
 import {
   Users, Flame, AlertTriangle, TrendingUp, CalendarCheck,
   MessageCircle, Eye, ChevronRight, BarChart3, Target, Trophy, Activity,
-  Cake, X, Gift
+  Cake, X, Gift, FileDown, Loader2
 } from "lucide-react";
+import { fetchMonthlyData, generateMonthlyPDF } from "@/lib/generateMonthlyReport";
+import { toast } from "sonner";
 import { AreaChart, Area, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import { useDashboardStats, useClients, useOverdueTasks, useAllPendingTasks, useLeadsChartData } from "@/hooks/useSupabase";
 import { useNavigate } from "react-router-dom";
@@ -68,6 +70,22 @@ const AdminDashboard = () => {
   const { data: pendingTasks } = useAllPendingTasks();
   const { data: chartData } = useLeadsChartData();
   const [dismissedBirthday, setDismissedBirthday] = useState(false);
+  const [generatingPDF, setGeneratingPDF] = useState(false);
+
+  const handleGenerateReport = async () => {
+    setGeneratingPDF(true);
+    try {
+      const now = new Date();
+      const data = await fetchMonthlyData(now.getMonth() + 1, now.getFullYear());
+      generateMonthlyPDF(data);
+      toast.success("Relatório PDF gerado com sucesso!");
+    } catch (e) {
+      console.error(e);
+      toast.error("Erro ao gerar relatório");
+    } finally {
+      setGeneratingPDF(false);
+    }
+  };
 
   // Birthday query
   const { data: birthdayClients } = useQuery({
@@ -106,14 +124,20 @@ const AdminDashboard = () => {
   return (
     <motion.div variants={stagger} initial="initial" animate="animate" className="p-5 md:p-6 space-y-6 max-w-4xl">
       {/* Greeting */}
-      <motion.div variants={fadeUp}>
-        <h1 className="text-2xl font-display font-bold">{greeting()}, Arsenal 👊</h1>
-        <p className="text-sm text-muted-foreground">
-          {(overdueTasks?.length || 0) > 0
-            ? `⚠️ Você tem ${overdueTasks?.length} follow-ups atrasados`
-            : "Tudo em dia! Continue assim 🔥"
-          }
-        </p>
+      <motion.div variants={fadeUp} className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-display font-bold">{greeting()}, Arsenal 👊</h1>
+          <p className="text-sm text-muted-foreground">
+            {(overdueTasks?.length || 0) > 0
+              ? `⚠️ Você tem ${overdueTasks?.length} follow-ups atrasados`
+              : "Tudo em dia! Continue assim 🔥"
+            }
+          </p>
+        </div>
+        <Button variant="outline" size="sm" className="gap-2" onClick={handleGenerateReport} disabled={generatingPDF}>
+          {generatingPDF ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
+          Relatório PDF
+        </Button>
       </motion.div>
 
       {/* 🎂 Birthday Banner */}
