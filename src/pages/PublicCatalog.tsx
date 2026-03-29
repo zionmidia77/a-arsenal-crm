@@ -255,7 +255,7 @@ const PublicCatalog = () => {
                   <div className="h-56 bg-muted relative overflow-hidden">
                     <CardCarousel photos={allPhotos} alt={`${v.brand} ${v.model}`} />
                     <Badge className="absolute top-3 left-3 z-10" variant={v.condition === "new" ? "default" : "secondary"}>
-                      {v.condition === "new" ? "0km" : "Seminova"}
+                      {v.condition === "new" ? "0km" : "Seminovo"}
                     </Badge>
                     {/* Compare checkbox */}
                     <div className="absolute bottom-2 right-2 z-10">
