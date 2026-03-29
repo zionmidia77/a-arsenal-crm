@@ -532,6 +532,7 @@ export type Database = {
           month: number
           target_contacts: number
           target_leads: number
+          target_ltv: number
           target_revenue: number
           target_sales: number
           updated_at: string
@@ -543,6 +544,7 @@ export type Database = {
           month: number
           target_contacts?: number
           target_leads?: number
+          target_ltv?: number
           target_revenue?: number
           target_sales?: number
           updated_at?: string
@@ -554,6 +556,7 @@ export type Database = {
           month?: number
           target_contacts?: number
           target_leads?: number
+          target_ltv?: number
           target_revenue?: number
           target_sales?: number
           updated_at?: string
