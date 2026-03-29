@@ -565,7 +565,7 @@ async function executeTool(
       case "search_vehicles": {
         let query = supabase
           .from("stock_vehicles")
-          .select("id, brand, model, year, km, color, price, condition, status, description, features")
+          .select("id, brand, model, year, km, color, price, selling_price, condition, status, description, features, photos, image_url")
           .eq("status", "available");
 
         if (args.brand) {
@@ -591,17 +591,21 @@ async function executeTool(
 
         return JSON.stringify({
           success: true,
-          vehicles: data.map((v) => ({
-            brand: v.brand,
-            model: v.model,
-            year: v.year,
-            km: v.km,
-            color: v.color,
-            price: v.price,
-            condition: v.condition === "new" ? "0km" : "Seminova",
-            description: v.description,
-            features: v.features,
-          })),
+          vehicles: data.map((v) => {
+            const allPhotos = [...(v.photos || []), ...(v.image_url && !(v.photos || []).includes(v.image_url) ? [v.image_url] : [])];
+            return {
+              brand: v.brand,
+              model: v.model,
+              year: v.year,
+              km: v.km,
+              color: v.color,
+              price: v.selling_price || v.price,
+              condition: v.condition === "new" ? "0km" : "Seminova",
+              description: v.description,
+              features: v.features,
+              photos: allPhotos,
+            };
+          }),
           total: data.length,
           display_hint: "Apresente cada moto em formato visual com emojis: 🏍️ Marca Modelo Ano, condição, km, cor, preço em negrito. Use simulate_financing para cada opção relevante.",
         });
