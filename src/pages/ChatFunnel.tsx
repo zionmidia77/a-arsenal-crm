@@ -575,6 +575,7 @@ const ChatFunnel = () => {
               if (parsed.metadata) {
                 if (parsed.metadata.client_id) {
                   const newClientId = parsed.metadata.client_id;
+                  latestClientId = newClientId;
                   setClientId(newClientId);
                   saveConversation(newMessages, newClientId);
                 }
