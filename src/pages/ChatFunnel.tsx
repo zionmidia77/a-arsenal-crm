@@ -681,7 +681,7 @@ const ChatFunnel = () => {
         });
       }
     },
-    [messages, isLoading, isTransferred, clientId, scrollToBottom, saveConversation, pendingVehicles]
+    [messages, isLoading, isTransferred, clientId, scrollToBottom, saveConversation]
   );
 
   const handleSubmit = (e?: React.FormEvent) => {
