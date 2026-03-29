@@ -242,7 +242,7 @@ const tools = [
     function: {
       name: "simulate_financing",
       description:
-        "Simulate a financing plan using Aqui Financiamentos rate table (Moto Leve). Uses coeficientes based on vehicle year and number of installments. Call when discussing parcelas, entrada, and payment options.",
+        "Simulate a financing plan using fixed coefficients per installment count. Formula: parcela = valor_financiado × coeficiente. Coefficients: 12x=0.095, 24x=0.070, 36x=0.065, 48x=0.060, 60x=0.058. Do NOT calculate compound interest.",
       parameters: {
         type: "object",
         properties: {
