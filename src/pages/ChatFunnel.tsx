@@ -461,6 +461,7 @@ const ChatFunnel = () => {
   const sendMessage = useCallback(
     async (text: string) => {
       if (!text.trim() || isLoading || isTransferred) return;
+      let latestClientId = clientId;
 
       setShowSuggestions(false);
       const userMsg: ChatMessage = {
@@ -574,6 +575,7 @@ const ChatFunnel = () => {
               if (parsed.metadata) {
                 if (parsed.metadata.client_id) {
                   const newClientId = parsed.metadata.client_id;
+                  latestClientId = newClientId;
                   setClientId(newClientId);
                   saveConversation(newMessages, newClientId);
                 }
@@ -628,10 +630,10 @@ const ChatFunnel = () => {
                 : m
             );
             setPendingVehicles(null);
-            saveConversation(updated);
+            saveConversation(updated, latestClientId);
             return updated;
           }
-          saveConversation(prev);
+          saveConversation(prev, latestClientId);
           return prev;
         });
       }
