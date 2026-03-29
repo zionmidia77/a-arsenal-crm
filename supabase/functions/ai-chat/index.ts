@@ -565,7 +565,7 @@ async function executeTool(
       case "search_vehicles": {
         let query = supabase
           .from("stock_vehicles")
-          .select("id, brand, model, year, km, color, price, condition, status, description, features")
+          .select("id, brand, model, year, km, color, price, selling_price, condition, status, description, features, photos, image_url")
           .eq("status", "available");
 
         if (args.brand) {
