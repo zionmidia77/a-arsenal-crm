@@ -6,8 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Search, Bike, MessageCircle, Filter, ChevronLeft, ChevronRight, X, ZoomIn, Camera } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Search, Bike, MessageCircle, Filter, ChevronLeft, ChevronRight, X, ZoomIn, Camera, GitCompareArrows, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -164,10 +165,21 @@ const CardCarousel = ({ photos, alt }: { photos: string[]; alt: string }) => {
 };
 
 // ── Main Page ──
+const COEFS: Record<number, number> = { 12: 0.095, 24: 0.070, 36: 0.065, 48: 0.060, 60: 0.058 };
+const fmt = (n: number) => `R$ ${n.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+
 const PublicCatalog = () => {
   const [search, setSearch] = useState("");
   const [brandFilter, setBrandFilter] = useState("all");
+  const [compareIds, setCompareIds] = useState<string[]>([]);
+  const [showCompare, setShowCompare] = useState(false);
   const navigate = useNavigate();
+
+  const toggleCompare = (id: string) => {
+    setCompareIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : prev.length < 3 ? [...prev, id] : prev
+    );
+  };
 
   const { data: vehicles = [], isLoading } = useQuery({
     queryKey: ["public-catalog"],
@@ -238,12 +250,22 @@ const PublicCatalog = () => {
               const parcela48 = displayPrice * coef48;
 
               return (
-                <Card key={v.id} className="overflow-hidden hover:shadow-xl transition-shadow">
+                <Card key={v.id} className={`overflow-hidden hover:shadow-xl transition-shadow ${compareIds.includes(v.id) ? "ring-2 ring-primary" : ""}`}>
                   <div className="h-56 bg-muted relative overflow-hidden">
                     <CardCarousel photos={allPhotos} alt={`${v.brand} ${v.model}`} />
                     <Badge className="absolute top-3 left-3 z-10" variant={v.condition === "new" ? "default" : "secondary"}>
                       {v.condition === "new" ? "0km" : "Seminova"}
                     </Badge>
+                    {/* Compare checkbox */}
+                    <div className="absolute bottom-2 right-2 z-10">
+                      <button
+                        onClick={() => toggleCompare(v.id)}
+                        className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium transition ${compareIds.includes(v.id) ? "bg-primary text-primary-foreground" : "bg-black/50 text-white hover:bg-black/70"}`}
+                      >
+                        <GitCompareArrows className="h-3 w-3" />
+                        {compareIds.includes(v.id) ? "✓" : "Comparar"}
+                      </button>
+                    </div>
                   </div>
 
                   <CardContent className="p-5 space-y-3">
@@ -295,6 +317,103 @@ const PublicCatalog = () => {
           <MessageCircle className="h-5 w-5" /> Falar com Consultor
         </Button>
       </div>
+
+      {/* Floating compare bar */}
+      <AnimatePresence>
+        {compareIds.length > 0 && (
+          <motion.div
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-primary text-primary-foreground rounded-2xl shadow-2xl px-5 py-3 flex items-center gap-4"
+          >
+            <div className="flex items-center gap-2">
+              <GitCompareArrows className="h-5 w-5" />
+              <span className="font-semibold text-sm">{compareIds.length}/3 selecionadas</span>
+            </div>
+            <Button size="sm" variant="secondary" className="gap-1" onClick={() => setShowCompare(true)} disabled={compareIds.length < 2}>
+              Comparar
+            </Button>
+            <button onClick={() => setCompareIds([])} className="p-1 rounded-full hover:bg-primary-foreground/20 transition">
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Compare Dialog */}
+      <Dialog open={showCompare} onOpenChange={setShowCompare}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <GitCompareArrows className="h-5 w-5" /> Comparar Motos
+            </DialogTitle>
+          </DialogHeader>
+          {(() => {
+            const selected = compareIds.map(id => vehicles.find((v: any) => v.id === id)).filter(Boolean) as any[];
+            if (selected.length < 2) return null;
+
+            const rows: { label: string; values: string[]; highlight?: boolean }[] = [
+              { label: "Marca / Modelo", values: selected.map(v => `${v.brand} ${v.model}`) },
+              { label: "Ano", values: selected.map(v => v.year ? String(v.year) : "—") },
+              { label: "Km", values: selected.map(v => v.km ? `${v.km.toLocaleString()} km` : "—") },
+              { label: "Cor", values: selected.map(v => v.color || "—") },
+              { label: "Condição", values: selected.map(v => v.condition === "new" ? "0km" : "Seminova") },
+              { label: "Preço", values: selected.map(v => fmt(Number(v.selling_price || v.price || 0))), highlight: true },
+              { label: "FIPE", values: selected.map(v => v.fipe_value ? fmt(Number(v.fipe_value)) : "—") },
+              ...Object.entries(COEFS).map(([months, coef]) => ({
+                label: `Parcela ${months}x`,
+                values: selected.map(v => fmt(Number(v.selling_price || v.price || 0) * coef)),
+              })),
+              { label: "Diferenciais", values: selected.map(v => (v.features || []).slice(0, 4).join(", ") || "—") },
+            ];
+
+            // Find best (lowest) price index
+            const prices = selected.map(v => Number(v.selling_price || v.price || 0));
+            const minPrice = Math.min(...prices);
+
+            return (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr>
+                      <th className="text-left p-2 w-32"></th>
+                      {selected.map((v: any) => {
+                        const photo = (v.photos || [])[0] || v.image_url;
+                        return (
+                          <th key={v.id} className="p-2 text-center">
+                            {photo && <img src={photo} alt="" className="w-20 h-14 object-cover rounded mx-auto mb-1" />}
+                            <p className="font-bold text-xs">{v.brand} {v.model}</p>
+                          </th>
+                        );
+                      })}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows.map((row, ri) => (
+                      <tr key={ri} className={ri % 2 === 0 ? "bg-muted/50" : ""}>
+                        <td className="p-2 font-medium text-muted-foreground text-xs">{row.label}</td>
+                        {row.values.map((val, vi) => (
+                          <td key={vi} className={`p-2 text-center text-xs ${row.highlight && Number(selected[vi].selling_price || selected[vi].price || 0) === minPrice ? "text-primary font-bold" : ""}`}>
+                            {val}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div className="flex gap-2 mt-4 justify-center">
+                  {selected.map((v: any) => (
+                    <Button key={v.id} size="sm" className="gap-1" onClick={() => { setShowCompare(false); navigate(`/chat?moto=${encodeURIComponent(`${v.brand} ${v.model} ${v.year || ""}`)}`); }}>
+                      <MessageCircle className="h-3 w-3" /> {v.brand} {v.model}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
