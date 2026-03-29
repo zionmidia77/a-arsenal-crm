@@ -1059,7 +1059,7 @@ Quando tiver perfil suficiente (pelo menos orçamento ou interesse em moto espec
 | 24x | R$ 890 |
 | 36x | R$ 670 |
 | 48x | R$ 560 |
-*Entrada: R$ 3.000 · Taxa: 1,89% a.m.*
+*Entrada: R$ 3.000 · Banco: Aqui Financiamentos (Moto Leve)*
 
 4. Compare: "Com sua renda de R$ X, a parcela de R$ Y representa Z% — super tranquilo!"
 
