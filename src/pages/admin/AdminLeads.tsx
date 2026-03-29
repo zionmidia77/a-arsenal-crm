@@ -388,9 +388,45 @@ const AdminLeads = () => {
               <div className="flex gap-1.5 flex-wrap">
                 {client.phone && (
                   <>
-                    <Button size="sm" className="rounded-full text-xs gap-1 flex-1 h-8" onClick={() => window.open(`https://wa.me/55${client.phone?.replace(/\D/g, "")}`)}>
-                      <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
-                    </Button>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button size="sm" className="rounded-full text-xs gap-1 flex-1 h-8">
+                          <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
+                          <ChevronDown className="w-3 h-3 ml-0.5 opacity-60" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-72 p-2" align="start">
+                        <p className="text-[10px] font-medium text-muted-foreground px-2 py-1 uppercase tracking-wider">Enviar com template</p>
+                        <button
+                          onClick={() => sendWhatsApp(client, `Fala ${client.name.split(" ")[0]}! Aqui é da Arsenal Motors 🏍️ Vi que você tem interesse em ${(client.interest || "motos").toLowerCase()}. Posso te ajudar?`)}
+                          className="w-full text-left px-2 py-2 rounded-lg hover:bg-accent/50 transition-colors"
+                        >
+                          <p className="text-xs font-medium">💬 1° Contato</p>
+                          <p className="text-[10px] text-muted-foreground line-clamp-1">Mensagem padrão de primeiro contato</p>
+                        </button>
+                        {(templates || []).slice(0, 5).map(t => (
+                          <button
+                            key={t.id}
+                            onClick={() => sendWhatsApp(client, t.message)}
+                            className="w-full text-left px-2 py-2 rounded-lg hover:bg-accent/50 transition-colors"
+                          >
+                            <p className="text-xs font-medium">{t.emoji} {t.title}</p>
+                            <p className="text-[10px] text-muted-foreground line-clamp-1">{replaceVars(t.message, client)}</p>
+                          </button>
+                        ))}
+                        <div className="border-t border-border/30 mt-1 pt-1">
+                          <button
+                            onClick={() => {
+                              const phone = client.phone?.replace(/\D/g, "");
+                              window.open(`https://wa.me/55${phone}`);
+                            }}
+                            className="w-full text-left px-2 py-2 rounded-lg hover:bg-accent/50 transition-colors"
+                          >
+                            <p className="text-xs font-medium text-muted-foreground">Abrir sem mensagem</p>
+                          </button>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
                     <Button size="sm" variant="outline" className="rounded-full text-xs gap-1 h-8" onClick={() => window.open(`tel:${client.phone?.replace(/\D/g, "")}`)}>
                       <Phone className="w-3.5 h-3.5" /> Ligar
                     </Button>
