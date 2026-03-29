@@ -303,7 +303,7 @@ const PublicCatalog = () => {
                       <Button variant="outline" className="flex-1 gap-1.5" onClick={() => setDetailVehicle({ ...v, allPhotos })}>
                         <Eye className="h-4 w-4" /> Ver detalhes
                       </Button>
-                      <Button className="flex-1 gap-1.5" onClick={() => navigate(`/chat?moto=${encodeURIComponent(`${v.brand} ${v.model} ${v.year || ""}`)}`)}>
+                      <Button className="flex-1 gap-1.5" onClick={() => navigate(`/chat?veiculo=${encodeURIComponent(`${v.brand} ${v.model} ${v.year || ""}`)}`)}>
                         <MessageCircle className="h-4 w-4" /> Interesse
                       </Button>
                     </div>
