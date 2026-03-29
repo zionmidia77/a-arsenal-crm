@@ -76,6 +76,7 @@ const VehicleFormDialog = ({ open, onOpenChange, vehicle, onSuccess }: Props) =>
         seller_name: "", seller_phone: "", purchase_date: new Date().toISOString().split("T")[0],
         documents_cost: "", description: "", features: [],
         photos: [], image_url: null,
+        fipe_brand_code: "", fipe_model_code: "", fipe_year_code: "", fipe_vehicle_type: "carros",
       });
     }
   }, [vehicle, open]);
