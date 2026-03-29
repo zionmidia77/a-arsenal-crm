@@ -21,12 +21,18 @@ const Simulator = () => {
   const [motoValue, setMotoValue] = useState([20000]);
   const [downPayment, setDownPayment] = useState([5000]);
   const [months, setMonths] = useState([36]);
+  const [vehicleYear, setVehicleYear] = useState([new Date().getFullYear() - 3]);
 
   const financed = motoValue[0] - downPayment[0];
-  // Aqui Financiamentos - Moto Leve, Coeficiente A, veículo até 8 anos
-  const coefTable: Record<number, number> = {
-    12: 0.10100, 18: 0.07450, 24: 0.06050, 36: 0.04650, 48: 0.04000,
+  const currentYear = new Date().getFullYear();
+  const vehicleAge = currentYear - vehicleYear[0];
+  // Aqui Financiamentos - Moto Leve, Coeficiente A, rate by vehicle age
+  const getCoefTable = (age: number): Record<number, number> => {
+    if (age <= 3) return { 12: 0.09800, 18: 0.07200, 24: 0.05850, 36: 0.04450, 48: 0.03800 };
+    if (age <= 8) return { 12: 0.10100, 18: 0.07450, 24: 0.06050, 36: 0.04650, 48: 0.04000 };
+    return { 12: 0.10500, 18: 0.07800, 24: 0.06350, 36: 0.04900, 48: 0.04250 };
   };
+  const coefTable = getCoefTable(vehicleAge);
   const closest = [12, 18, 24, 36, 48].reduce((prev, curr) =>
     Math.abs(curr - months[0]) < Math.abs(prev - months[0]) ? curr : prev
   );
