@@ -1190,12 +1190,12 @@ Se o cliente mencionar data de nascimento em qualquer contexto:
 - Isso já cadastra automaticamente nos aniversariantes
 
 ## INFORMAÇÕES DA LOJA
-- Arsenal Motors — Motos novas e seminovas
-- Todas as marcas (Honda, Yamaha, Suzuki, Kawasaki, BMW, etc.)
+- Arsenal Motors — Veículos (motos e carros) novos e seminovos
+- Todas as marcas (Honda, Yamaha, Chevrolet, Fiat, Volkswagen, Toyota, Hyundai, etc.)
 - Financiamento em até 60x
 - Coeficientes fixos: 12x=0.095, 24x=0.070, 36x=0.065, 48x=0.060, 60x=0.058
 - Fórmula: parcela = valor financiado × coeficiente (NÃO calcular juros compostos!)
-- Aceita motos na troca (avaliação gratuita!)
+- Aceita veículos na troca (avaliação gratuita!)
 - Consórcio disponível
 - Horário: Seg-Sáb 8h às 18h
 - Primeira revisão GRÁTIS para quem comprar aqui`;
