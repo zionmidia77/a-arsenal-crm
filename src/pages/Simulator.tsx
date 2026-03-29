@@ -106,6 +106,7 @@ const Simulator = () => {
           <div className="flex justify-between text-[10px] text-muted-foreground">
             <span>2005</span><span>{currentYear}</span>
           </div>
+        </motion.div>
 
         {/* Results */}
         <motion.div variants={fadeUp} className="glass-card gradient-border p-6 space-y-5">
