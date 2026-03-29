@@ -4,8 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
   Bike, DollarSign, Clock, FileText, ChevronRight,
-  MessageCircle, TrendingUp, ArrowRightLeft, Bell, LogOut, User
+  MessageCircle, TrendingUp, ArrowRightLeft, Bell, LogOut, User,
+  Trophy, Gift, Users, Check, Share2, Copy, Loader2
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
