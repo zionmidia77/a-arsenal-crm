@@ -291,6 +291,7 @@ const AdminGoals = () => {
       target_revenue: targets.target_revenue,
       target_leads: targets.target_leads,
       target_contacts: targets.target_contacts,
+      target_ltv: (targets as any).target_ltv || 0,
     });
     setEditOpen(true);
   };
