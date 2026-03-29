@@ -90,6 +90,7 @@ const NotificationCenter = () => {
 
   const counts: Record<FilterType, number> = {
     all: allNotifications.length,
+    ai: aiNotifications.length,
     docs: docsNotifications.length,
     leads: leadNotifications.length,
     tasks: taskNotifications.length,
