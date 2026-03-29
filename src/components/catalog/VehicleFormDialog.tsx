@@ -29,7 +29,6 @@ const VehicleFormDialog = ({ open, onOpenChange, vehicle, onSuccess }: Props) =>
     documents_cost: "", description: "", features: [],
     photos: [], image_url: null,
     fipe_brand_code: "", fipe_model_code: "", fipe_year_code: "", fipe_vehicle_type: "carros",
-    photos: [], image_url: null,
   });
   const isEdit = !!vehicle?.id;
 
