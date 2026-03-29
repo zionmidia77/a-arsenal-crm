@@ -318,7 +318,7 @@ const PublicCatalog = () => {
       {/* CTA */}
       <div className="bg-muted py-8 px-4 mt-8 text-center">
         <h2 className="text-xl font-bold mb-2">Não encontrou o que procura?</h2>
-        <p className="text-muted-foreground mb-4">Fale com nosso consultor e encontramos a moto ideal pra você!</p>
+        <p className="text-muted-foreground mb-4">Fale com nosso consultor e encontramos o veículo ideal pra você!</p>
         <Button size="lg" onClick={() => navigate("/chat")} className="gap-2">
           <MessageCircle className="h-5 w-5" /> Falar com Consultor
         </Button>
