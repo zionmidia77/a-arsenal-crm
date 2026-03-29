@@ -238,8 +238,8 @@ const PublicCatalog = () => {
           <div className="text-center py-12 text-muted-foreground">Carregando catálogo...</div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-12">
-            <Bike className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-            <h3 className="text-xl font-semibold mb-2">Nenhuma moto encontrada</h3>
+            <Car className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+            <h3 className="text-xl font-semibold mb-2">Nenhum veículo encontrado</h3>
             <p className="text-muted-foreground">Tente buscar com outros termos</p>
           </div>
         ) : (
