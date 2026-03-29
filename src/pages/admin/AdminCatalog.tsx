@@ -17,10 +17,12 @@ import VehiclePhotoUpload from "@/components/catalog/VehiclePhotoUpload";
 import VehicleCostManager from "@/components/catalog/VehicleCostManager";
 import FipeLookup from "@/components/catalog/FipeLookup";
 import VehicleDocOCR from "@/components/catalog/VehicleDocOCR";
+import StockFinancialDashboard from "@/components/catalog/StockFinancialDashboard";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 const AdminCatalog = () => {
+  const [activeTab, setActiveTab] = useState("catalog");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
@@ -77,6 +79,12 @@ const AdminCatalog = () => {
           <p className="text-muted-foreground">Gerencie seu estoque com fotos, custos e FIPE</p>
         </div>
         <div className="flex gap-2">
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList>
+              <TabsTrigger value="catalog">📋 Estoque</TabsTrigger>
+              <TabsTrigger value="dashboard">📊 Financeiro</TabsTrigger>
+            </TabsList>
+          </Tabs>
           <Button onClick={() => setShowOCR(true)} variant="outline" className="gap-2">
             <Camera className="h-4 w-4" /> Cadastro por Foto
           </Button>
@@ -86,6 +94,10 @@ const AdminCatalog = () => {
         </div>
       </div>
 
+      {activeTab === "dashboard" ? (
+        <StockFinancialDashboard />
+      ) : (
+      <>
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
@@ -255,6 +267,9 @@ const AdminCatalog = () => {
             );
           })}
         </div>
+      )}
+
+      </>
       )}
 
       {/* Dialogs */}
