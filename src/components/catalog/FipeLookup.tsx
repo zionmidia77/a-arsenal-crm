@@ -22,7 +22,7 @@ interface Props {
   onVehicleTypeChange?: (type: string) => void;
 }
 
-const FipeLookup = ({ brand, model, year, onFipeValue }: Props) => {
+const FipeLookup = ({ brand, model, year, onFipeValue, vehicleType = "carros", onVehicleTypeChange }: Props) => {
   const [brands, setBrands] = useState<any[]>([]);
   const [models, setModels] = useState<any[]>([]);
   const [years, setYears] = useState<any[]>([]);
