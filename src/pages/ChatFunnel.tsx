@@ -473,16 +473,6 @@ const ChatFunnel = () => {
     restoreChat();
   }, [sessionId, scrollToBottom]);
 
-  // Auto-send message when coming from catalog with ?veiculo= param
-  const vehicleParamSent = useRef(false);
-  useEffect(() => {
-    if (vehicleParamSent.current || isRestoringChat || isLoading) return;
-    const vehicleName = searchParams.get("veiculo") || searchParams.get("moto");
-    if (vehicleName && messages.length >= 1 && !messages.some(m => m.role === "user")) {
-      vehicleParamSent.current = true;
-      sendMessage(`Tenho interesse no ${vehicleName.trim()}`);
-    }
-  }, [isRestoringChat, isLoading, searchParams, messages, sendMessage]);
 
   // Handle transfer to human
   const handleTransfer = useCallback(async () => {
