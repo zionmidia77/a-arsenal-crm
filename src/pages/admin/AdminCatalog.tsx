@@ -11,7 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Plus, Camera, Search, Package, DollarSign, Clock, TrendingUp, Trash2, Edit, Eye } from "lucide-react";
+import { Plus, Camera, Search, Package, DollarSign, Clock, TrendingUp, Trash2, Edit, Eye, QrCode } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import VehicleFormDialog from "@/components/catalog/VehicleFormDialog";
 import VehiclePhotoUpload from "@/components/catalog/VehiclePhotoUpload";
 import VehicleCostManager from "@/components/catalog/VehicleCostManager";
@@ -256,6 +257,41 @@ const AdminCatalog = () => {
                     <Button size="sm" variant="outline" className="flex-1" onClick={() => { setSelectedVehicle(vehicle); setShowForm(true); }}>
                       <Edit className="h-3 w-3 mr-1" /> Editar
                     </Button>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button size="sm" variant="outline">
+                          <QrCode className="h-3 w-3" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-xs">
+                        <DialogHeader>
+                          <DialogTitle className="text-center">QR Code</DialogTitle>
+                        </DialogHeader>
+                        <div className="flex flex-col items-center gap-3 py-4">
+                          <QRCodeSVG
+                            value={`${window.location.origin}/chat?moto=${encodeURIComponent(`${vehicle.brand} ${vehicle.model} ${vehicle.year || ""}`)}`}
+                            size={200}
+                            level="M"
+                          />
+                          <p className="text-sm font-semibold text-center">{vehicle.brand} {vehicle.model} {vehicle.year || ""}</p>
+                          <p className="text-xs text-muted-foreground text-center">Escaneie para falar sobre esta moto</p>
+                          <Button size="sm" variant="outline" onClick={() => {
+                            const svg = document.querySelector('.qr-print-area svg');
+                            if (!svg) return;
+                            const svgData = new XMLSerializer().serializeToString(svg);
+                            const blob = new Blob([svgData], { type: 'image/svg+xml' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `qr-${vehicle.brand}-${vehicle.model}.svg`;
+                            a.click();
+                            URL.revokeObjectURL(url);
+                          }}>
+                            Baixar QR Code
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                     <Button size="sm" variant="destructive" onClick={() => {
                       if (confirm("Remover este veículo?")) deleteMutation.mutate(vehicle.id);
                     }}>
