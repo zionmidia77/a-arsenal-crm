@@ -100,15 +100,7 @@ const MemberArea = () => {
     refetchReferrals();
   };
 
-  const shareText = `Quer comprar uma moto com as melhores condições? Fala que o ${firstName} indicou! Arsenal Motors 🏍️`;
-  const handleShare = () => {
-    if (navigator.share) {
-      navigator.share({ text: shareText });
-    } else {
-      navigator.clipboard.writeText(shareText);
-      toast.success("Link copiado!");
-    }
-  };
+  // handleShare defined after firstName
 
   const greeting = () => {
     const h = new Date().getHours();
