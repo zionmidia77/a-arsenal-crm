@@ -100,7 +100,7 @@ const MemberArea = () => {
     refetchReferrals();
   };
 
-  // handleShare defined after firstName
+  
 
   const greeting = () => {
     const h = new Date().getHours();
