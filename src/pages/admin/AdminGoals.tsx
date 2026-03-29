@@ -425,10 +425,13 @@ const AdminGoals = () => {
         </div>
       </motion.div>
 
-      {/* Stats cards */}
+      {/* Stats cards with growth comparison */}
       <motion.div variants={fadeUp} className="grid grid-cols-2 gap-3">
         <div className="glass-card p-4">
-          <p className="text-xs text-muted-foreground mb-1">Vendas este mês</p>
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-xs text-muted-foreground">Vendas este mês</p>
+            <GrowthBadge current={actual.sales} previous={prev.sales} />
+          </div>
           <p className="text-3xl font-bold font-mono">
             <AnimatedNumber value={actual.sales} />
             <span className="text-sm text-muted-foreground font-normal">/{targets.target_sales}</span>
@@ -438,7 +441,10 @@ const AdminGoals = () => {
           </p>
         </div>
         <div className="glass-card p-4">
-          <p className="text-xs text-muted-foreground mb-1">Leads captados</p>
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-xs text-muted-foreground">Leads captados</p>
+            <GrowthBadge current={actual.leads} previous={prev.leads} />
+          </div>
           <p className="text-3xl font-bold font-mono">
             <AnimatedNumber value={actual.leads} />
             <span className="text-sm text-muted-foreground font-normal">/{targets.target_leads}</span>
@@ -450,7 +456,10 @@ const AdminGoals = () => {
           </p>
         </div>
         <div className="glass-card p-4">
-          <p className="text-xs text-muted-foreground mb-1">Contatos realizados</p>
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-xs text-muted-foreground">Contatos realizados</p>
+            <GrowthBadge current={actual.contacts} previous={prev.contacts} />
+          </div>
           <p className="text-3xl font-bold font-mono">
             <AnimatedNumber value={actual.contacts} />
             <span className="text-sm text-muted-foreground font-normal">/{targets.target_contacts}</span>
@@ -473,6 +482,63 @@ const AdminGoals = () => {
                 : "Meta atingida 🎉"}
             </p>
           )}
+        </div>
+      </motion.div>
+
+      {/* LTV Section */}
+      <motion.div variants={fadeUp} className="glass-card p-5 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-primary" />
+            <h2 className="font-display font-bold text-sm">LTV Mensal</h2>
+          </div>
+          {(targets as any).target_ltv > 0 && (
+            <span className="text-xs text-muted-foreground">
+              Meta: R$ {((targets as any).target_ltv).toLocaleString("pt-BR")}
+            </span>
+          )}
+        </div>
+
+        {/* LTV progress bar */}
+        {(targets as any).target_ltv > 0 && (
+          <div className="space-y-1">
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>R$ {ltv.avgRevenue.toLocaleString("pt-BR")} / R$ {((targets as any).target_ltv).toLocaleString("pt-BR")}</span>
+              <span>{Math.min(ltvPct, 100)}%</span>
+            </div>
+            <div className="h-2.5 rounded-full bg-secondary overflow-hidden">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${Math.min(ltvPct, 100)}%` }}
+                transition={{ duration: 1, ease: "easeOut" }}
+                className={`h-full rounded-full ${ltvPct >= 100 ? "bg-green-500" : "bg-primary"}`}
+              />
+            </div>
+          </div>
+        )}
+
+        <div className="grid grid-cols-3 gap-3">
+          <div className="text-center p-3 rounded-xl bg-secondary/50">
+            <p className="text-xs text-muted-foreground mb-1">LTV Médio</p>
+            <p className="text-lg font-bold font-mono">
+              R$ <AnimatedNumber value={ltv.avgRevenue} />
+            </p>
+            <GrowthBadge current={ltv.avgRevenue} previous={prevLtv.avgRevenue} label="vs mês ant." />
+          </div>
+          <div className="text-center p-3 rounded-xl bg-secondary/50">
+            <p className="text-xs text-muted-foreground mb-1">Receita Total</p>
+            <p className="text-lg font-bold font-mono">
+              R$ <AnimatedNumber value={ltv.totalRevenue} />
+            </p>
+            <GrowthBadge current={ltv.totalRevenue} previous={prevLtv.totalRevenue} label="vs mês ant." />
+          </div>
+          <div className="text-center p-3 rounded-xl bg-secondary/50">
+            <p className="text-xs text-muted-foreground mb-1">Clientes</p>
+            <p className="text-lg font-bold font-mono">
+              <AnimatedNumber value={ltv.clientCount} />
+            </p>
+            <p className="text-xs text-muted-foreground">{ltv.referrals} indicações</p>
+          </div>
         </div>
       </motion.div>
 
