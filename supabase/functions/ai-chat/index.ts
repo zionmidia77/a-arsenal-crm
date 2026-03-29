@@ -766,7 +766,7 @@ async function executeTool(
         proposalMsg += `✅ *Próximos passos:*\n`;
         proposalMsg += `1. Análise de crédito (resposta em até 2h)\n`;
         proposalMsg += `2. Documentação\n`;
-        proposalMsg += `3. Retirada da moto! 🎉\n\n`;
+        proposalMsg += `3. Retirada do veículo! 🎉\n\n`;
         proposalMsg += `_Arsenal Motors — Sua moto dos sonhos está aqui!_\n`;
         proposalMsg += `📞 Horário: Seg-Sáb 8h às 18h`;
 
