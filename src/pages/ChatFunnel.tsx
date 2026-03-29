@@ -826,6 +826,18 @@ const ChatFunnel = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {/* New conversation button */}
+          {!isRestoringChat && messages.length > 1 && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={startNewConversation}
+              className="rounded-full h-8 w-8 text-muted-foreground hover:text-primary"
+              title="Nova conversa"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+            </Button>
+          )}
           {showTransferButton && (
             <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}>
               <Button
