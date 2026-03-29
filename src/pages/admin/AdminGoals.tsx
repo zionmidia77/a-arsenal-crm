@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Target, TrendingUp, Users, DollarSign, Phone, ChevronLeft, ChevronRight, Settings2, Trophy, Flame } from "lucide-react";
+import { Target, TrendingUp, Users, DollarSign, Phone, ChevronLeft, ChevronRight, Settings2, Trophy, Flame, ArrowUpRight, ArrowDownRight, Minus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
