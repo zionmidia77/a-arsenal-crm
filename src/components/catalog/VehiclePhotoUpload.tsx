@@ -35,12 +35,20 @@ const VehiclePhotoUpload = ({
     return urlData.publicUrl;
   };
 
+  const MAX_PHOTOS_PER_UPLOAD = 10;
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files?.length) return;
+    const selected = Array.from(files);
+    if (selected.length > MAX_PHOTOS_PER_UPLOAD) {
+      toast.error(`Máximo de ${MAX_PHOTOS_PER_UPLOAD} fotos por vez. Você selecionou ${selected.length}.`);
+      e.target.value = "";
+      return;
+    }
     setUploading(true);
     try {
-      const uploadedUrls = await Promise.all(Array.from(files).map((file) => uploadSinglePhoto(file)));
+      const uploadedUrls = await Promise.all(selected.map((file) => uploadSinglePhoto(file)));
       const dedupedPhotos = [...new Set([...photos, ...uploadedUrls])];
       onPhotosChange(dedupedPhotos);
       if (!coverPhoto || !dedupedPhotos.includes(coverPhoto)) {
