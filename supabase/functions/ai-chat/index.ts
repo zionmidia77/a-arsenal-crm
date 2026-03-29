@@ -551,7 +551,7 @@ async function executeTool(
         await supabase.from("interactions").insert({
           client_id: client_id as string,
           type: "system",
-          content: `Moto de troca registrada: ${vehicleData.brand} ${vehicleData.model}${vehicleData.year ? ` ${vehicleData.year}` : ""}${vehicleData.is_financed ? " (financiada)" : ""}`,
+          content: `Veículo de troca registrado: ${vehicleData.brand} ${vehicleData.model}${vehicleData.year ? ` ${vehicleData.year}` : ""}${vehicleData.is_financed ? " (financiado)" : ""}`,
           created_by: "ai-consultant",
         });
 
