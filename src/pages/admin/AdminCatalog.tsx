@@ -94,6 +94,10 @@ const AdminCatalog = () => {
         </div>
       </div>
 
+      {activeTab === "dashboard" ? (
+        <StockFinancialDashboard />
+      ) : (
+      <>
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
