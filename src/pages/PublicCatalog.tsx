@@ -250,12 +250,22 @@ const PublicCatalog = () => {
               const parcela48 = displayPrice * coef48;
 
               return (
-                <Card key={v.id} className="overflow-hidden hover:shadow-xl transition-shadow">
+                <Card key={v.id} className={`overflow-hidden hover:shadow-xl transition-shadow ${compareIds.includes(v.id) ? "ring-2 ring-primary" : ""}`}>
                   <div className="h-56 bg-muted relative overflow-hidden">
                     <CardCarousel photos={allPhotos} alt={`${v.brand} ${v.model}`} />
                     <Badge className="absolute top-3 left-3 z-10" variant={v.condition === "new" ? "default" : "secondary"}>
                       {v.condition === "new" ? "0km" : "Seminova"}
                     </Badge>
+                    {/* Compare checkbox */}
+                    <div className="absolute bottom-2 right-2 z-10">
+                      <button
+                        onClick={() => toggleCompare(v.id)}
+                        className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium transition ${compareIds.includes(v.id) ? "bg-primary text-primary-foreground" : "bg-black/50 text-white hover:bg-black/70"}`}
+                      >
+                        <GitCompareArrows className="h-3 w-3" />
+                        {compareIds.includes(v.id) ? "✓" : "Comparar"}
+                      </button>
+                    </div>
                   </div>
 
                   <CardContent className="p-5 space-y-3">
