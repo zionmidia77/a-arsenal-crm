@@ -63,6 +63,10 @@ const VehicleFormDialog = ({ open, onOpenChange, vehicle, onSuccess }: Props) =>
         features: vehicle.features || [],
         photos: normalizedPhotos,
         image_url: vehicle.image_url || normalizedPhotos[0] || null,
+        fipe_brand_code: vehicle.fipe_brand_code || "",
+        fipe_model_code: vehicle.fipe_model_code || "",
+        fipe_year_code: vehicle.fipe_year_code || "",
+        fipe_vehicle_type: vehicle.fipe_vehicle_type || "carros",
       });
     } else {
       setForm({
