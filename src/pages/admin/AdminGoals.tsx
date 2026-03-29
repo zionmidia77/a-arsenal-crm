@@ -176,8 +176,83 @@ const AdminGoals = () => {
     },
   });
 
-  const targets = goal || { target_sales: 10, target_revenue: 0, target_leads: 50, target_contacts: 100 };
+  // Fetch previous month metrics for comparison
+  const prevMonth = month === 1 ? 12 : month - 1;
+  const prevYear = month === 1 ? year - 1 : year;
+
+  const { data: prevMetrics } = useQuery({
+    queryKey: ["monthly-metrics-prev", prevMonth, prevYear],
+    queryFn: async () => {
+      const startDate = `${prevYear}-${String(prevMonth).padStart(2, "0")}-01`;
+      const endMonth = prevMonth === 12 ? 1 : prevMonth + 1;
+      const endYear = prevMonth === 12 ? prevYear + 1 : prevYear;
+      const endDate = `${endYear}-${String(endMonth).padStart(2, "0")}-01`;
+
+      const [salesRes, leadsRes, contactsRes] = await Promise.all([
+        supabase.from("clients").select("id", { count: "exact" }).eq("pipeline_stage", "closed_won").gte("updated_at", startDate).lt("updated_at", endDate),
+        supabase.from("clients").select("id", { count: "exact" }).gte("created_at", startDate).lt("created_at", endDate),
+        supabase.from("interactions").select("id", { count: "exact" }).gte("created_at", startDate).lt("created_at", endDate),
+      ]);
+      return { sales: salesRes.count || 0, leads: leadsRes.count || 0, contacts: contactsRes.count || 0 };
+    },
+  });
+
+  // Calculate LTV: avg revenue per client (closed_won) * avg lifespan
+  const { data: ltvData } = useQuery({
+    queryKey: ["ltv-data", month, year],
+    queryFn: async () => {
+      const startDate = `${year}-${String(month).padStart(2, "0")}-01`;
+      const endMonth = month === 12 ? 1 : month + 1;
+      const endYear = month === 12 ? year + 1 : year;
+      const endDate = `${endYear}-${String(endMonth).padStart(2, "0")}-01`;
+
+      // Get simulations with revenue for the month
+      const { data: sims } = await supabase
+        .from("financing_simulations")
+        .select("moto_value, client_id")
+        .gte("created_at", startDate)
+        .lt("created_at", endDate);
+
+      const totalRevenue = sims?.reduce((sum, s) => sum + Number(s.moto_value || 0), 0) || 0;
+      const uniqueClients = new Set(sims?.map(s => s.client_id).filter(Boolean)).size || 1;
+      const avgRevenue = totalRevenue / Math.max(uniqueClients, 1);
+
+      // Get referrals count for the month as a proxy for retention/repeat
+      const { count: referralCount } = await supabase
+        .from("referrals")
+        .select("id", { count: "exact" })
+        .gte("created_at", startDate)
+        .lt("created_at", endDate);
+
+      return { avgRevenue: Math.round(avgRevenue), totalRevenue: Math.round(totalRevenue), clientCount: uniqueClients, referrals: referralCount || 0 };
+    },
+  });
+
+  const { data: prevLtvData } = useQuery({
+    queryKey: ["ltv-data-prev", prevMonth, prevYear],
+    queryFn: async () => {
+      const startDate = `${prevYear}-${String(prevMonth).padStart(2, "0")}-01`;
+      const endMonth = prevMonth === 12 ? 1 : prevMonth + 1;
+      const endYear = prevMonth === 12 ? prevYear + 1 : prevYear;
+      const endDate = `${endYear}-${String(endMonth).padStart(2, "0")}-01`;
+
+      const { data: sims } = await supabase
+        .from("financing_simulations")
+        .select("moto_value, client_id")
+        .gte("created_at", startDate)
+        .lt("created_at", endDate);
+
+      const totalRevenue = sims?.reduce((sum, s) => sum + Number(s.moto_value || 0), 0) || 0;
+      const uniqueClients = new Set(sims?.map(s => s.client_id).filter(Boolean)).size || 1;
+      return { avgRevenue: Math.round(totalRevenue / Math.max(uniqueClients, 1)), totalRevenue: Math.round(totalRevenue) };
+    },
+  });
+
+  const targets = goal || { target_sales: 10, target_revenue: 0, target_leads: 50, target_contacts: 100, target_ltv: 0 };
   const actual = metrics || { sales: 0, leads: 0, contacts: 0 };
+  const prev = prevMetrics || { sales: 0, leads: 0, contacts: 0 };
+  const ltv = ltvData || { avgRevenue: 0, totalRevenue: 0, clientCount: 0, referrals: 0 };
+  const prevLtv = prevLtvData || { avgRevenue: 0, totalRevenue: 0 };
 
   const navigate = (dir: number) => {
     let m = month + dir;
