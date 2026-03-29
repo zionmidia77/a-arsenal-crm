@@ -62,15 +62,24 @@ const ReferralSection = ({ client }: ReferralSectionProps) => {
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const updateData: any = { status };
+      // Auto R$200 bonus on conversion
+      if (status === "converted") {
+        updateData.reward_amount = 200;
+      }
       const { error } = await supabase
         .from("referrals")
-        .update({ status })
+        .update(updateData)
         .eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       qc.invalidateQueries({ queryKey: ["referrals", client.id] });
-      toast.success("Status atualizado!");
+      if (variables.status === "converted") {
+        toast.success("🎉 Indicação convertida! Bônus de R$200 aplicado automaticamente!");
+      } else {
+        toast.success("Status atualizado!");
+      }
     },
   });
 
@@ -208,13 +217,11 @@ const ReferralSection = ({ client }: ReferralSectionProps) => {
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
                 className="rounded-xl bg-secondary border-border/50 h-8 text-xs"
               />
-              <Input
-                placeholder="Recompensa (R$) — opcional"
-                type="number"
-                value={form.reward}
-                onChange={(e) => setForm({ ...form, reward: e.target.value })}
-                className="rounded-xl bg-secondary border-border/50 h-8 text-xs"
-              />
+              <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-2 text-center">
+                <p className="text-[10px] text-green-400 font-medium">
+                  💰 Bônus automático: R$ 200 por indicação convertida
+                </p>
+              </div>
               <div className="flex gap-2">
                 <Button
                   size="sm"

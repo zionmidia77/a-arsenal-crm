@@ -4,8 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
   Bike, DollarSign, Clock, FileText, ChevronRight,
-  MessageCircle, TrendingUp, ArrowRightLeft, Bell, LogOut, User
+  MessageCircle, TrendingUp, ArrowRightLeft, Bell, LogOut, User,
+  Trophy, Gift, Users, Check, Share2, Copy, Loader2
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,7 +23,9 @@ const fadeUp = {
 const MemberArea = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<"status" | "vehicles" | "history">("status");
+  const [activeTab, setActiveTab] = useState<"status" | "vehicles" | "history" | "referrals">("status");
+  const [refForm, setRefForm] = useState({ name: "", phone: "" });
+  const [showRefForm, setShowRefForm] = useState(false);
 
   // Find client by email
   const { data: client } = useQuery({
@@ -55,6 +60,48 @@ const MemberArea = () => {
     enabled: !!client?.id,
   });
 
+  // Get referrals
+  const { data: referrals, refetch: refetchReferrals } = useQuery({
+    queryKey: ["member-referrals", client?.id],
+    queryFn: async () => {
+      if (!client?.id) return [];
+      const { data } = await supabase
+        .from("referrals")
+        .select("*")
+        .eq("referrer_id", client.id)
+        .order("created_at", { ascending: false });
+      return data || [];
+    },
+    enabled: !!client?.id,
+  });
+
+  const totalBonus = (referrals || [])
+    .filter(r => r.status === "converted")
+    .reduce((sum, r) => sum + (Number(r.reward_amount) || 0), 0);
+  const convertedCount = (referrals || []).filter(r => r.status === "converted").length;
+  const pendingCount = (referrals || []).filter(r => r.status === "pending").length;
+
+  const handleSubmitReferral = async () => {
+    if (!client?.id || !refForm.name.trim()) return;
+    const { error } = await supabase.from("referrals").insert({
+      referrer_id: client.id,
+      referred_name: refForm.name,
+      referred_phone: refForm.phone,
+      reward_amount: 0,
+      status: "pending",
+    });
+    if (error) {
+      toast.error("Erro ao enviar indicação");
+      return;
+    }
+    toast.success("🎉 Indicação enviada com sucesso!");
+    setRefForm({ name: "", phone: "" });
+    setShowRefForm(false);
+    refetchReferrals();
+  };
+
+  
+
   const greeting = () => {
     const h = new Date().getHours();
     if (h < 12) return "Bom dia";
@@ -63,6 +110,16 @@ const MemberArea = () => {
   };
 
   const firstName = client?.name?.split(" ")[0] || user?.email?.split("@")[0] || "Cliente";
+
+  const shareText = `Quer comprar uma moto com as melhores condições? Fala que o ${firstName} indicou! Arsenal Motors 🏍️`;
+  const handleShare = () => {
+    if (navigator.share) {
+      navigator.share({ text: shareText });
+    } else {
+      navigator.clipboard.writeText(shareText);
+      toast.success("Link copiado!");
+    }
+  };
 
   const stageLabels: Record<string, { label: string; color: string }> = {
     new: { label: "Cadastro recebido", color: "text-info" },
@@ -116,6 +173,7 @@ const MemberArea = () => {
           {([
             { key: "status", label: "Status" },
             { key: "vehicles", label: "Veículos" },
+            { key: "referrals", label: "Indicações" },
             { key: "history", label: "Histórico" },
           ] as const).map(tab => (
             <Button
@@ -245,6 +303,122 @@ const MemberArea = () => {
                     <Bike className="w-8 h-8 mx-auto mb-2 opacity-50" />
                     Nenhum veículo cadastrado
                   </div>
+                )}
+              </>
+            )}
+
+            {activeTab === "referrals" && (
+              <>
+                {/* Indica e Ganha Hero */}
+                <motion.div variants={fadeUp} className="glass-card gradient-border p-5">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Trophy className="w-6 h-6 text-primary" />
+                    <h2 className="text-lg font-display font-bold">Indica e Ganha</h2>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Indique amigos e ganhe <span className="text-primary font-bold">R$ 200</span> por cada indicação que fechar negócio!
+                  </p>
+                  <Button onClick={handleShare} className="w-full rounded-xl glow-red h-11 gap-2">
+                    <Share2 className="w-4 h-4" /> Compartilhar convite
+                  </Button>
+                </motion.div>
+
+                {/* Stats */}
+                <motion.div variants={fadeUp} className="grid grid-cols-3 gap-2">
+                  <div className="glass-card p-3 text-center">
+                    <Users className="w-4 h-4 mx-auto text-primary mb-1" />
+                    <p className="text-xl font-bold font-mono">{referrals?.length || 0}</p>
+                    <p className="text-[9px] text-muted-foreground">Indicações</p>
+                  </div>
+                  <div className="glass-card p-3 text-center">
+                    <Check className="w-4 h-4 mx-auto text-green-400 mb-1" />
+                    <p className="text-xl font-bold font-mono text-green-400">{convertedCount}</p>
+                    <p className="text-[9px] text-muted-foreground">Convertidos</p>
+                  </div>
+                  <div className="glass-card p-3 text-center">
+                    <Gift className="w-4 h-4 mx-auto text-amber-400 mb-1" />
+                    <p className="text-xl font-bold font-mono text-amber-400">
+                      {totalBonus > 0 ? `R$${totalBonus}` : "R$0"}
+                    </p>
+                    <p className="text-[9px] text-muted-foreground">Bônus total</p>
+                  </div>
+                </motion.div>
+
+                {/* Referral list */}
+                {referrals && referrals.length > 0 && (
+                  <motion.div variants={fadeUp} className="space-y-2">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-1">
+                      Suas indicações
+                    </p>
+                    {referrals.map(ref => {
+                      const statusMap: Record<string, { label: string; color: string; icon: typeof Check }> = {
+                        pending: { label: "Em análise", color: "text-amber-400", icon: Loader2 },
+                        converted: { label: "Convertido! +R$200", color: "text-green-400", icon: Check },
+                        lost: { label: "Não convertido", color: "text-muted-foreground", icon: Clock },
+                      };
+                      const st = statusMap[ref.status] || statusMap.pending;
+                      return (
+                        <div key={ref.id} className="glass-card p-3.5 flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                            <User className="w-4 h-4 text-primary" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{ref.referred_name || "—"}</p>
+                            <p className="text-[10px] text-muted-foreground">
+                              {new Date(ref.created_at).toLocaleDateString("pt-BR")}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <span className={`text-xs font-medium ${st.color}`}>{st.label}</span>
+                            {ref.status === "converted" && (
+                              <p className="text-[10px] text-green-400 font-mono">🎉</p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </motion.div>
+                )}
+
+                {/* Add referral */}
+                {showRefForm ? (
+                  <motion.div variants={fadeUp} className="glass-card p-4 space-y-3">
+                    <p className="text-xs font-medium">Nova indicação</p>
+                    <Input
+                      placeholder="Nome do amigo"
+                      value={refForm.name}
+                      onChange={e => setRefForm({ ...refForm, name: e.target.value })}
+                      className="rounded-xl h-10"
+                    />
+                    <Input
+                      placeholder="Telefone (WhatsApp)"
+                      value={refForm.phone}
+                      onChange={e => setRefForm({ ...refForm, phone: e.target.value })}
+                      className="rounded-xl h-10"
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        className="flex-1 rounded-xl h-10"
+                        disabled={!refForm.name.trim()}
+                        onClick={handleSubmitReferral}
+                      >
+                        Enviar indicação
+                      </Button>
+                      <Button variant="outline" className="rounded-xl h-10" onClick={() => setShowRefForm(false)}>
+                        Cancelar
+                      </Button>
+                    </div>
+                  </motion.div>
+                ) : (
+                  <motion.div variants={fadeUp}>
+                    <Button
+                      variant="outline"
+                      className="w-full rounded-xl h-11 gap-2 border-primary/30"
+                      onClick={() => setShowRefForm(true)}
+                    >
+                      <Users className="w-4 h-4" /> Indicar um amigo
+                    </Button>
+                  </motion.div>
                 )}
               </>
             )}
