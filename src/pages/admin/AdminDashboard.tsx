@@ -71,14 +71,19 @@ const AdminDashboard = () => {
   const { data: chartData } = useLeadsChartData();
   const [dismissedBirthday, setDismissedBirthday] = useState(false);
   const [generatingPDF, setGeneratingPDF] = useState(false);
+  const [reportMonth, setReportMonth] = useState(new Date().getMonth() + 1);
+  const [reportYear, setReportYear] = useState(new Date().getFullYear());
+  const [showMonthPicker, setShowMonthPicker] = useState(false);
+
+  const MONTH_NAMES_SHORT = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
   const handleGenerateReport = async () => {
     setGeneratingPDF(true);
+    setShowMonthPicker(false);
     try {
-      const now = new Date();
-      const data = await fetchMonthlyData(now.getMonth() + 1, now.getFullYear());
+      const data = await fetchMonthlyData(reportMonth, reportYear);
       generateMonthlyPDF(data);
-      toast.success("Relatório PDF gerado com sucesso!");
+      toast.success(`Relatório de ${MONTH_NAMES_SHORT[reportMonth - 1]}/${reportYear} gerado!`);
     } catch (e) {
       console.error(e);
       toast.error("Erro ao gerar relatório");
