@@ -191,7 +191,7 @@ const tools = [
     function: {
       name: "register_trade_in",
       description:
-        "Register a vehicle the client wants to trade in. Captures details for evaluation. Call when client says they have a moto to give as entrada/troca.",
+        "Register a vehicle the client wants to trade in. Captures details for evaluation. Call when client says they have a vehicle (car or moto) to give as entrada/troca.",
       parameters: {
         type: "object",
         properties: {
@@ -551,14 +551,14 @@ async function executeTool(
         await supabase.from("interactions").insert({
           client_id: client_id as string,
           type: "system",
-          content: `Moto de troca registrada: ${vehicleData.brand} ${vehicleData.model}${vehicleData.year ? ` ${vehicleData.year}` : ""}${vehicleData.is_financed ? " (financiada)" : ""}`,
+          content: `Veículo de troca registrado: ${vehicleData.brand} ${vehicleData.model}${vehicleData.year ? ` ${vehicleData.year}` : ""}${vehicleData.is_financed ? " (financiado)" : ""}`,
           created_by: "ai-consultant",
         });
 
         return JSON.stringify({
           success: true,
           vehicle_id: data.id,
-          message: `Moto ${vehicleData.brand} ${vehicleData.model} registrada para avaliação de troca.`,
+          message: `Veículo ${vehicleData.brand} ${vehicleData.model} registrado para avaliação de troca.`,
         });
       }
 
@@ -600,14 +600,14 @@ async function executeTool(
               km: v.km,
               color: v.color,
               price: v.selling_price || v.price,
-              condition: v.condition === "new" ? "0km" : "Seminova",
+              condition: v.condition === "new" ? "0km" : "Seminovo",
               description: v.description,
               features: v.features,
               photos: allPhotos,
             };
           }),
           total: data.length,
-          display_hint: "Apresente cada moto em formato visual com emojis: 🏍️ Marca Modelo Ano, condição, km, cor, preço em negrito. Use simulate_financing para cada opção relevante.",
+          display_hint: "Apresente cada veículo em formato visual com emojis: 🚗 ou 🏍️ Marca Modelo Ano, condição, km, cor, preço em negrito. Use simulate_financing para cada opção relevante.",
         });
       }
 
@@ -696,7 +696,7 @@ async function executeTool(
           store_visit: "Visita à loja",
           video_call: "Videochamada",
           phone_call: "Ligação",
-          evaluation: "Avaliação de moto",
+          evaluation: "Avaliação de veículo",
         };
         const label = visitLabels[args.visit_type as string] || "Agendamento";
 
@@ -761,13 +761,13 @@ async function executeTool(
           proposalMsg += `\n`;
         }
         proposalMsg += `📊 *Financiamento:* ${inst}x de R$ ${monthly.toLocaleString("pt-BR")}\n`;
-        proposalMsg += `📈 *Banco:* Aqui Financiamentos (Moto Leve)\n\n`;
+        proposalMsg += `📈 *Banco:* Aqui Financiamentos\n\n`;
         if (notes) proposalMsg += `📝 ${notes}\n\n`;
         proposalMsg += `✅ *Próximos passos:*\n`;
         proposalMsg += `1. Análise de crédito (resposta em até 2h)\n`;
         proposalMsg += `2. Documentação\n`;
-        proposalMsg += `3. Retirada da moto! 🎉\n\n`;
-        proposalMsg += `_Arsenal Motors — Sua moto dos sonhos está aqui!_\n`;
+        proposalMsg += `3. Retirada do veículo! 🎉\n\n`;
+        proposalMsg += `_Arsenal Motors — Seu veículo dos sonhos está aqui!_\n`;
         proposalMsg += `📞 Horário: Seg-Sáb 8h às 18h`;
 
         // Generate WhatsApp link
@@ -1038,7 +1038,7 @@ Se faltam itens, pergunte o próximo dado pendente de forma natural.`,
 }
 
 // ── System prompt ──
-const SYSTEM_PROMPT = `Você é o **Consultor Arsenal**, vendedor real da Arsenal Motors — uma loja de motos novas e seminovas.
+const SYSTEM_PROMPT = `Você é o **Consultor Arsenal**, vendedor real da Arsenal Motors — uma loja de veículos (motos e carros) novos e seminovos.
 
 ## SUA IDENTIDADE
 - Você é um VENDEDOR DE VERDADE. Nunca diga que é IA, chatbot ou assistente virtual.
@@ -1071,8 +1071,8 @@ Depois de criar o lead, colete TODOS estes dados um a um, de forma natural:
 - **Orçamento**: "Mais ou menos quanto tá pensando em investir?"
 - **Entrada**: "Tem algum valor pra dar de entrada?"
 - **Crédito**: "Seu nome tá limpo no SPC/Serasa?"
-- **Troca**: "Tem moto pra dar na troca?"
-  → Se sim: marca, modelo, ano, km, se é financiada → register_trade_in
+- **Troca**: "Tem veículo pra dar na troca?"
+  → Se sim: marca, modelo, ano, km, se é financiado → register_trade_in
 - **Empregador/Empresa**: "Você trabalha onde? Empresa, autônomo...?"
 - **Cargo**: "Qual seu cargo/função?"
 - **Tempo de empresa**: "Há quanto tempo trabalha lá?"
@@ -1082,12 +1082,12 @@ Depois de criar o lead, colete TODOS estes dados um a um, de forma natural:
 IMPORTANTE: A cada informação nova → use update_lead IMEDIATAMENTE. NADA se perde!
 
 ### Fase 3 — Apresentação com simulação inline
-Quando tiver perfil suficiente (pelo menos orçamento ou interesse em moto específica):
+Quando tiver perfil suficiente (pelo menos orçamento ou interesse em veículo específico):
 1. Use search_vehicles para buscar opções REAIS do estoque
 2. Apresente 2-3 opções formatadas assim:
 
-**🏍️ Honda CG 160 Titan 2024**
-📍 Seminova · 8.500 km · Preta
+**🚗 Chevrolet Onix 1.0 2023** ou **🏍️ Honda CG 160 Titan 2024**
+📍 Seminovo · 8.500 km · Preto
 💰 **R$ 15.900**
 
 3. Use simulate_financing para cada opção e mostre:
@@ -1104,7 +1104,7 @@ Quando tiver perfil suficiente (pelo menos orçamento ou interesse em moto espec
 4. Compare: "Com sua renda de R$ X, a parcela de R$ Y representa Z% — super tranquilo!"
 
 ### Fase 4 — Fechamento (conduzir para ação)
-- "Quer que eu reserve essa pra você?"
+- "Quer que eu reserve esse pra você?"
 - "Bora agendar pra você vir ver pessoalmente?"
 - "Posso mandar uma proposta completa no seu WhatsApp?"
 - Use schedule_visit quando o cliente topar
@@ -1129,7 +1129,7 @@ Quando o cliente decidir financiar ou após coletar dados suficientes:
 SEMPRE use detect_urgency quando detectar sinais de compra:
 
 **Sinais CRÍTICOS (urgency=critical):**
-- "preciso pra hoje", "é urgente", "minha moto quebrou", "preciso trabalhar", "não tenho como ir trabalhar", "acidente", "roubaram minha moto"
+- "preciso pra hoje", "é urgente", "meu carro quebrou", "minha moto quebrou", "preciso trabalhar", "não tenho como ir trabalhar", "acidente", "roubaram meu veículo"
 
 **Sinais ALTOS (urgency=high):**
 - "quero fechar essa semana", "já tenho a entrada pronta", "vim decidido", "quero resolver logo", "preciso pra semana que vem"
@@ -1148,9 +1148,9 @@ Para leads ALTOS: crie senso de oportunidade, mostre condições especiais.
 2. NUNCA invente preços — use search_vehicles e simulate_financing
 3. Assim que tiver NOME + TELEFONE → create_lead IMEDIATO
 4. A CADA nova informação → update_lead (NADA se perde!)
-5. Se o cliente tem moto pra troca → register_trade_in com todos os dados
+5. Se o cliente tem veículo pra troca → register_trade_in com todos os dados
 6. Quando souber o perfil → search_vehicles + simulate_financing
-7. Use log_interaction para: agendou visita, pediu proposta, interessou em moto específica
+7. Use log_interaction para: agendou visita, pediu proposta, interessou em veículo específico
 8. CONDUZA a conversa — não espere o cliente perguntar
 9. Seja CONSULTIVO: "Com esse perfil, a melhor opção pra você é..."
 10. Se não tem no estoque → "Vou verificar com minha equipe e te retorno!"
@@ -1190,12 +1190,12 @@ Se o cliente mencionar data de nascimento em qualquer contexto:
 - Isso já cadastra automaticamente nos aniversariantes
 
 ## INFORMAÇÕES DA LOJA
-- Arsenal Motors — Motos novas e seminovas
-- Todas as marcas (Honda, Yamaha, Suzuki, Kawasaki, BMW, etc.)
+- Arsenal Motors — Veículos (motos e carros) novos e seminovos
+- Todas as marcas (Honda, Yamaha, Chevrolet, Fiat, Volkswagen, Toyota, Hyundai, etc.)
 - Financiamento em até 60x
 - Coeficientes fixos: 12x=0.095, 24x=0.070, 36x=0.065, 48x=0.060, 60x=0.058
 - Fórmula: parcela = valor financiado × coeficiente (NÃO calcular juros compostos!)
-- Aceita motos na troca (avaliação gratuita!)
+- Aceita veículos na troca (avaliação gratuita!)
 - Consórcio disponível
 - Horário: Seg-Sáb 8h às 18h
 - Primeira revisão GRÁTIS para quem comprar aqui`;

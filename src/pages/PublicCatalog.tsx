@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Search, Bike, MessageCircle, Filter, ChevronLeft, ChevronRight, X, ZoomIn, Camera, GitCompareArrows, Trash2, Eye, Fuel, Gauge, Palette, Calendar, Info } from "lucide-react";
+import { Search, Car, MessageCircle, Filter, ChevronLeft, ChevronRight, X, ZoomIn, Camera, GitCompareArrows, Trash2, Eye, Fuel, Gauge, Palette, Calendar, Info } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -108,7 +108,7 @@ const CardCarousel = ({ photos, alt }: { photos: string[]; alt: string }) => {
   if (photos.length === 0) {
     return (
       <div className="w-full h-full flex items-center justify-center">
-        <Bike className="h-16 w-16 text-muted-foreground" />
+        <Car className="h-16 w-16 text-muted-foreground" />
       </div>
     );
   }
@@ -208,9 +208,9 @@ const PublicCatalog = () => {
       {/* Header */}
       <header className="bg-primary text-primary-foreground py-8 px-4">
         <div className="max-w-6xl mx-auto text-center">
-          <h1 className="text-3xl md:text-4xl font-bold mb-2">🏍️ Arsenal Motors</h1>
-          <p className="text-primary-foreground/80 text-lg">Motos novas e seminovas com as melhores condições</p>
-          <p className="text-sm mt-2 text-primary-foreground/60">{vehicles.length} motos disponíveis</p>
+          <h1 className="text-3xl md:text-4xl font-bold mb-2">🚗 Arsenal Motors</h1>
+          <p className="text-primary-foreground/80 text-lg">Veículos novos e seminovos com as melhores condições</p>
+          <p className="text-sm mt-2 text-primary-foreground/60">{vehicles.length} veículos disponíveis</p>
         </div>
       </header>
 
@@ -219,7 +219,7 @@ const PublicCatalog = () => {
         <div className="flex flex-col sm:flex-row gap-3 mb-6">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Buscar moto..." value={search} onChange={e => setSearch(e.target.value)} className="pl-10" />
+            <Input placeholder="Buscar veículo..." value={search} onChange={e => setSearch(e.target.value)} className="pl-10" />
           </div>
           <Select value={brandFilter} onValueChange={setBrandFilter}>
             <SelectTrigger className="w-[180px]">
@@ -238,8 +238,8 @@ const PublicCatalog = () => {
           <div className="text-center py-12 text-muted-foreground">Carregando catálogo...</div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-12">
-            <Bike className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-            <h3 className="text-xl font-semibold mb-2">Nenhuma moto encontrada</h3>
+            <Car className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+            <h3 className="text-xl font-semibold mb-2">Nenhum veículo encontrado</h3>
             <p className="text-muted-foreground">Tente buscar com outros termos</p>
           </div>
         ) : (
@@ -255,7 +255,7 @@ const PublicCatalog = () => {
                   <div className="h-56 bg-muted relative overflow-hidden">
                     <CardCarousel photos={allPhotos} alt={`${v.brand} ${v.model}`} />
                     <Badge className="absolute top-3 left-3 z-10" variant={v.condition === "new" ? "default" : "secondary"}>
-                      {v.condition === "new" ? "0km" : "Seminova"}
+                      {v.condition === "new" ? "0km" : "Seminovo"}
                     </Badge>
                     {/* Compare checkbox */}
                     <div className="absolute bottom-2 right-2 z-10">
@@ -303,7 +303,7 @@ const PublicCatalog = () => {
                       <Button variant="outline" className="flex-1 gap-1.5" onClick={() => setDetailVehicle({ ...v, allPhotos })}>
                         <Eye className="h-4 w-4" /> Ver detalhes
                       </Button>
-                      <Button className="flex-1 gap-1.5" onClick={() => navigate(`/chat?moto=${encodeURIComponent(`${v.brand} ${v.model} ${v.year || ""}`)}`)}>
+                      <Button className="flex-1 gap-1.5" onClick={() => navigate(`/chat?veiculo=${encodeURIComponent(`${v.brand} ${v.model} ${v.year || ""}`)}`)}>
                         <MessageCircle className="h-4 w-4" /> Interesse
                       </Button>
                     </div>
@@ -318,7 +318,7 @@ const PublicCatalog = () => {
       {/* CTA */}
       <div className="bg-muted py-8 px-4 mt-8 text-center">
         <h2 className="text-xl font-bold mb-2">Não encontrou o que procura?</h2>
-        <p className="text-muted-foreground mb-4">Fale com nosso consultor e encontramos a moto ideal pra você!</p>
+        <p className="text-muted-foreground mb-4">Fale com nosso consultor e encontramos o veículo ideal pra você!</p>
         <Button size="lg" onClick={() => navigate("/chat")} className="gap-2">
           <MessageCircle className="h-5 w-5" /> Falar com Consultor
         </Button>
@@ -335,7 +335,7 @@ const PublicCatalog = () => {
           >
             <div className="flex items-center gap-2">
               <GitCompareArrows className="h-5 w-5" />
-              <span className="font-semibold text-sm">{compareIds.length}/3 selecionadas</span>
+              <span className="font-semibold text-sm">{compareIds.length}/3 selecionados</span>
             </div>
             <Button size="sm" variant="secondary" className="gap-1" onClick={() => setShowCompare(true)} disabled={compareIds.length < 2}>
               Comparar
@@ -352,7 +352,7 @@ const PublicCatalog = () => {
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <GitCompareArrows className="h-5 w-5" /> Comparar Motos
+              <GitCompareArrows className="h-5 w-5" /> Comparar Veículos
             </DialogTitle>
           </DialogHeader>
           {(() => {
@@ -364,7 +364,7 @@ const PublicCatalog = () => {
               { label: "Ano", values: selected.map(v => v.year ? String(v.year) : "—") },
               { label: "Km", values: selected.map(v => v.km ? `${v.km.toLocaleString()} km` : "—") },
               { label: "Cor", values: selected.map(v => v.color || "—") },
-              { label: "Condição", values: selected.map(v => v.condition === "new" ? "0km" : "Seminova") },
+              { label: "Condição", values: selected.map(v => v.condition === "new" ? "0km" : "Seminovo") },
               { label: "Preço", values: selected.map(v => fmt(Number(v.selling_price || v.price || 0))), highlight: true },
               { label: "FIPE", values: selected.map(v => v.fipe_value ? fmt(Number(v.fipe_value)) : "—") },
               ...Object.entries(COEFS).map(([months, coef]) => ({
@@ -410,7 +410,7 @@ const PublicCatalog = () => {
                 </table>
                 <div className="flex gap-2 mt-4 justify-center">
                   {selected.map((v: any) => (
-                    <Button key={v.id} size="sm" className="gap-1" onClick={() => { setShowCompare(false); navigate(`/chat?moto=${encodeURIComponent(`${v.brand} ${v.model} ${v.year || ""}`)}`); }}>
+                    <Button key={v.id} size="sm" className="gap-1" onClick={() => { setShowCompare(false); navigate(`/chat?veiculo=${encodeURIComponent(`${v.brand} ${v.model} ${v.year || ""}`)}`); }}>
                       <MessageCircle className="h-3 w-3" /> {v.brand} {v.model}
                     </Button>
                   ))}
@@ -433,7 +433,7 @@ const PublicCatalog = () => {
               { icon: Gauge, label: "Quilometragem", value: v.km != null ? `${v.km.toLocaleString("pt-BR")} km` : "—" },
               { icon: Palette, label: "Cor", value: v.color || "—" },
               { icon: Fuel, label: "Combustível", value: v.fuel || "—" },
-              { icon: Info, label: "Condição", value: v.condition === "new" ? "0km" : "Seminova" },
+              { icon: Info, label: "Condição", value: v.condition === "new" ? "0km" : "Seminovo" },
             ];
 
             return (
@@ -449,7 +449,7 @@ const PublicCatalog = () => {
                     <div>
                       <div className="flex items-center gap-2 mb-1">
                         <Badge variant={v.condition === "new" ? "default" : "secondary"}>
-                          {v.condition === "new" ? "0km" : "Seminova"}
+                          {v.condition === "new" ? "0km" : "Seminovo"}
                         </Badge>
                       </div>
                       <h2 className="text-2xl font-bold">{v.brand} {v.model}</h2>
@@ -514,8 +514,8 @@ const PublicCatalog = () => {
                   )}
 
                   {/* CTA */}
-                  <Button className="w-full gap-2" size="lg" onClick={() => { setDetailVehicle(null); navigate(`/chat?moto=${encodeURIComponent(`${v.brand} ${v.model} ${v.year || ""}`)}`); }}>
-                    <MessageCircle className="h-5 w-5" /> Tenho interesse nessa moto!
+                  <Button className="w-full gap-2" size="lg" onClick={() => { setDetailVehicle(null); navigate(`/chat?veiculo=${encodeURIComponent(`${v.brand} ${v.model} ${v.year || ""}`)}`); }}>
+                    <MessageCircle className="h-5 w-5" /> Tenho interesse nesse veículo!
                   </Button>
                 </div>
               </>

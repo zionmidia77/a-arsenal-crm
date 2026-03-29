@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Send, ArrowLeft, Sparkles, UserCheck, Camera, FileCheck, Loader2, Bike, ChevronLeft, ChevronRight, RotateCcw } from "lucide-react";
+import { Send, ArrowLeft, Sparkles, UserCheck, Camera, FileCheck, Loader2, Car, ChevronLeft, ChevronRight, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
@@ -132,9 +132,9 @@ const ChatBubble = ({ msg }: { msg: ChatMessage }) => {
 // ── Quick suggestion chips ──
 const SuggestionChips = ({ onSelect }: { onSelect: (text: string) => void }) => {
   const suggestions = [
-    "Quero comprar uma moto",
-    "Quero trocar minha moto",
-    "Quero vender minha moto",
+    "Quero comprar um veículo",
+    "Quero trocar meu veículo",
+    "Quero vender meu veículo",
     "Preciso de dinheiro",
   ];
 
@@ -200,7 +200,7 @@ const VehicleCard = ({ vehicle }: { vehicle: StockVehicle }) => {
           </>
         ) : (
           <div className="w-full h-full flex items-center justify-center">
-            <Bike className="w-12 h-12 text-primary/60" />
+            <Car className="w-12 h-12 text-primary/60" />
           </div>
         )}
       </div>
@@ -251,8 +251,8 @@ const VehicleCarousel = ({ vehicles }: { vehicles: StockVehicle[] }) => {
       className="mb-4 pl-10"
     >
       <div className="flex items-center gap-1 mb-2 text-xs text-muted-foreground">
-        <Bike className="w-3.5 h-3.5 text-primary" />
-        <span className="font-medium">Motos do estoque</span>
+        <Car className="w-3.5 h-3.5 text-primary" />
+        <span className="font-medium">Veículos do estoque</span>
         <span>• {vehicles.length} opções</span>
       </div>
       <div className="relative">
@@ -329,6 +329,7 @@ const getOrCreateSessionId = (): string => {
 
 const ChatFunnel = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -413,7 +414,7 @@ const ChatFunnel = () => {
       id: "welcome",
       role: "assistant",
       content:
-        "E aí! Tudo bem? 👊\n\nSou o consultor da Arsenal Motors. Tô aqui pra te ajudar a encontrar a moto perfeita, fazer uma troca ou o que precisar!\n\nComo posso te ajudar?",
+        "E aí! Tudo bem? 👊\n\nSou o consultor da Arsenal Motors. Tô aqui pra te ajudar a encontrar o veículo perfeito, fazer uma troca ou o que precisar!\n\nComo posso te ajudar?",
       timestamp: new Date(),
     };
     setMessages([welcome]);
@@ -449,7 +450,7 @@ const ChatFunnel = () => {
             id: "welcome",
             role: "assistant",
             content:
-              "E aí! Tudo bem? 👊\n\nSou o consultor da Arsenal Motors. Tô aqui pra te ajudar a encontrar a moto perfeita, fazer uma troca ou o que precisar!\n\nComo posso te ajudar?",
+              "E aí! Tudo bem? 👊\n\nSou o consultor da Arsenal Motors. Tô aqui pra te ajudar a encontrar o veículo perfeito, fazer uma troca ou o que precisar!\n\nComo posso te ajudar?",
             timestamp: new Date(),
           };
           setMessages([welcome]);
@@ -460,7 +461,7 @@ const ChatFunnel = () => {
           id: "welcome",
           role: "assistant",
           content:
-            "E aí! Tudo bem? 👊\n\nSou o consultor da Arsenal Motors. Tô aqui pra te ajudar a encontrar a moto perfeita, fazer uma troca ou o que precisar!\n\nComo posso te ajudar?",
+            "E aí! Tudo bem? 👊\n\nSou o consultor da Arsenal Motors. Tô aqui pra te ajudar a encontrar o veículo perfeito, fazer uma troca ou o que precisar!\n\nComo posso te ajudar?",
           timestamp: new Date(),
         };
         setMessages([welcome]);
@@ -471,6 +472,7 @@ const ChatFunnel = () => {
 
     restoreChat();
   }, [sessionId, scrollToBottom]);
+
 
   // Handle transfer to human
   const handleTransfer = useCallback(async () => {
@@ -683,6 +685,17 @@ const ChatFunnel = () => {
     },
     [messages, isLoading, isTransferred, clientId, scrollToBottom, saveConversation]
   );
+
+  // Auto-send message when coming from catalog with ?veiculo= param
+  const vehicleParamSent = useRef(false);
+  useEffect(() => {
+    if (vehicleParamSent.current || isRestoringChat || isLoading) return;
+    const vehicleName = searchParams.get("veiculo") || searchParams.get("moto");
+    if (vehicleName && messages.length >= 1 && !messages.some(m => m.role === "user")) {
+      vehicleParamSent.current = true;
+      sendMessage(`Tenho interesse no ${vehicleName.trim()}`);
+    }
+  }, [isRestoringChat, isLoading, searchParams, messages, sendMessage]);
 
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
