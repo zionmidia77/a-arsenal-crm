@@ -124,14 +124,20 @@ const AdminDashboard = () => {
   return (
     <motion.div variants={stagger} initial="initial" animate="animate" className="p-5 md:p-6 space-y-6 max-w-4xl">
       {/* Greeting */}
-      <motion.div variants={fadeUp}>
-        <h1 className="text-2xl font-display font-bold">{greeting()}, Arsenal 👊</h1>
-        <p className="text-sm text-muted-foreground">
-          {(overdueTasks?.length || 0) > 0
-            ? `⚠️ Você tem ${overdueTasks?.length} follow-ups atrasados`
-            : "Tudo em dia! Continue assim 🔥"
-          }
-        </p>
+      <motion.div variants={fadeUp} className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-display font-bold">{greeting()}, Arsenal 👊</h1>
+          <p className="text-sm text-muted-foreground">
+            {(overdueTasks?.length || 0) > 0
+              ? `⚠️ Você tem ${overdueTasks?.length} follow-ups atrasados`
+              : "Tudo em dia! Continue assim 🔥"
+            }
+          </p>
+        </div>
+        <Button variant="outline" size="sm" className="gap-2" onClick={handleGenerateReport} disabled={generatingPDF}>
+          {generatingPDF ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
+          Relatório PDF
+        </Button>
       </motion.div>
 
       {/* 🎂 Birthday Banner */}
