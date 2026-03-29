@@ -28,6 +28,7 @@ const VehicleFormDialog = ({ open, onOpenChange, vehicle, onSuccess }: Props) =>
     seller_name: "", seller_phone: "", purchase_date: new Date().toISOString().split("T")[0],
     documents_cost: "", description: "", features: [],
     photos: [], image_url: null,
+    fipe_brand_code: "", fipe_model_code: "", fipe_year_code: "", fipe_vehicle_type: "carros",
   });
   const isEdit = !!vehicle?.id;
 
@@ -62,6 +63,10 @@ const VehicleFormDialog = ({ open, onOpenChange, vehicle, onSuccess }: Props) =>
         features: vehicle.features || [],
         photos: normalizedPhotos,
         image_url: vehicle.image_url || normalizedPhotos[0] || null,
+        fipe_brand_code: vehicle.fipe_brand_code || "",
+        fipe_model_code: vehicle.fipe_model_code || "",
+        fipe_year_code: vehicle.fipe_year_code || "",
+        fipe_vehicle_type: vehicle.fipe_vehicle_type || "carros",
       });
     } else {
       setForm({
@@ -71,6 +76,7 @@ const VehicleFormDialog = ({ open, onOpenChange, vehicle, onSuccess }: Props) =>
         seller_name: "", seller_phone: "", purchase_date: new Date().toISOString().split("T")[0],
         documents_cost: "", description: "", features: [],
         photos: [], image_url: null,
+        fipe_brand_code: "", fipe_model_code: "", fipe_year_code: "", fipe_vehicle_type: "carros",
       });
     }
   }, [vehicle, open]);
@@ -117,6 +123,10 @@ const VehicleFormDialog = ({ open, onOpenChange, vehicle, onSuccess }: Props) =>
         features: form.features?.length ? form.features : null,
         photos: normalizedPhotos,
         image_url: coverPhoto,
+        fipe_brand_code: form.fipe_brand_code || null,
+        fipe_model_code: form.fipe_model_code || null,
+        fipe_year_code: form.fipe_year_code || null,
+        fipe_vehicle_type: form.fipe_vehicle_type || null,
       };
 
       if (isEdit) {
@@ -255,7 +265,15 @@ const VehicleFormDialog = ({ open, onOpenChange, vehicle, onSuccess }: Props) =>
               brand={form.brand}
               model={form.model}
               year={form.year}
-              onFipeValue={(value) => update("fipe_value", value)}
+              vehicleType={form.fipe_vehicle_type || "carros"}
+              onVehicleTypeChange={(type) => update("fipe_vehicle_type", type)}
+              onFipeValue={(value, codes) => {
+                update("fipe_value", value);
+                update("fipe_brand_code", codes.brandCode);
+                update("fipe_model_code", codes.modelCode);
+                update("fipe_year_code", codes.yearCode);
+                update("fipe_vehicle_type", codes.vehicleType);
+              }}
             />
 
             {form.fipe_value && (

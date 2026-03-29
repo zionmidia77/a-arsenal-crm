@@ -6,14 +6,23 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Search, Loader2 } from "lucide-react";
 
+interface FipeCodes {
+  brandCode: string;
+  modelCode: string;
+  yearCode: string;
+  vehicleType: string;
+}
+
 interface Props {
   brand: string;
   model: string;
   year: string | number;
-  onFipeValue: (value: number) => void;
+  onFipeValue: (value: number, codes: FipeCodes) => void;
+  vehicleType?: string;
+  onVehicleTypeChange?: (type: string) => void;
 }
 
-const FipeLookup = ({ brand, model, year, onFipeValue }: Props) => {
+const FipeLookup = ({ brand, model, year, onFipeValue, vehicleType = "carros", onVehicleTypeChange }: Props) => {
   const [brands, setBrands] = useState<any[]>([]);
   const [models, setModels] = useState<any[]>([]);
   const [years, setYears] = useState<any[]>([]);
@@ -25,7 +34,7 @@ const FipeLookup = ({ brand, model, year, onFipeValue }: Props) => {
 
   const callFipe = async (action: string, params: any = {}) => {
     const { data, error } = await supabase.functions.invoke("fipe-lookup", {
-      body: { action, ...params },
+      body: { action, vehicle_type: vehicleType, ...params },
     });
     if (error) throw error;
     if (!data.success) throw new Error(data.error);
@@ -65,7 +74,12 @@ const FipeLookup = ({ brand, model, year, onFipeValue }: Props) => {
       setFipeResult(result);
       const priceStr = result.Valor?.replace("R$ ", "").replace(/\./g, "").replace(",", ".");
       const price = parseFloat(priceStr);
-      if (!isNaN(price)) onFipeValue(price);
+      if (!isNaN(price)) onFipeValue(price, {
+        brandCode: selectedBrand,
+        modelCode: selectedModel,
+        yearCode: selectedYear,
+        vehicleType,
+      });
       toast.success(`FIPE encontrado: ${result.Valor}`);
     } catch (e: any) {
       toast.error(`Erro ao buscar FIPE: ${e.message}`);
@@ -79,7 +93,27 @@ const FipeLookup = ({ brand, model, year, onFipeValue }: Props) => {
       <h4 className="font-semibold flex items-center gap-2">
         <Search className="h-4 w-4" /> Consulta Tabela FIPE
       </h4>
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-4 gap-3">
+        <div>
+          <Label className="text-xs">Tipo</Label>
+          <Select value={vehicleType} onValueChange={(v) => {
+            onVehicleTypeChange?.(v);
+            setSelectedBrand("");
+            setModels([]);
+            setSelectedModel("");
+            setYears([]);
+            setSelectedYear("");
+            setFipeResult(null);
+            callFipe("brands").then(setBrands).catch(() => {});
+          }}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="carros">Carros</SelectItem>
+              <SelectItem value="motos">Motos</SelectItem>
+              <SelectItem value="caminhoes">Caminhões</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
         <div>
           <Label className="text-xs">Marca</Label>
           <Select value={selectedBrand} onValueChange={setSelectedBrand}>

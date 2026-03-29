@@ -815,7 +815,12 @@ export type Database = {
           description: string | null
           documents_cost: number | null
           features: string[] | null
+          fipe_brand_code: string | null
+          fipe_model_code: string | null
+          fipe_updated_at: string | null
           fipe_value: number | null
+          fipe_vehicle_type: string | null
+          fipe_year_code: string | null
           fuel: string | null
           id: string
           image_url: string | null
@@ -844,7 +849,12 @@ export type Database = {
           description?: string | null
           documents_cost?: number | null
           features?: string[] | null
+          fipe_brand_code?: string | null
+          fipe_model_code?: string | null
+          fipe_updated_at?: string | null
           fipe_value?: number | null
+          fipe_vehicle_type?: string | null
+          fipe_year_code?: string | null
           fuel?: string | null
           id?: string
           image_url?: string | null
@@ -873,7 +883,12 @@ export type Database = {
           description?: string | null
           documents_cost?: number | null
           features?: string[] | null
+          fipe_brand_code?: string | null
+          fipe_model_code?: string | null
+          fipe_updated_at?: string | null
           fipe_value?: number | null
+          fipe_vehicle_type?: string | null
+          fipe_year_code?: string | null
           fuel?: string | null
           id?: string
           image_url?: string | null
