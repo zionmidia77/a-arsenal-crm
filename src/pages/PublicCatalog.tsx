@@ -410,7 +410,7 @@ const PublicCatalog = () => {
                 </table>
                 <div className="flex gap-2 mt-4 justify-center">
                   {selected.map((v: any) => (
-                    <Button key={v.id} size="sm" className="gap-1" onClick={() => { setShowCompare(false); navigate(`/chat?moto=${encodeURIComponent(`${v.brand} ${v.model} ${v.year || ""}`)}`); }}>
+                    <Button key={v.id} size="sm" className="gap-1" onClick={() => { setShowCompare(false); navigate(`/chat?veiculo=${encodeURIComponent(`${v.brand} ${v.model} ${v.year || ""}`)}`); }}>
                       <MessageCircle className="h-3 w-3" /> {v.brand} {v.model}
                     </Button>
                   ))}
