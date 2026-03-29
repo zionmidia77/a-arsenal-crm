@@ -188,14 +188,20 @@ const tools = [
     function: {
       name: "simulate_financing",
       description:
-        "Simulate a financing plan for the client. Use when discussing parcelas, entrada, and payment options.",
+        "Simulate a financing plan using Aqui Financiamentos rate table (Moto Leve). Uses coeficientes based on vehicle year and number of installments. Call when discussing parcelas, entrada, and payment options.",
       parameters: {
         type: "object",
         properties: {
           client_id: { type: "string", description: "Client UUID" },
           vehicle_value: { type: "number", description: "Total vehicle value in BRL" },
           down_payment: { type: "number", description: "Down payment amount in BRL" },
-          installments: { type: "number", description: "Number of installments (12, 24, 36, 48)" },
+          installments: { type: "number", description: "Number of installments (12, 18, 24, 36, 48)" },
+          vehicle_year: { type: "number", description: "Year of the vehicle being financed. Affects rate. Use current year for 0km." },
+          coeficiente: {
+            type: "string",
+            enum: ["A", "B", "C"],
+            description: "Credit coeficiente/rating. A=best rate (good credit), B=medium, C=higher risk. Default A.",
+          },
         },
         required: ["client_id", "vehicle_value"],
         additionalProperties: false,
