@@ -200,7 +200,7 @@ const VehicleCard = ({ vehicle }: { vehicle: StockVehicle }) => {
           </>
         ) : (
           <div className="w-full h-full flex items-center justify-center">
-            <Bike className="w-12 h-12 text-primary/60" />
+            <Car className="w-12 h-12 text-primary/60" />
           </div>
         )}
       </div>
