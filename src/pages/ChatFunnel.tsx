@@ -896,7 +896,7 @@ const ChatFunnel = () => {
 
         <AnimatePresence>{isLoading && <TypingIndicator />}</AnimatePresence>
 
-        {showSuggestions && messages.length === 1 && !isLoading && (
+        {showSuggestions && messages.length === 1 && !isLoading && !isRestoringChat && (
           <SuggestionChips onSelect={handleSuggestion} />
         )}
 
