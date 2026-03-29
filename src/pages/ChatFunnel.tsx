@@ -1086,7 +1086,7 @@ const ChatFunnel = () => {
               type="button"
               variant="ghost"
               size="icon"
-              disabled={isLoading || isAnalyzingDoc}
+              disabled={isLoading || isAnalyzingDoc || isRecording || isTranscribing}
               onClick={() => fileInputRef.current?.click()}
               className="rounded-full shrink-0 h-11 w-11 text-muted-foreground hover:text-primary transition-colors"
               title="Enviar documento (CNH, holerite, comprovante)"
@@ -1097,31 +1097,72 @@ const ChatFunnel = () => {
                 <Camera className="h-4 w-4" />
               )}
             </Button>
-            <div className="flex-1 relative">
-              <textarea
-                ref={inputRef}
-                value={inputValue}
-                onChange={(e) => {
-                  setInputValue(e.target.value);
-                  e.target.style.height = "auto";
-                  e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
-                }}
-                onKeyDown={handleKeyDown}
-                placeholder={isAnalyzingDoc ? "Analisando documento..." : "Digite sua mensagem..."}
-                rows={1}
-                disabled={isLoading || isAnalyzingDoc}
-                className="w-full resize-none rounded-2xl bg-secondary border border-border/50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all disabled:opacity-50 placeholder:text-muted-foreground"
-                style={{ maxHeight: "120px" }}
-              />
-            </div>
-            <Button
-              type="submit"
-              size="icon"
-              disabled={!inputValue.trim() || isLoading || isAnalyzingDoc}
-              className="rounded-full shrink-0 h-11 w-11 glow-red transition-all"
-            >
-              <Send className="h-4 w-4" />
-            </Button>
+
+            {isRecording ? (
+              <div className="flex-1 flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-destructive/10 border border-destructive/30">
+                <span className="w-2.5 h-2.5 rounded-full bg-destructive animate-pulse shrink-0" />
+                <span className="text-sm font-medium text-destructive flex-1">
+                  Gravando... {formatDuration(recordingDuration)}
+                </span>
+                <button type="button" onClick={cancelRecording} className="text-xs text-muted-foreground hover:text-foreground transition px-2">
+                  Cancelar
+                </button>
+              </div>
+            ) : isTranscribing ? (
+              <div className="flex-1 flex items-center gap-3 px-4 py-3 rounded-2xl bg-secondary border border-border/50">
+                <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                <span className="text-sm text-muted-foreground">Transcrevendo áudio...</span>
+              </div>
+            ) : (
+              <div className="flex-1 relative">
+                <textarea
+                  ref={inputRef}
+                  value={inputValue}
+                  onChange={(e) => {
+                    setInputValue(e.target.value);
+                    e.target.style.height = "auto";
+                    e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
+                  }}
+                  onKeyDown={handleKeyDown}
+                  placeholder={isAnalyzingDoc ? "Analisando documento..." : "Digite ou envie um áudio..."}
+                  rows={1}
+                  disabled={isLoading || isAnalyzingDoc}
+                  className="w-full resize-none rounded-2xl bg-secondary border border-border/50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all disabled:opacity-50 placeholder:text-muted-foreground"
+                  style={{ maxHeight: "120px" }}
+                />
+              </div>
+            )}
+
+            {isRecording ? (
+              <Button
+                type="button"
+                size="icon"
+                onClick={stopRecording}
+                className="rounded-full shrink-0 h-11 w-11 bg-destructive hover:bg-destructive/90 transition-all"
+              >
+                <Square className="h-4 w-4 fill-current" />
+              </Button>
+            ) : inputValue.trim() ? (
+              <Button
+                type="submit"
+                size="icon"
+                disabled={isLoading || isAnalyzingDoc || isTranscribing}
+                className="rounded-full shrink-0 h-11 w-11 glow-red transition-all"
+              >
+                <Send className="h-4 w-4" />
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                size="icon"
+                disabled={isLoading || isAnalyzingDoc || isTranscribing}
+                onClick={startRecording}
+                className="rounded-full shrink-0 h-11 w-11 bg-primary/80 hover:bg-primary transition-all"
+                title="Gravar áudio"
+              >
+                <Mic className="h-4 w-4" />
+              </Button>
+            )}
           </form>
         )}
         <p className="text-[9px] text-muted-foreground text-center mt-2 opacity-50">
