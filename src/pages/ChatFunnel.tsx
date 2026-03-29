@@ -274,6 +274,20 @@ const useLastSeen = () => {
 // ── Main Component ──
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
 
+const STORAGE_KEY = "arsenal-chat-session-id";
+
+const getOrCreateSessionId = (): string => {
+  try {
+    const existing = localStorage.getItem(STORAGE_KEY);
+    if (existing) return existing;
+    const newId = crypto.randomUUID();
+    localStorage.setItem(STORAGE_KEY, newId);
+    return newId;
+  } catch {
+    return crypto.randomUUID();
+  }
+};
+
 const ChatFunnel = () => {
   const navigate = useNavigate();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -281,12 +295,13 @@ const ChatFunnel = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [clientId, setClientId] = useState<string | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(true);
-  const [sessionId] = useState(() => crypto.randomUUID());
+  const [sessionId, setSessionId] = useState(getOrCreateSessionId);
   const [conversationSaved, setConversationSaved] = useState(false);
   const [isTransferred, setIsTransferred] = useState(false);
   const [messageCount, setMessageCount] = useState(0);
   const [isAnalyzingDoc, setIsAnalyzingDoc] = useState(false);
   const [pendingVehicles, setPendingVehicles] = useState<StockVehicle[] | null>(null);
+  const [isRestoringChat, setIsRestoringChat] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -344,8 +359,16 @@ const ChatFunnel = () => {
     }
   }, [sessionId, clientId]);
 
-  // Send welcome message on mount
-  useEffect(() => {
+  // Start new conversation
+  const startNewConversation = useCallback(() => {
+    const newId = crypto.randomUUID();
+    try { localStorage.setItem(STORAGE_KEY, newId); } catch {}
+    setSessionId(newId);
+    setClientId(null);
+    setIsTransferred(false);
+    setMessageCount(0);
+    setShowSuggestions(true);
+    setConversationSaved(false);
     const welcome: ChatMessage = {
       id: "welcome",
       role: "assistant",
@@ -355,6 +378,59 @@ const ChatFunnel = () => {
     };
     setMessages([welcome]);
   }, []);
+
+  // Restore conversation from DB or show welcome
+  useEffect(() => {
+    const restoreChat = async () => {
+      try {
+        const { data } = await supabase
+          .from("chat_conversations")
+          .select("*")
+          .eq("session_id", sessionId)
+          .maybeSingle();
+
+        if (data && Array.isArray(data.messages) && data.messages.length > 0) {
+          const restored: ChatMessage[] = (data.messages as any[]).map((m, i) => ({
+            id: `restored-${i}`,
+            role: m.role as "user" | "assistant",
+            content: m.content,
+            timestamp: new Date(m.timestamp || data.created_at),
+          }));
+          setMessages(restored);
+          setClientId(data.client_id || null);
+          setIsTransferred(data.status === "transferred");
+          setConversationSaved(true);
+          setShowSuggestions(false);
+          setMessageCount(restored.filter(m => m.role === "user").length);
+          scrollToBottom();
+        } else {
+          // No existing conversation — show welcome
+          const welcome: ChatMessage = {
+            id: "welcome",
+            role: "assistant",
+            content:
+              "E aí! Tudo bem? 👊\n\nSou o consultor da Arsenal Motors. Tô aqui pra te ajudar a encontrar a moto perfeita, fazer uma troca ou o que precisar!\n\nComo posso te ajudar?",
+            timestamp: new Date(),
+          };
+          setMessages([welcome]);
+        }
+      } catch (err) {
+        console.error("Error restoring chat:", err);
+        const welcome: ChatMessage = {
+          id: "welcome",
+          role: "assistant",
+          content:
+            "E aí! Tudo bem? 👊\n\nSou o consultor da Arsenal Motors. Tô aqui pra te ajudar a encontrar a moto perfeita, fazer uma troca ou o que precisar!\n\nComo posso te ajudar?",
+          timestamp: new Date(),
+        };
+        setMessages([welcome]);
+      } finally {
+        setIsRestoringChat(false);
+      }
+    };
+
+    restoreChat();
+  }, [sessionId, scrollToBottom]);
 
   // Handle transfer to human
   const handleTransfer = useCallback(async () => {
