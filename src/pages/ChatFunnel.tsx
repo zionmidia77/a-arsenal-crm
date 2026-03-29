@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Send, ArrowLeft, Sparkles, UserCheck, Camera, FileCheck, Loader2, Bike, ChevronLeft, ChevronRight } from "lucide-react";
+import { Send, ArrowLeft, Sparkles, UserCheck, Camera, FileCheck, Loader2, Bike, ChevronLeft, ChevronRight, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
@@ -274,6 +274,20 @@ const useLastSeen = () => {
 // ── Main Component ──
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
 
+const STORAGE_KEY = "arsenal-chat-session-id";
+
+const getOrCreateSessionId = (): string => {
+  try {
+    const existing = localStorage.getItem(STORAGE_KEY);
+    if (existing) return existing;
+    const newId = crypto.randomUUID();
+    localStorage.setItem(STORAGE_KEY, newId);
+    return newId;
+  } catch {
+    return crypto.randomUUID();
+  }
+};
+
 const ChatFunnel = () => {
   const navigate = useNavigate();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -281,12 +295,13 @@ const ChatFunnel = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [clientId, setClientId] = useState<string | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(true);
-  const [sessionId] = useState(() => crypto.randomUUID());
+  const [sessionId, setSessionId] = useState(getOrCreateSessionId);
   const [conversationSaved, setConversationSaved] = useState(false);
   const [isTransferred, setIsTransferred] = useState(false);
   const [messageCount, setMessageCount] = useState(0);
   const [isAnalyzingDoc, setIsAnalyzingDoc] = useState(false);
   const [pendingVehicles, setPendingVehicles] = useState<StockVehicle[] | null>(null);
+  const [isRestoringChat, setIsRestoringChat] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -344,8 +359,16 @@ const ChatFunnel = () => {
     }
   }, [sessionId, clientId]);
 
-  // Send welcome message on mount
-  useEffect(() => {
+  // Start new conversation
+  const startNewConversation = useCallback(() => {
+    const newId = crypto.randomUUID();
+    try { localStorage.setItem(STORAGE_KEY, newId); } catch {}
+    setSessionId(newId);
+    setClientId(null);
+    setIsTransferred(false);
+    setMessageCount(0);
+    setShowSuggestions(true);
+    setConversationSaved(false);
     const welcome: ChatMessage = {
       id: "welcome",
       role: "assistant",
@@ -355,6 +378,59 @@ const ChatFunnel = () => {
     };
     setMessages([welcome]);
   }, []);
+
+  // Restore conversation from DB or show welcome
+  useEffect(() => {
+    const restoreChat = async () => {
+      try {
+        const { data } = await supabase
+          .from("chat_conversations")
+          .select("*")
+          .eq("session_id", sessionId)
+          .maybeSingle();
+
+        if (data && Array.isArray(data.messages) && data.messages.length > 0) {
+          const restored: ChatMessage[] = (data.messages as any[]).map((m, i) => ({
+            id: `restored-${i}`,
+            role: m.role as "user" | "assistant",
+            content: m.content,
+            timestamp: new Date(m.timestamp || data.created_at),
+          }));
+          setMessages(restored);
+          setClientId(data.client_id || null);
+          setIsTransferred(data.status === "transferred");
+          setConversationSaved(true);
+          setShowSuggestions(false);
+          setMessageCount(restored.filter(m => m.role === "user").length);
+          scrollToBottom();
+        } else {
+          // No existing conversation — show welcome
+          const welcome: ChatMessage = {
+            id: "welcome",
+            role: "assistant",
+            content:
+              "E aí! Tudo bem? 👊\n\nSou o consultor da Arsenal Motors. Tô aqui pra te ajudar a encontrar a moto perfeita, fazer uma troca ou o que precisar!\n\nComo posso te ajudar?",
+            timestamp: new Date(),
+          };
+          setMessages([welcome]);
+        }
+      } catch (err) {
+        console.error("Error restoring chat:", err);
+        const welcome: ChatMessage = {
+          id: "welcome",
+          role: "assistant",
+          content:
+            "E aí! Tudo bem? 👊\n\nSou o consultor da Arsenal Motors. Tô aqui pra te ajudar a encontrar a moto perfeita, fazer uma troca ou o que precisar!\n\nComo posso te ajudar?",
+          timestamp: new Date(),
+        };
+        setMessages([welcome]);
+      } finally {
+        setIsRestoringChat(false);
+      }
+    };
+
+    restoreChat();
+  }, [sessionId, scrollToBottom]);
 
   // Handle transfer to human
   const handleTransfer = useCallback(async () => {
@@ -750,6 +826,18 @@ const ChatFunnel = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {/* New conversation button */}
+          {!isRestoringChat && messages.length > 1 && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={startNewConversation}
+              className="rounded-full h-8 w-8 text-muted-foreground hover:text-primary"
+              title="Nova conversa"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+            </Button>
+          )}
           {showTransferButton && (
             <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}>
               <Button
@@ -772,20 +860,43 @@ const ChatFunnel = () => {
 
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-6">
-        <AnimatePresence mode="popLayout">
-          {messages.map((msg) => (
-            <div key={msg.id}>
-              <ChatBubble msg={msg} />
-              {msg.vehicles && msg.vehicles.length > 0 && (
-                <VehicleCarousel vehicles={msg.vehicles} />
-              )}
-            </div>
-          ))}
-        </AnimatePresence>
+        {isRestoringChat ? (
+          <div className="flex flex-col items-center justify-center py-12 gap-3">
+            <Loader2 className="w-6 h-6 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground">Carregando conversa...</p>
+          </div>
+        ) : (
+          <>
+            {/* Restored conversation indicator */}
+            {conversationSaved && messages.length > 1 && messages[0]?.id?.startsWith("restored") && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex justify-center mb-4"
+              >
+                <div className="bg-secondary/80 text-muted-foreground text-[10px] px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-border/50">
+                  <RotateCcw className="w-3 h-3" />
+                  Conversa anterior restaurada
+                </div>
+              </motion.div>
+            )}
+
+            <AnimatePresence mode="popLayout">
+              {messages.map((msg) => (
+                <div key={msg.id}>
+                  <ChatBubble msg={msg} />
+                  {msg.vehicles && msg.vehicles.length > 0 && (
+                    <VehicleCarousel vehicles={msg.vehicles} />
+                  )}
+                </div>
+              ))}
+            </AnimatePresence>
+          </>
+        )}
 
         <AnimatePresence>{isLoading && <TypingIndicator />}</AnimatePresence>
 
-        {showSuggestions && messages.length === 1 && !isLoading && (
+        {showSuggestions && messages.length === 1 && !isLoading && !isRestoringChat && (
           <SuggestionChips onSelect={handleSuggestion} />
         )}
 
