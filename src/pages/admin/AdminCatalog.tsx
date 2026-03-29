@@ -11,7 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Plus, Camera, Search, Package, DollarSign, Clock, TrendingUp, Trash2, Edit, Eye } from "lucide-react";
+import { Plus, Camera, Search, Package, DollarSign, Clock, TrendingUp, Trash2, Edit, Eye, QrCode } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import VehicleFormDialog from "@/components/catalog/VehicleFormDialog";
 import VehiclePhotoUpload from "@/components/catalog/VehiclePhotoUpload";
 import VehicleCostManager from "@/components/catalog/VehicleCostManager";
