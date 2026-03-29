@@ -120,7 +120,7 @@ const AdminGoals = () => {
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [year, setYear] = useState(now.getFullYear());
   const [editOpen, setEditOpen] = useState(false);
-  const [editGoals, setEditGoals] = useState({ target_sales: 10, target_revenue: 0, target_leads: 50, target_contacts: 100 });
+  const [editGoals, setEditGoals] = useState({ target_sales: 10, target_revenue: 0, target_leads: 50, target_contacts: 100, target_ltv: 0 });
   const qc = useQueryClient();
 
   const isCurrentMonth = month === now.getMonth() + 1 && year === now.getFullYear();
