@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { ArrowLeft, Bike, DollarSign, Clock, Sparkles, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Bike, DollarSign, Clock, Sparkles, CheckCircle2, Calendar } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -21,12 +21,18 @@ const Simulator = () => {
   const [motoValue, setMotoValue] = useState([20000]);
   const [downPayment, setDownPayment] = useState([5000]);
   const [months, setMonths] = useState([36]);
+  const [vehicleYear, setVehicleYear] = useState([new Date().getFullYear() - 3]);
 
   const financed = motoValue[0] - downPayment[0];
-  // Aqui Financiamentos - Moto Leve, Coeficiente A, veículo até 8 anos
-  const coefTable: Record<number, number> = {
-    12: 0.10100, 18: 0.07450, 24: 0.06050, 36: 0.04650, 48: 0.04000,
+  const currentYear = new Date().getFullYear();
+  const vehicleAge = currentYear - vehicleYear[0];
+  // Aqui Financiamentos - Moto Leve, Coeficiente A, rate by vehicle age
+  const getCoefTable = (age: number): Record<number, number> => {
+    if (age <= 3) return { 12: 0.09800, 18: 0.07200, 24: 0.05850, 36: 0.04450, 48: 0.03800 };
+    if (age <= 8) return { 12: 0.10100, 18: 0.07450, 24: 0.06050, 36: 0.04650, 48: 0.04000 };
+    return { 12: 0.10500, 18: 0.07800, 24: 0.06350, 36: 0.04900, 48: 0.04250 };
   };
+  const coefTable = getCoefTable(vehicleAge);
   const closest = [12, 18, 24, 36, 48].reduce((prev, curr) =>
     Math.abs(curr - months[0]) < Math.abs(prev - months[0]) ? curr : prev
   );
@@ -87,6 +93,18 @@ const Simulator = () => {
           <Slider value={months} onValueChange={setMonths} min={12} max={60} step={6} className="[&_[role=slider]]:bg-info [&_[role=slider]]:border-info [&_[role=slider]]:h-5 [&_[role=slider]]:w-5 [&_[role=slider]]:shadow-lg" />
           <div className="flex justify-between text-[10px] text-muted-foreground">
             <span>12x</span><span>60x</span>
+          </div>
+        </motion.div>
+
+        {/* Ano do veículo */}
+        <motion.div variants={fadeUp} className="glass-card p-5 space-y-4">
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-muted-foreground flex items-center gap-2"><Calendar className="w-4 h-4 text-primary" /> Ano do veículo</span>
+            <span className="font-display font-bold text-lg">{vehicleYear[0]}</span>
+          </div>
+          <Slider value={vehicleYear} onValueChange={setVehicleYear} min={2005} max={currentYear} step={1} className="[&_[role=slider]]:bg-primary [&_[role=slider]]:border-primary [&_[role=slider]]:h-5 [&_[role=slider]]:w-5 [&_[role=slider]]:shadow-lg" />
+          <div className="flex justify-between text-[10px] text-muted-foreground">
+            <span>2005</span><span>{currentYear}</span>
           </div>
         </motion.div>
 

@@ -114,38 +114,65 @@ export type Database = {
       }
       clients: {
         Row: {
+          address_cep: string | null
+          address_complement: string | null
+          address_neighborhood: string | null
+          address_number: string | null
+          address_state: string | null
+          address_street: string | null
           arsenal_score: number
           birth_city: string | null
           birthdate: string | null
           budget_range: string | null
           city: string | null
+          cnh_category: string | null
+          cnh_number: string | null
           cpf: string | null
           created_at: string
+          dependents: number | null
           down_payment_amount: number | null
+          education_level: string | null
           email: string | null
           employer: string | null
+          employer_address: string | null
+          employer_cep: string | null
+          employer_cnpj: string | null
+          employer_phone: string | null
           employment_time: string | null
+          father_name: string | null
           financing_docs: Json | null
           financing_status: string | null
           funnel_data: Json | null
+          gender: string | null
+          gross_income: number | null
           has_clean_credit: boolean | null
           has_down_payment: boolean | null
           has_trade_in: boolean | null
+          housing_type: string | null
           id: string
           interest: string | null
           last_contact_at: string | null
           lead_score: number
           marital_status: string | null
+          mother_name: string | null
           name: string
           notes: string | null
           payment_type: string | null
           phone: string | null
           pipeline_stage: Database["public"]["Enums"]["pipeline_stage"]
           position: string | null
+          profession: string | null
           reference_name: string | null
+          reference_name_2: string | null
           reference_phone: string | null
+          reference_phone_2: string | null
+          reference_relation: string | null
+          reference_relation_2: string | null
           referred_by: string | null
+          residence_time: string | null
           response_time_hours: number | null
+          rg: string | null
+          rg_issuer: string | null
           salary: number | null
           source: string | null
           status: Database["public"]["Enums"]["client_status"]
@@ -153,38 +180,65 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          address_cep?: string | null
+          address_complement?: string | null
+          address_neighborhood?: string | null
+          address_number?: string | null
+          address_state?: string | null
+          address_street?: string | null
           arsenal_score?: number
           birth_city?: string | null
           birthdate?: string | null
           budget_range?: string | null
           city?: string | null
+          cnh_category?: string | null
+          cnh_number?: string | null
           cpf?: string | null
           created_at?: string
+          dependents?: number | null
           down_payment_amount?: number | null
+          education_level?: string | null
           email?: string | null
           employer?: string | null
+          employer_address?: string | null
+          employer_cep?: string | null
+          employer_cnpj?: string | null
+          employer_phone?: string | null
           employment_time?: string | null
+          father_name?: string | null
           financing_docs?: Json | null
           financing_status?: string | null
           funnel_data?: Json | null
+          gender?: string | null
+          gross_income?: number | null
           has_clean_credit?: boolean | null
           has_down_payment?: boolean | null
           has_trade_in?: boolean | null
+          housing_type?: string | null
           id?: string
           interest?: string | null
           last_contact_at?: string | null
           lead_score?: number
           marital_status?: string | null
+          mother_name?: string | null
           name: string
           notes?: string | null
           payment_type?: string | null
           phone?: string | null
           pipeline_stage?: Database["public"]["Enums"]["pipeline_stage"]
           position?: string | null
+          profession?: string | null
           reference_name?: string | null
+          reference_name_2?: string | null
           reference_phone?: string | null
+          reference_phone_2?: string | null
+          reference_relation?: string | null
+          reference_relation_2?: string | null
           referred_by?: string | null
+          residence_time?: string | null
           response_time_hours?: number | null
+          rg?: string | null
+          rg_issuer?: string | null
           salary?: number | null
           source?: string | null
           status?: Database["public"]["Enums"]["client_status"]
@@ -192,38 +246,65 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          address_cep?: string | null
+          address_complement?: string | null
+          address_neighborhood?: string | null
+          address_number?: string | null
+          address_state?: string | null
+          address_street?: string | null
           arsenal_score?: number
           birth_city?: string | null
           birthdate?: string | null
           budget_range?: string | null
           city?: string | null
+          cnh_category?: string | null
+          cnh_number?: string | null
           cpf?: string | null
           created_at?: string
+          dependents?: number | null
           down_payment_amount?: number | null
+          education_level?: string | null
           email?: string | null
           employer?: string | null
+          employer_address?: string | null
+          employer_cep?: string | null
+          employer_cnpj?: string | null
+          employer_phone?: string | null
           employment_time?: string | null
+          father_name?: string | null
           financing_docs?: Json | null
           financing_status?: string | null
           funnel_data?: Json | null
+          gender?: string | null
+          gross_income?: number | null
           has_clean_credit?: boolean | null
           has_down_payment?: boolean | null
           has_trade_in?: boolean | null
+          housing_type?: string | null
           id?: string
           interest?: string | null
           last_contact_at?: string | null
           lead_score?: number
           marital_status?: string | null
+          mother_name?: string | null
           name?: string
           notes?: string | null
           payment_type?: string | null
           phone?: string | null
           pipeline_stage?: Database["public"]["Enums"]["pipeline_stage"]
           position?: string | null
+          profession?: string | null
           reference_name?: string | null
+          reference_name_2?: string | null
           reference_phone?: string | null
+          reference_phone_2?: string | null
+          reference_relation?: string | null
+          reference_relation_2?: string | null
           referred_by?: string | null
+          residence_time?: string | null
           response_time_hours?: number | null
+          rg?: string | null
+          rg_issuer?: string | null
           salary?: number | null
           source?: string | null
           status?: Database["public"]["Enums"]["client_status"]
