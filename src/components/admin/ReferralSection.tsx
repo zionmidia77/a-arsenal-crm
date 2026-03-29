@@ -62,15 +62,24 @@ const ReferralSection = ({ client }: ReferralSectionProps) => {
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const updateData: any = { status };
+      // Auto R$200 bonus on conversion
+      if (status === "converted") {
+        updateData.reward_amount = 200;
+      }
       const { error } = await supabase
         .from("referrals")
-        .update({ status })
+        .update(updateData)
         .eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       qc.invalidateQueries({ queryKey: ["referrals", client.id] });
-      toast.success("Status atualizado!");
+      if (variables.status === "converted") {
+        toast.success("🎉 Indicação convertida! Bônus de R$200 aplicado automaticamente!");
+      } else {
+        toast.success("Status atualizado!");
+      }
     },
   });
 
