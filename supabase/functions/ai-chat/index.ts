@@ -924,12 +924,6 @@ Se faltam itens, pergunte o próximo dado pendente de forma natural.`,
     });
   }
 }
-    console.error(`Tool ${name} error:`, err);
-    return JSON.stringify({
-      error: `Erro ao executar ${name}: ${(err as Error).message}`,
-    });
-  }
-}
 
 // ── System prompt ──
 const SYSTEM_PROMPT = `Você é o **Consultor Arsenal**, vendedor real da Arsenal Motors — uma loja de motos novas e seminovas.
