@@ -663,14 +663,16 @@ const ChatFunnel = () => {
         inputRef.current?.focus();
 
         // Attach pending vehicles to the last assistant message
+        const vehiclesToAttach = pendingVehiclesRef.current;
         setMessages(prev => {
-          if (pendingVehicles && pendingVehicles.length > 0) {
+          if (vehiclesToAttach && vehiclesToAttach.length > 0) {
             const updated = prev.map((m, i) =>
               i === prev.length - 1 && m.role === "assistant"
-                ? { ...m, vehicles: pendingVehicles }
+                ? { ...m, vehicles: vehiclesToAttach }
                 : m
             );
             setPendingVehicles(null);
+            pendingVehiclesRef.current = null;
             saveConversation(updated, latestClientId);
             return updated;
           }
