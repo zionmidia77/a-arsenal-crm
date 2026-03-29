@@ -13,7 +13,7 @@ import { toast } from "sonner";
 
 interface SmartAlert {
   id: string;
-  type: "upgrade" | "refinance" | "birthday" | "milestone" | "reactivation" | "revision" | "stale";
+  type: string;
   title: string;
   message: string;
   priority: number;
