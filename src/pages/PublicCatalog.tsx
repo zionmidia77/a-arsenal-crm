@@ -186,7 +186,7 @@ const PublicCatalog = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("stock_vehicles")
-        .select("id, brand, model, year, km, color, price, selling_price, condition, photos, image_url, description, features, fipe_value")
+        .select("id, brand, model, year, km, color, price, selling_price, condition, photos, image_url, description, features, fipe_value, fuel")
         .eq("status", "available")
         .order("created_at", { ascending: false });
       if (error) throw error;
