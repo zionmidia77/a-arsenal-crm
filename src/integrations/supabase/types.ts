@@ -808,49 +808,88 @@ export type Database = {
       stock_vehicles: {
         Row: {
           brand: string
+          chassis: string | null
           color: string | null
           condition: string
           created_at: string
           description: string | null
+          documents_cost: number | null
           features: string[] | null
+          fipe_value: number | null
+          fuel: string | null
           id: string
           image_url: string | null
           km: number | null
           model: string
+          photos: string[] | null
+          plate: string | null
           price: number
+          purchase_date: string | null
+          purchase_price: number | null
+          renavam: string | null
+          seller_name: string | null
+          seller_phone: string | null
+          selling_price: number | null
           status: string
+          total_costs: number | null
           updated_at: string
           year: number | null
         }
         Insert: {
           brand: string
+          chassis?: string | null
           color?: string | null
           condition?: string
           created_at?: string
           description?: string | null
+          documents_cost?: number | null
           features?: string[] | null
+          fipe_value?: number | null
+          fuel?: string | null
           id?: string
           image_url?: string | null
           km?: number | null
           model: string
+          photos?: string[] | null
+          plate?: string | null
           price: number
+          purchase_date?: string | null
+          purchase_price?: number | null
+          renavam?: string | null
+          seller_name?: string | null
+          seller_phone?: string | null
+          selling_price?: number | null
           status?: string
+          total_costs?: number | null
           updated_at?: string
           year?: number | null
         }
         Update: {
           brand?: string
+          chassis?: string | null
           color?: string | null
           condition?: string
           created_at?: string
           description?: string | null
+          documents_cost?: number | null
           features?: string[] | null
+          fipe_value?: number | null
+          fuel?: string | null
           id?: string
           image_url?: string | null
           km?: number | null
           model?: string
+          photos?: string[] | null
+          plate?: string | null
           price?: number
+          purchase_date?: string | null
+          purchase_price?: number | null
+          renavam?: string | null
+          seller_name?: string | null
+          seller_phone?: string | null
+          selling_price?: number | null
           status?: string
+          total_costs?: number | null
           updated_at?: string
           year?: number | null
         }
@@ -911,6 +950,44 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vehicle_costs: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string | null
+          date: string | null
+          description: string
+          id: string
+          vehicle_id: string
+        }
+        Insert: {
+          amount?: number
+          category?: string
+          created_at?: string | null
+          date?: string | null
+          description: string
+          id?: string
+          vehicle_id: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string | null
+          date?: string | null
+          description?: string
+          id?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_costs_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "stock_vehicles"
             referencedColumns: ["id"]
           },
         ]

@@ -21,7 +21,9 @@ import AdminGoals from "./pages/admin/AdminGoals";
 import AdminCalendar from "./pages/admin/AdminCalendar";
 import AdminChatHistory from "./pages/admin/AdminChatHistory";
 import AdminSimulations from "./pages/admin/AdminSimulations";
+import AdminCatalog from "./pages/admin/AdminCatalog";
 import MemberArea from "./pages/MemberArea";
+import PublicCatalog from "./pages/PublicCatalog";
 import Login from "./pages/auth/Login";
 import Signup from "./pages/auth/Signup";
 import ForgotPassword from "./pages/auth/ForgotPassword";
@@ -42,6 +44,7 @@ const App = () => (
             <Route path="/chat" element={<ChatFunnel />} />
             <Route path="/dashboard" element={<ClientDashboard />} />
             <Route path="/simulator" element={<Simulator />} />
+            <Route path="/catalogo" element={<PublicCatalog />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -64,6 +67,7 @@ const App = () => (
               <Route path="goals" element={<AdminGoals />} />
               <Route path="chat-history" element={<AdminChatHistory />} />
               <Route path="simulations" element={<AdminSimulations />} />
+              <Route path="catalog" element={<AdminCatalog />} />
               <Route path="client/:id" element={<AdminClientDetail />} />
             </Route>
             <Route
