@@ -60,6 +60,56 @@ const MemberArea = () => {
     enabled: !!client?.id,
   });
 
+  // Get referrals
+  const { data: referrals, refetch: refetchReferrals } = useQuery({
+    queryKey: ["member-referrals", client?.id],
+    queryFn: async () => {
+      if (!client?.id) return [];
+      const { data } = await supabase
+        .from("referrals")
+        .select("*")
+        .eq("referrer_id", client.id)
+        .order("created_at", { ascending: false });
+      return data || [];
+    },
+    enabled: !!client?.id,
+  });
+
+  const totalBonus = (referrals || [])
+    .filter(r => r.status === "converted")
+    .reduce((sum, r) => sum + (Number(r.reward_amount) || 0), 0);
+  const convertedCount = (referrals || []).filter(r => r.status === "converted").length;
+  const pendingCount = (referrals || []).filter(r => r.status === "pending").length;
+
+  const handleSubmitReferral = async () => {
+    if (!client?.id || !refForm.name.trim()) return;
+    const { error } = await supabase.from("referrals").insert({
+      referrer_id: client.id,
+      referred_name: refForm.name,
+      referred_phone: refForm.phone,
+      reward_amount: 0,
+      status: "pending",
+    });
+    if (error) {
+      toast.error("Erro ao enviar indicação");
+      return;
+    }
+    toast.success("🎉 Indicação enviada com sucesso!");
+    setRefForm({ name: "", phone: "" });
+    setShowRefForm(false);
+    refetchReferrals();
+  };
+
+  const shareText = `Quer comprar uma moto com as melhores condições? Fala que o ${firstName} indicou! Arsenal Motors 🏍️`;
+  const handleShare = () => {
+    if (navigator.share) {
+      navigator.share({ text: shareText });
+    } else {
+      navigator.clipboard.writeText(shareText);
+      toast.success("Link copiado!");
+    }
+  };
+
   const greeting = () => {
     const h = new Date().getHours();
     if (h < 12) return "Bom dia";
