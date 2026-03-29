@@ -173,6 +173,7 @@ const PublicCatalog = () => {
   const [brandFilter, setBrandFilter] = useState("all");
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [showCompare, setShowCompare] = useState(false);
+  const [detailVehicle, setDetailVehicle] = useState<any>(null);
   const navigate = useNavigate();
 
   const toggleCompare = (id: string) => {
