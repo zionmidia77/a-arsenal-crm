@@ -70,6 +70,22 @@ const AdminDashboard = () => {
   const { data: pendingTasks } = useAllPendingTasks();
   const { data: chartData } = useLeadsChartData();
   const [dismissedBirthday, setDismissedBirthday] = useState(false);
+  const [generatingPDF, setGeneratingPDF] = useState(false);
+
+  const handleGenerateReport = async () => {
+    setGeneratingPDF(true);
+    try {
+      const now = new Date();
+      const data = await fetchMonthlyData(now.getMonth() + 1, now.getFullYear());
+      generateMonthlyPDF(data);
+      toast.success("Relatório PDF gerado com sucesso!");
+    } catch (e) {
+      console.error(e);
+      toast.error("Erro ao gerar relatório");
+    } finally {
+      setGeneratingPDF(false);
+    }
+  };
 
   // Birthday query
   const { data: birthdayClients } = useQuery({
