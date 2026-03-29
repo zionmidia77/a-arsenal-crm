@@ -329,6 +329,7 @@ const getOrCreateSessionId = (): string => {
 
 const ChatFunnel = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
