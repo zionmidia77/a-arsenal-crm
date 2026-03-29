@@ -28,6 +28,7 @@ interface StockVehicle {
   condition: string;
   description?: string;
   features?: string[];
+  photos?: string[];
 }
 
 // ── Typing indicator ──
