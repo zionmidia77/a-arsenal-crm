@@ -60,7 +60,7 @@ const NotificationCenter = () => {
     action: () => { navigate("/admin/tasks"); setOpen(false); },
   }));
 
-  const leadNotifications = newLeads.slice(0, 10).map(c => ({
+  const leadNotifications = nonAiLeads.slice(0, 10).map(c => ({
     id: `lead-${c.id}`,
     type: "leads" as const,
     icon: Flame,
@@ -71,7 +71,18 @@ const NotificationCenter = () => {
     action: () => { navigate(`/admin/client/${c.id}`); setOpen(false); },
   }));
 
-  const allNotifications = [...docsNotifications, ...taskNotifications, ...leadNotifications];
+  const aiNotifications = aiLeads.slice(0, 10).map(c => ({
+    id: `ai-${c.id}`,
+    type: "ai" as const,
+    icon: Bot,
+    color: "text-blue-400",
+    bg: "bg-blue-500/10",
+    title: "🤖 Novo lead via Chat IA!",
+    desc: `${c.name} · ${c.interest || "sem interesse"} · capturado automaticamente`,
+    action: () => { navigate(`/admin/client/${c.id}`); setOpen(false); },
+  }));
+
+  const allNotifications = [...aiNotifications, ...docsNotifications, ...taskNotifications, ...leadNotifications];
 
   const filtered = filter === "all"
     ? allNotifications
