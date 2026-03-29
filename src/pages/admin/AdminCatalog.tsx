@@ -191,15 +191,14 @@ const AdminCatalog = () => {
             const days = getDaysInStock(vehicle.purchase_date);
             const profit = (Number(vehicle.selling_price) || Number(vehicle.price) || 0) - (Number(vehicle.purchase_price) || 0) - (Number(vehicle.documents_cost) || 0) - (Number(vehicle.total_costs) || 0);
             const photos = vehicle.photos || [];
+            const coverPhoto = vehicle.image_url || photos[0] || null;
 
             return (
               <Card key={vehicle.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                 {/* Photo */}
                 <div className="h-48 bg-muted relative">
-                  {photos.length > 0 ? (
-                    <img src={photos[0]} alt={`${vehicle.brand} ${vehicle.model}`} className="w-full h-full object-cover" />
-                  ) : vehicle.image_url ? (
-                    <img src={vehicle.image_url} alt={`${vehicle.brand} ${vehicle.model}`} className="w-full h-full object-cover" />
+                  {coverPhoto ? (
+                    <img src={coverPhoto} alt={`${vehicle.brand} ${vehicle.model}`} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-muted-foreground">
                       <Package className="h-12 w-12" />

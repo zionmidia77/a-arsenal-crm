@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -27,12 +27,17 @@ const VehicleFormDialog = ({ open, onOpenChange, vehicle, onSuccess }: Props) =>
     fipe_value: "", plate: "", chassis: "", renavam: "", fuel: "Flex",
     seller_name: "", seller_phone: "", purchase_date: new Date().toISOString().split("T")[0],
     documents_cost: "", description: "", features: [],
-    photos: [],
+    photos: [], image_url: null,
   });
   const isEdit = !!vehicle?.id;
 
   useEffect(() => {
     if (vehicle) {
+      const vehiclePhotos = Array.isArray(vehicle.photos) ? vehicle.photos : [];
+      const normalizedPhotos = vehicle.image_url && !vehiclePhotos.includes(vehicle.image_url)
+        ? [vehicle.image_url, ...vehiclePhotos]
+        : vehiclePhotos;
+
       setForm({
         brand: vehicle.brand || "",
         model: vehicle.model || "",
@@ -55,7 +60,8 @@ const VehicleFormDialog = ({ open, onOpenChange, vehicle, onSuccess }: Props) =>
         documents_cost: vehicle.documents_cost || "",
         description: vehicle.description || "",
         features: vehicle.features || [],
-        photos: vehicle.photos || [],
+        photos: normalizedPhotos,
+        image_url: vehicle.image_url || normalizedPhotos[0] || null,
       });
     } else {
       setForm({
@@ -64,7 +70,7 @@ const VehicleFormDialog = ({ open, onOpenChange, vehicle, onSuccess }: Props) =>
         fipe_value: "", plate: "", chassis: "", renavam: "", fuel: "Flex",
         seller_name: "", seller_phone: "", purchase_date: new Date().toISOString().split("T")[0],
         documents_cost: "", description: "", features: [],
-        photos: [],
+        photos: [], image_url: null,
       });
     }
   }, [vehicle, open]);
@@ -73,6 +79,20 @@ const VehicleFormDialog = ({ open, onOpenChange, vehicle, onSuccess }: Props) =>
 
   const saveMutation = useMutation({
     mutationFn: async () => {
+      const photosRaw: string[] = Array.isArray(form.photos)
+        ? form.photos.filter((photo: unknown): photo is string => typeof photo === "string" && photo.length > 0)
+        : [];
+      const imageUrl = typeof form.image_url === "string" && form.image_url.length > 0
+        ? form.image_url
+        : null;
+      const photosWithCover: string[] = imageUrl && !photosRaw.includes(imageUrl)
+        ? [imageUrl, ...photosRaw]
+        : photosRaw;
+      const normalizedPhotos: string[] = Array.from(new Set(photosWithCover));
+      const coverPhoto = imageUrl && normalizedPhotos.includes(imageUrl)
+        ? imageUrl
+        : normalizedPhotos[0] || null;
+
       const payload = {
         brand: form.brand,
         model: form.model,
@@ -95,7 +115,8 @@ const VehicleFormDialog = ({ open, onOpenChange, vehicle, onSuccess }: Props) =>
         documents_cost: form.documents_cost ? Number(form.documents_cost) : 0,
         description: form.description || null,
         features: form.features?.length ? form.features : null,
-        photos: form.photos || [],
+        photos: normalizedPhotos,
+        image_url: coverPhoto,
       };
 
       if (isEdit) {
@@ -110,7 +131,7 @@ const VehicleFormDialog = ({ open, onOpenChange, vehicle, onSuccess }: Props) =>
       toast.success(isEdit ? "Veículo atualizado!" : "Veículo cadastrado!");
       onSuccess();
     },
-    onError: (e) => toast.error(`Erro: ${e.message}`),
+    onError: (e: any) => toast.error(`Erro: ${e.message}`),
   });
 
   return (
@@ -230,7 +251,6 @@ const VehicleFormDialog = ({ open, onOpenChange, vehicle, onSuccess }: Props) =>
               </div>
             </div>
 
-            {/* FIPE Lookup */}
             <FipeLookup
               brand={form.brand}
               model={form.model}
@@ -245,7 +265,6 @@ const VehicleFormDialog = ({ open, onOpenChange, vehicle, onSuccess }: Props) =>
               </div>
             )}
 
-            {/* Margin Preview */}
             {(form.selling_price || form.purchase_price) && (
               <div className="p-4 border rounded-lg">
                 <h4 className="font-semibold mb-2">📊 Prévia de Margem</h4>
@@ -264,7 +283,16 @@ const VehicleFormDialog = ({ open, onOpenChange, vehicle, onSuccess }: Props) =>
           <TabsContent value="photos" className="mt-4">
             <VehiclePhotoUpload
               photos={form.photos}
-              onPhotosChange={(photos) => update("photos", photos)}
+              onPhotosChange={(photos) => {
+                update("photos", photos);
+                if (!photos.length) {
+                  update("image_url", null);
+                } else if (!form.image_url || !photos.includes(form.image_url)) {
+                  update("image_url", photos[0]);
+                }
+              }}
+              coverPhoto={form.image_url}
+              onCoverPhotoChange={(photo) => update("image_url", photo)}
               vehicleId={vehicle?.id}
             />
           </TabsContent>
