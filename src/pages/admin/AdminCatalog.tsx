@@ -17,6 +17,7 @@ import VehiclePhotoUpload from "@/components/catalog/VehiclePhotoUpload";
 import VehicleCostManager from "@/components/catalog/VehicleCostManager";
 import FipeLookup from "@/components/catalog/FipeLookup";
 import VehicleDocOCR from "@/components/catalog/VehicleDocOCR";
+import StockFinancialDashboard from "@/components/catalog/StockFinancialDashboard";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
