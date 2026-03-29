@@ -310,6 +310,47 @@ const tools = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "save_conversation_notes",
+      description:
+        "Save a structured summary of ALL relevant information collected during the conversation. Call this EVERY FEW MESSAGES with a cumulative summary. Include: preferences, objections, personal details mentioned, family situation, work context, buying timeline, anything useful for future sales.",
+      parameters: {
+        type: "object",
+        properties: {
+          client_id: { type: "string", description: "Client UUID" },
+          notes: {
+            type: "string",
+            description: "Structured notes with all relevant info collected. Use bullet points. Example: '• Prefere motos esportivas\n• Trabalha como entregador, precisa da moto pra trabalhar\n• Esposa também anda de moto\n• Quer parcela até R$500\n• Mora perto da loja\n• Tem medo de financiar por já ter tido nome sujo'",
+          },
+        },
+        required: ["client_id", "notes"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "process_cnh_data",
+      description:
+        "Process CNH (driver's license) data extracted from a photo or text. Automatically registers the birthdate, full name, and CPF in the lead profile, marks CNH as received in financing docs, and adds the client to the birthday alerts system. Call this whenever the client shares CNH information — either by photo OCR results or by providing CNH details in text.",
+      parameters: {
+        type: "object",
+        properties: {
+          client_id: { type: "string", description: "Client UUID" },
+          full_name: { type: "string", description: "Full name as on CNH" },
+          cpf: { type: "string", description: "CPF number from CNH" },
+          birthdate: { type: "string", description: "Birth date in YYYY-MM-DD format from CNH" },
+          cnh_number: { type: "string", description: "CNH number" },
+          birth_city: { type: "string", description: "City of birth from CNH" },
+        },
+        required: ["client_id"],
+        additionalProperties: false,
+      },
+    },
+  },
 ];
 
 // ── Execute tool calls ──
@@ -770,6 +811,109 @@ Se faltam itens, pergunte o próximo dado pendente de forma natural.`,
         return JSON.stringify({ success: true });
       }
 
+      case "save_conversation_notes": {
+        // Get existing notes to append
+        const { data: existingClient } = await supabase
+          .from("clients")
+          .select("notes")
+          .eq("id", args.client_id)
+          .single();
+
+        const timestamp = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
+        const newNotes = `\n\n--- Anotação IA (${timestamp}) ---\n${args.notes}`;
+        const combinedNotes = (existingClient?.notes || "") + newNotes;
+
+        const { error } = await supabase
+          .from("clients")
+          .update({ notes: combinedNotes })
+          .eq("id", args.client_id);
+
+        if (error) throw error;
+
+        await supabase.from("interactions").insert({
+          client_id: args.client_id as string,
+          type: "system",
+          content: `📝 Notas da conversa salvas automaticamente pela IA`,
+          created_by: "ai-consultant",
+        });
+
+        return JSON.stringify({
+          success: true,
+          message: "Notas salvas no perfil do cliente.",
+        });
+      }
+
+      case "process_cnh_data": {
+        const updateData: Record<string, unknown> = {};
+        const logParts: string[] = [];
+
+        if (args.full_name) {
+          updateData.name = args.full_name;
+          logParts.push(`Nome: ${args.full_name}`);
+        }
+        if (args.cpf) {
+          updateData.cpf = args.cpf;
+          logParts.push(`CPF: ${args.cpf}`);
+        }
+        if (args.birthdate) {
+          updateData.birthdate = args.birthdate;
+          logParts.push(`Nascimento: ${args.birthdate}`);
+        }
+        if (args.birth_city) {
+          updateData.birth_city = args.birth_city;
+          logParts.push(`Naturalidade: ${args.birth_city}`);
+        }
+
+        // Mark CNH as received in financing_docs
+        const { data: clientData } = await supabase
+          .from("clients")
+          .select("financing_docs")
+          .eq("id", args.client_id)
+          .single();
+
+        const docs = (clientData?.financing_docs as Record<string, boolean>) || {
+          cnh: false, pay_stub: false, proof_of_residence: false, reference: false
+        };
+        docs.cnh = true;
+        updateData.financing_docs = docs;
+        logParts.push("CNH: ✅ recebida");
+
+        // Update client
+        const { error } = await supabase
+          .from("clients")
+          .update(updateData)
+          .eq("id", args.client_id);
+
+        if (error) throw error;
+
+        // Log interaction
+        await supabase.from("interactions").insert({
+          client_id: args.client_id as string,
+          type: "system",
+          content: `🪪 CNH processada automaticamente:\n${logParts.join("\n")}${args.birthdate ? "\n🎂 Cliente adicionado aos alertas de aniversário!" : ""}`,
+          created_by: "ai-consultant",
+        });
+
+        // If we have a birthdate, check if birthday is today or this month
+        let birthdayMessage = "";
+        if (args.birthdate) {
+          const bd = new Date(args.birthdate + "T12:00:00");
+          const today = new Date();
+          if (bd.getMonth() === today.getMonth() && bd.getDate() === today.getDate()) {
+            birthdayMessage = "🎂 HOJE é aniversário do cliente! Parabenize-o!";
+          } else if (bd.getMonth() === today.getMonth()) {
+            birthdayMessage = `🎂 Aniversário este mês (dia ${bd.getDate()})!`;
+          }
+        }
+
+        return JSON.stringify({
+          success: true,
+          processed: logParts,
+          birthday_alert: birthdayMessage || null,
+          message: `CNH processada! Dados atualizados: ${logParts.join(", ")}. ${args.birthdate ? "Cliente cadastrado nos alertas de aniversário automaticamente. " : ""}${birthdayMessage}`,
+        });
+      }
+
       default:
         return JSON.stringify({ error: `Unknown tool: ${name}` });
     }
@@ -895,41 +1039,34 @@ Para leads ALTOS: crie senso de oportunidade, mostre condições especiais.
 14. Use detect_urgency SEMPRE que detectar sinais de urgência ou desinteresse
 15. Use check_documents quando discutir financiamento para mostrar progresso visual
 
-## QUANDO O CLIENTE DIZ "SÓ ESTOU OLHANDO"
-- Não desista! "Tranquilo! Me conta o que você curte, posso te mostrar umas opções legais que chegaram"
-- Mostre entusiasmo pela moto que ele mencionar
-- Crie URGÊNCIA sutil: "Essa aqui tá saindo rápido..."
+## 📝 ANOTAÇÕES AUTOMÁTICAS (IMPORTANTÍSSIMO!)
+Você DEVE usar save_conversation_notes a cada 3-4 mensagens trocadas com o cliente.
+Anote TUDO que for relevante, incluindo:
+- Preferências pessoais (cor, marca, estilo de moto)
+- Objeções e medos ("medo de financiar", "parcela muito alta")
+- Situação familiar (esposa, filhos, dependentes)
+- Contexto profissional (usa moto pra trabalho, entregador, etc)
+- Timeline de compra ("preciso pra semana que vem", "sem pressa")
+- Detalhes pessoais mencionados (hobbies, viagens, etc)
+- Motivo da troca/compra
+- Qualquer informação que ajude em vendas futuras
 
-## DADOS QUE GERAM RECEITA FUTURA (capte TODOS!)
-Cada dado no CRM é uma oportunidade:
-- CPF → análise de crédito rápida
-- Estado civil → composição de renda (cônjuge)
-- Aniversário → oferta especial
-- Profissão/empresa → convênio corporativo
-- Cidade → eventos regionais
-- Moto atual → lembrete de revisão, upgrade
-- Referência → rede de contatos para prospecção
-- Email → newsletter com ofertas
+Formato das notas: use bullet points (•) com categorias claras.
+As notas são CUMULATIVAS — inclua tudo que já sabe + novas informações.
 
-## FLUXO DE FINANCIAMENTO
-Quando o cliente quer financiar:
-1. Colete CPF, renda, empresa, tempo de empresa, estado civil
-2. Pergunte valor de entrada
-3. Pergunte se nome está limpo
-4. Peça referência pessoal (nome + telefone)
-5. Use search_vehicles para mostrar opções no orçamento
-6. Use simulate_financing para cada opção — mostre tabela comparativa
-7. Apresente: "Com entrada de R$ X, fica 48x de R$ Y (Z% da sua renda)"
-8. Se o cliente APROVAR → use send_whatsapp_proposal IMEDIATAMENTE
-9. Oriente sobre documentos necessários
+## 🪪 PROCESSAMENTO AUTOMÁTICO DE CNH
+Quando o cliente enviar foto da CNH ou informar dados da CNH:
+1. Use process_cnh_data IMEDIATAMENTE com todos os dados visíveis
+2. Isso automaticamente:
+   - Atualiza nome completo, CPF, data de nascimento e naturalidade
+   - Marca CNH como ✅ no checklist de documentos
+   - Cadastra o cliente nos alertas de aniversário
+3. Confirme ao cliente: "Já peguei todos os seus dados da CNH! ✅"
+4. Se for aniversário do cliente hoje ou neste mês, parabenize!
 
-## ENVIO DE PROPOSTA VIA WHATSAPP
-- Quando o cliente demonstrar interesse na simulação (disse "quero", "pode ser", "tá bom", "manda", "vamos", "fecha", "gostei"), use send_whatsapp_proposal
-- NÃO espere o cliente pedir explicitamente — seja proativo!
-- Após enviar, SEMPRE inclua o link do WhatsApp na resposta usando markdown: [📲 Abrir proposta no WhatsApp](link)
-- O link abre o WhatsApp do cliente com a proposta formatada pronta pra enviar
-- Isso move o lead para "Negociando" no pipeline automaticamente
-- Uma tarefa de follow-up é criada automaticamente para o dia seguinte
+Se o cliente mencionar data de nascimento em qualquer contexto:
+- Use update_lead com birthdate IMEDIATAMENTE
+- Isso já cadastra automaticamente nos aniversariantes
 
 ## INFORMAÇÕES DA LOJA
 - Arsenal Motors — Motos novas e seminovas
