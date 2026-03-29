@@ -514,8 +514,8 @@ const PublicCatalog = () => {
                   )}
 
                   {/* CTA */}
-                  <Button className="w-full gap-2" size="lg" onClick={() => { setDetailVehicle(null); navigate(`/chat?moto=${encodeURIComponent(`${v.brand} ${v.model} ${v.year || ""}`)}`); }}>
-                    <MessageCircle className="h-5 w-5" /> Tenho interesse nessa moto!
+                  <Button className="w-full gap-2" size="lg" onClick={() => { setDetailVehicle(null); navigate(`/chat?veiculo=${encodeURIComponent(`${v.brand} ${v.model} ${v.year || ""}`)}`); }}>
+                    <MessageCircle className="h-5 w-5" /> Tenho interesse nesse veículo!
                   </Button>
                 </div>
               </>
