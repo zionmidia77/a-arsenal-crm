@@ -79,6 +79,12 @@ const AdminCatalog = () => {
           <p className="text-muted-foreground">Gerencie seu estoque com fotos, custos e FIPE</p>
         </div>
         <div className="flex gap-2">
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList>
+              <TabsTrigger value="catalog">📋 Estoque</TabsTrigger>
+              <TabsTrigger value="dashboard">📊 Financeiro</TabsTrigger>
+            </TabsList>
+          </Tabs>
           <Button onClick={() => setShowOCR(true)} variant="outline" className="gap-2">
             <Camera className="h-4 w-4" /> Cadastro por Foto
           </Button>
