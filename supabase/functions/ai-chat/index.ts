@@ -811,10 +811,119 @@ Se faltam itens, pergunte o próximo dado pendente de forma natural.`,
         return JSON.stringify({ success: true });
       }
 
+      case "save_conversation_notes": {
+        // Get existing notes to append
+        const { data: existingClient } = await supabase
+          .from("clients")
+          .select("notes")
+          .eq("id", args.client_id)
+          .single();
+
+        const timestamp = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
+        const newNotes = `\n\n--- Anotação IA (${timestamp}) ---\n${args.notes}`;
+        const combinedNotes = (existingClient?.notes || "") + newNotes;
+
+        const { error } = await supabase
+          .from("clients")
+          .update({ notes: combinedNotes })
+          .eq("id", args.client_id);
+
+        if (error) throw error;
+
+        await supabase.from("interactions").insert({
+          client_id: args.client_id as string,
+          type: "system",
+          content: `📝 Notas da conversa salvas automaticamente pela IA`,
+          created_by: "ai-consultant",
+        });
+
+        return JSON.stringify({
+          success: true,
+          message: "Notas salvas no perfil do cliente.",
+        });
+      }
+
+      case "process_cnh_data": {
+        const updateData: Record<string, unknown> = {};
+        const logParts: string[] = [];
+
+        if (args.full_name) {
+          updateData.name = args.full_name;
+          logParts.push(`Nome: ${args.full_name}`);
+        }
+        if (args.cpf) {
+          updateData.cpf = args.cpf;
+          logParts.push(`CPF: ${args.cpf}`);
+        }
+        if (args.birthdate) {
+          updateData.birthdate = args.birthdate;
+          logParts.push(`Nascimento: ${args.birthdate}`);
+        }
+        if (args.birth_city) {
+          updateData.birth_city = args.birth_city;
+          logParts.push(`Naturalidade: ${args.birth_city}`);
+        }
+
+        // Mark CNH as received in financing_docs
+        const { data: clientData } = await supabase
+          .from("clients")
+          .select("financing_docs")
+          .eq("id", args.client_id)
+          .single();
+
+        const docs = (clientData?.financing_docs as Record<string, boolean>) || {
+          cnh: false, pay_stub: false, proof_of_residence: false, reference: false
+        };
+        docs.cnh = true;
+        updateData.financing_docs = docs;
+        logParts.push("CNH: ✅ recebida");
+
+        // Update client
+        const { error } = await supabase
+          .from("clients")
+          .update(updateData)
+          .eq("id", args.client_id);
+
+        if (error) throw error;
+
+        // Log interaction
+        await supabase.from("interactions").insert({
+          client_id: args.client_id as string,
+          type: "system",
+          content: `🪪 CNH processada automaticamente:\n${logParts.join("\n")}${args.birthdate ? "\n🎂 Cliente adicionado aos alertas de aniversário!" : ""}`,
+          created_by: "ai-consultant",
+        });
+
+        // If we have a birthdate, check if birthday is today or this month
+        let birthdayMessage = "";
+        if (args.birthdate) {
+          const bd = new Date(args.birthdate + "T12:00:00");
+          const today = new Date();
+          if (bd.getMonth() === today.getMonth() && bd.getDate() === today.getDate()) {
+            birthdayMessage = "🎂 HOJE é aniversário do cliente! Parabenize-o!";
+          } else if (bd.getMonth() === today.getMonth()) {
+            birthdayMessage = `🎂 Aniversário este mês (dia ${bd.getDate()})!`;
+          }
+        }
+
+        return JSON.stringify({
+          success: true,
+          processed: logParts,
+          birthday_alert: birthdayMessage || null,
+          message: `CNH processada! Dados atualizados: ${logParts.join(", ")}. ${args.birthdate ? "Cliente cadastrado nos alertas de aniversário automaticamente. " : ""}${birthdayMessage}`,
+        });
+      }
+
       default:
         return JSON.stringify({ error: `Unknown tool: ${name}` });
     }
   } catch (err) {
+    console.error(`Tool ${name} error:`, err);
+    return JSON.stringify({
+      error: `Erro ao executar ${name}: ${(err as Error).message}`,
+    });
+  }
+}
     console.error(`Tool ${name} error:`, err);
     return JSON.stringify({
       error: `Erro ao executar ${name}: ${(err as Error).message}`,
