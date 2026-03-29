@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Target, TrendingUp, Users, DollarSign, Phone, ChevronLeft, ChevronRight, Settings2, Trophy, Flame } from "lucide-react";
+import { Target, TrendingUp, Users, DollarSign, Phone, ChevronLeft, ChevronRight, Settings2, Trophy, Flame, ArrowUpRight, ArrowDownRight, Minus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -120,7 +120,7 @@ const AdminGoals = () => {
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [year, setYear] = useState(now.getFullYear());
   const [editOpen, setEditOpen] = useState(false);
-  const [editGoals, setEditGoals] = useState({ target_sales: 10, target_revenue: 0, target_leads: 50, target_contacts: 100 });
+  const [editGoals, setEditGoals] = useState({ target_sales: 10, target_revenue: 0, target_leads: 50, target_contacts: 100, target_ltv: 0 });
   const qc = useQueryClient();
 
   const isCurrentMonth = month === now.getMonth() + 1 && year === now.getFullYear();
@@ -176,8 +176,83 @@ const AdminGoals = () => {
     },
   });
 
-  const targets = goal || { target_sales: 10, target_revenue: 0, target_leads: 50, target_contacts: 100 };
+  // Fetch previous month metrics for comparison
+  const prevMonth = month === 1 ? 12 : month - 1;
+  const prevYear = month === 1 ? year - 1 : year;
+
+  const { data: prevMetrics } = useQuery({
+    queryKey: ["monthly-metrics-prev", prevMonth, prevYear],
+    queryFn: async () => {
+      const startDate = `${prevYear}-${String(prevMonth).padStart(2, "0")}-01`;
+      const endMonth = prevMonth === 12 ? 1 : prevMonth + 1;
+      const endYear = prevMonth === 12 ? prevYear + 1 : prevYear;
+      const endDate = `${endYear}-${String(endMonth).padStart(2, "0")}-01`;
+
+      const [salesRes, leadsRes, contactsRes] = await Promise.all([
+        supabase.from("clients").select("id", { count: "exact" }).eq("pipeline_stage", "closed_won").gte("updated_at", startDate).lt("updated_at", endDate),
+        supabase.from("clients").select("id", { count: "exact" }).gte("created_at", startDate).lt("created_at", endDate),
+        supabase.from("interactions").select("id", { count: "exact" }).gte("created_at", startDate).lt("created_at", endDate),
+      ]);
+      return { sales: salesRes.count || 0, leads: leadsRes.count || 0, contacts: contactsRes.count || 0 };
+    },
+  });
+
+  // Calculate LTV: avg revenue per client (closed_won) * avg lifespan
+  const { data: ltvData } = useQuery({
+    queryKey: ["ltv-data", month, year],
+    queryFn: async () => {
+      const startDate = `${year}-${String(month).padStart(2, "0")}-01`;
+      const endMonth = month === 12 ? 1 : month + 1;
+      const endYear = month === 12 ? year + 1 : year;
+      const endDate = `${endYear}-${String(endMonth).padStart(2, "0")}-01`;
+
+      // Get simulations with revenue for the month
+      const { data: sims } = await supabase
+        .from("financing_simulations")
+        .select("moto_value, client_id")
+        .gte("created_at", startDate)
+        .lt("created_at", endDate);
+
+      const totalRevenue = sims?.reduce((sum, s) => sum + Number(s.moto_value || 0), 0) || 0;
+      const uniqueClients = new Set(sims?.map(s => s.client_id).filter(Boolean)).size || 1;
+      const avgRevenue = totalRevenue / Math.max(uniqueClients, 1);
+
+      // Get referrals count for the month as a proxy for retention/repeat
+      const { count: referralCount } = await supabase
+        .from("referrals")
+        .select("id", { count: "exact" })
+        .gte("created_at", startDate)
+        .lt("created_at", endDate);
+
+      return { avgRevenue: Math.round(avgRevenue), totalRevenue: Math.round(totalRevenue), clientCount: uniqueClients, referrals: referralCount || 0 };
+    },
+  });
+
+  const { data: prevLtvData } = useQuery({
+    queryKey: ["ltv-data-prev", prevMonth, prevYear],
+    queryFn: async () => {
+      const startDate = `${prevYear}-${String(prevMonth).padStart(2, "0")}-01`;
+      const endMonth = prevMonth === 12 ? 1 : prevMonth + 1;
+      const endYear = prevMonth === 12 ? prevYear + 1 : prevYear;
+      const endDate = `${endYear}-${String(endMonth).padStart(2, "0")}-01`;
+
+      const { data: sims } = await supabase
+        .from("financing_simulations")
+        .select("moto_value, client_id")
+        .gte("created_at", startDate)
+        .lt("created_at", endDate);
+
+      const totalRevenue = sims?.reduce((sum, s) => sum + Number(s.moto_value || 0), 0) || 0;
+      const uniqueClients = new Set(sims?.map(s => s.client_id).filter(Boolean)).size || 1;
+      return { avgRevenue: Math.round(totalRevenue / Math.max(uniqueClients, 1)), totalRevenue: Math.round(totalRevenue) };
+    },
+  });
+
+  const targets = goal || { target_sales: 10, target_revenue: 0, target_leads: 50, target_contacts: 100, target_ltv: 0 };
   const actual = metrics || { sales: 0, leads: 0, contacts: 0 };
+  const prev = prevMetrics || { sales: 0, leads: 0, contacts: 0 };
+  const ltv = ltvData || { avgRevenue: 0, totalRevenue: 0, clientCount: 0, referrals: 0 };
+  const prevLtv = prevLtvData || { avgRevenue: 0, totalRevenue: 0 };
 
   const navigate = (dir: number) => {
     let m = month + dir;
@@ -216,9 +291,30 @@ const AdminGoals = () => {
       target_revenue: targets.target_revenue,
       target_leads: targets.target_leads,
       target_contacts: targets.target_contacts,
+      target_ltv: (targets as any).target_ltv || 0,
     });
     setEditOpen(true);
   };
+
+  // Growth comparison helper
+  const growthPct = (current: number, previous: number) => {
+    if (previous === 0) return current > 0 ? 100 : 0;
+    return Math.round(((current - previous) / previous) * 100);
+  };
+
+  const GrowthBadge = ({ current, previous, label }: { current: number; previous: number; label?: string }) => {
+    const pct = growthPct(current, previous);
+    const isUp = pct > 0;
+    const isDown = pct < 0;
+    return (
+      <span className={`inline-flex items-center gap-0.5 text-xs font-medium ${isUp ? "text-green-400" : isDown ? "text-destructive" : "text-muted-foreground"}`}>
+        {isUp ? <ArrowUpRight className="w-3 h-3" /> : isDown ? <ArrowDownRight className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
+        {Math.abs(pct)}%{label ? ` ${label}` : ""}
+      </span>
+    );
+  };
+
+  const ltvPct = (targets as any).target_ltv > 0 ? Math.round((ltv.avgRevenue / (targets as any).target_ltv) * 100) : 0;
 
   const salesPct = targets.target_sales > 0 ? Math.round((actual.sales / targets.target_sales) * 100) : 0;
   const overallPct = Math.round(
@@ -329,10 +425,13 @@ const AdminGoals = () => {
         </div>
       </motion.div>
 
-      {/* Stats cards */}
+      {/* Stats cards with growth comparison */}
       <motion.div variants={fadeUp} className="grid grid-cols-2 gap-3">
         <div className="glass-card p-4">
-          <p className="text-xs text-muted-foreground mb-1">Vendas este mês</p>
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-xs text-muted-foreground">Vendas este mês</p>
+            <GrowthBadge current={actual.sales} previous={prev.sales} />
+          </div>
           <p className="text-3xl font-bold font-mono">
             <AnimatedNumber value={actual.sales} />
             <span className="text-sm text-muted-foreground font-normal">/{targets.target_sales}</span>
@@ -342,7 +441,10 @@ const AdminGoals = () => {
           </p>
         </div>
         <div className="glass-card p-4">
-          <p className="text-xs text-muted-foreground mb-1">Leads captados</p>
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-xs text-muted-foreground">Leads captados</p>
+            <GrowthBadge current={actual.leads} previous={prev.leads} />
+          </div>
           <p className="text-3xl font-bold font-mono">
             <AnimatedNumber value={actual.leads} />
             <span className="text-sm text-muted-foreground font-normal">/{targets.target_leads}</span>
@@ -354,7 +456,10 @@ const AdminGoals = () => {
           </p>
         </div>
         <div className="glass-card p-4">
-          <p className="text-xs text-muted-foreground mb-1">Contatos realizados</p>
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-xs text-muted-foreground">Contatos realizados</p>
+            <GrowthBadge current={actual.contacts} previous={prev.contacts} />
+          </div>
           <p className="text-3xl font-bold font-mono">
             <AnimatedNumber value={actual.contacts} />
             <span className="text-sm text-muted-foreground font-normal">/{targets.target_contacts}</span>
@@ -377,6 +482,63 @@ const AdminGoals = () => {
                 : "Meta atingida 🎉"}
             </p>
           )}
+        </div>
+      </motion.div>
+
+      {/* LTV Section */}
+      <motion.div variants={fadeUp} className="glass-card p-5 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-primary" />
+            <h2 className="font-display font-bold text-sm">LTV Mensal</h2>
+          </div>
+          {(targets as any).target_ltv > 0 && (
+            <span className="text-xs text-muted-foreground">
+              Meta: R$ {((targets as any).target_ltv).toLocaleString("pt-BR")}
+            </span>
+          )}
+        </div>
+
+        {/* LTV progress bar */}
+        {(targets as any).target_ltv > 0 && (
+          <div className="space-y-1">
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>R$ {ltv.avgRevenue.toLocaleString("pt-BR")} / R$ {((targets as any).target_ltv).toLocaleString("pt-BR")}</span>
+              <span>{Math.min(ltvPct, 100)}%</span>
+            </div>
+            <div className="h-2.5 rounded-full bg-secondary overflow-hidden">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${Math.min(ltvPct, 100)}%` }}
+                transition={{ duration: 1, ease: "easeOut" }}
+                className={`h-full rounded-full ${ltvPct >= 100 ? "bg-green-500" : "bg-primary"}`}
+              />
+            </div>
+          </div>
+        )}
+
+        <div className="grid grid-cols-3 gap-3">
+          <div className="text-center p-3 rounded-xl bg-secondary/50">
+            <p className="text-xs text-muted-foreground mb-1">LTV Médio</p>
+            <p className="text-lg font-bold font-mono">
+              R$ <AnimatedNumber value={ltv.avgRevenue} />
+            </p>
+            <GrowthBadge current={ltv.avgRevenue} previous={prevLtv.avgRevenue} label="vs mês ant." />
+          </div>
+          <div className="text-center p-3 rounded-xl bg-secondary/50">
+            <p className="text-xs text-muted-foreground mb-1">Receita Total</p>
+            <p className="text-lg font-bold font-mono">
+              R$ <AnimatedNumber value={ltv.totalRevenue} />
+            </p>
+            <GrowthBadge current={ltv.totalRevenue} previous={prevLtv.totalRevenue} label="vs mês ant." />
+          </div>
+          <div className="text-center p-3 rounded-xl bg-secondary/50">
+            <p className="text-xs text-muted-foreground mb-1">Clientes</p>
+            <p className="text-lg font-bold font-mono">
+              <AnimatedNumber value={ltv.clientCount} />
+            </p>
+            <p className="text-xs text-muted-foreground">{ltv.referrals} indicações</p>
+          </div>
         </div>
       </motion.div>
 
@@ -424,6 +586,16 @@ const AdminGoals = () => {
                 value={editGoals.target_revenue}
                 onChange={(e) => setEditGoals({ ...editGoals, target_revenue: parseFloat(e.target.value) || 0 })}
                 className="rounded-xl bg-secondary border-border/50"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Meta de LTV médio (R$)</label>
+              <Input
+                type="number"
+                value={editGoals.target_ltv}
+                onChange={(e) => setEditGoals({ ...editGoals, target_ltv: parseFloat(e.target.value) || 0 })}
+                className="rounded-xl bg-secondary border-border/50"
+                placeholder="Ex: 25000"
               />
             </div>
             <Button className="w-full rounded-xl glow-red" onClick={handleSaveGoals}>
