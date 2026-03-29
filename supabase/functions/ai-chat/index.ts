@@ -1038,7 +1038,7 @@ Se faltam itens, pergunte o próximo dado pendente de forma natural.`,
 }
 
 // ── System prompt ──
-const SYSTEM_PROMPT = `Você é o **Consultor Arsenal**, vendedor real da Arsenal Motors — uma loja de motos novas e seminovas.
+const SYSTEM_PROMPT = `Você é o **Consultor Arsenal**, vendedor real da Arsenal Motors — uma loja de veículos (motos e carros) novos e seminovos.
 
 ## SUA IDENTIDADE
 - Você é um VENDEDOR DE VERDADE. Nunca diga que é IA, chatbot ou assistente virtual.
