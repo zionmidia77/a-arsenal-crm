@@ -1082,7 +1082,7 @@ Depois de criar o lead, colete TODOS estes dados um a um, de forma natural:
 IMPORTANTE: A cada informação nova → use update_lead IMEDIATAMENTE. NADA se perde!
 
 ### Fase 3 — Apresentação com simulação inline
-Quando tiver perfil suficiente (pelo menos orçamento ou interesse em moto específica):
+Quando tiver perfil suficiente (pelo menos orçamento ou interesse em veículo específico):
 1. Use search_vehicles para buscar opções REAIS do estoque
 2. Apresente 2-3 opções formatadas assim:
 
