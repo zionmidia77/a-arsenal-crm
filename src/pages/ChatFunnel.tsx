@@ -860,16 +860,39 @@ const ChatFunnel = () => {
 
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-6">
-        <AnimatePresence mode="popLayout">
-          {messages.map((msg) => (
-            <div key={msg.id}>
-              <ChatBubble msg={msg} />
-              {msg.vehicles && msg.vehicles.length > 0 && (
-                <VehicleCarousel vehicles={msg.vehicles} />
-              )}
-            </div>
-          ))}
-        </AnimatePresence>
+        {isRestoringChat ? (
+          <div className="flex flex-col items-center justify-center py-12 gap-3">
+            <Loader2 className="w-6 h-6 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground">Carregando conversa...</p>
+          </div>
+        ) : (
+          <>
+            {/* Restored conversation indicator */}
+            {conversationSaved && messages.length > 1 && messages[0]?.id?.startsWith("restored") && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex justify-center mb-4"
+              >
+                <div className="bg-secondary/80 text-muted-foreground text-[10px] px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-border/50">
+                  <RotateCcw className="w-3 h-3" />
+                  Conversa anterior restaurada
+                </div>
+              </motion.div>
+            )}
+
+            <AnimatePresence mode="popLayout">
+              {messages.map((msg) => (
+                <div key={msg.id}>
+                  <ChatBubble msg={msg} />
+                  {msg.vehicles && msg.vehicles.length > 0 && (
+                    <VehicleCarousel vehicles={msg.vehicles} />
+                  )}
+                </div>
+              ))}
+            </AnimatePresence>
+          </>
+        )}
 
         <AnimatePresence>{isLoading && <TypingIndicator />}</AnimatePresence>
 
