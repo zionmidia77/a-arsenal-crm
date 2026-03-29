@@ -251,8 +251,8 @@ const VehicleCarousel = ({ vehicles }: { vehicles: StockVehicle[] }) => {
       className="mb-4 pl-10"
     >
       <div className="flex items-center gap-1 mb-2 text-xs text-muted-foreground">
-        <Bike className="w-3.5 h-3.5 text-primary" />
-        <span className="font-medium">Motos do estoque</span>
+        <Car className="w-3.5 h-3.5 text-primary" />
+        <span className="font-medium">Veículos do estoque</span>
         <span>• {vehicles.length} opções</span>
       </div>
       <div className="relative">
