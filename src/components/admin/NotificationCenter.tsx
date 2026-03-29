@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Bell, Flame, AlertTriangle, FileCheck, ChevronRight } from "lucide-react";
+import { Bell, Flame, AlertTriangle, FileCheck, ChevronRight, Bot } from "lucide-react";
 import { useOverdueTasks, useClients } from "@/hooks/useSupabase";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 type FilterType = "all" | "docs" | "leads" | "tasks";
 
