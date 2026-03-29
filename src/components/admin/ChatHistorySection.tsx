@@ -54,7 +54,7 @@ const ChatHistorySection = ({ clientId }: ChatHistorySectionProps) => {
 
   const parseMessages = (msgs: Json): ChatMessage[] => {
     if (Array.isArray(msgs)) {
-      return msgs as ChatMessage[];
+      return msgs as unknown as ChatMessage[];
     }
     return [];
   };
