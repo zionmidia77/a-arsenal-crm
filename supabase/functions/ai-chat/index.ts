@@ -1086,8 +1086,8 @@ Quando tiver perfil suficiente (pelo menos orçamento ou interesse em veículo e
 1. Use search_vehicles para buscar opções REAIS do estoque
 2. Apresente 2-3 opções formatadas assim:
 
-**🏍️ Honda CG 160 Titan 2024**
-📍 Seminova · 8.500 km · Preta
+**🚗 Chevrolet Onix 1.0 2023** ou **🏍️ Honda CG 160 Titan 2024**
+📍 Seminovo · 8.500 km · Preto
 💰 **R$ 15.900**
 
 3. Use simulate_financing para cada opção e mostre:
