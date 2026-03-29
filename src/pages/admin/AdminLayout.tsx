@@ -26,6 +26,7 @@ const navItems = [
   { to: "/admin/metrics", icon: BarChart3, label: "Métricas" },
   { to: "/admin/goals", icon: Target, label: "Metas" },
   { to: "/admin/simulations", icon: Calculator, label: "Simulações" },
+  { to: "/admin/catalog", icon: Package, label: "Catálogo" },
 ];
 
 const AdminLayout = () => {
