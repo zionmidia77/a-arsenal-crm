@@ -116,6 +116,87 @@ const useLTVStats = () =>
 
       const congratulatedIds = new Set((congratulated || []).map(c => c.client_id));
 
+      // === LTV METRICS ===
+      // All clients for lifecycle analysis
+      const { data: allClients } = await supabase
+        .from("clients")
+        .select("id, name, status, pipeline_stage, created_at, updated_at");
+      const clients = allClients || [];
+
+      // All financing simulations (revenue proxy)
+      const { data: allSims } = await supabase
+        .from("financing_simulations")
+        .select("client_id, moto_value, created_at")
+        .eq("status", "approved");
+
+      // All vehicles (purchased)
+      const { data: allVehicles } = await supabase
+        .from("vehicles")
+        .select("client_id, estimated_value, created_at, status");
+
+      // Calculate LTV metrics
+      const totalClients = clients.length;
+      const activeClients = clients.filter(c => c.status === "active").length;
+      const closedWon = clients.filter(c => c.pipeline_stage === "closed_won").length;
+
+      // Revenue per client from vehicles
+      const vehiclesByClient: Record<string, { count: number; totalValue: number; dates: string[] }> = {};
+      (allVehicles || []).forEach(v => {
+        if (!vehiclesByClient[v.client_id]) vehiclesByClient[v.client_id] = { count: 0, totalValue: 0, dates: [] };
+        vehiclesByClient[v.client_id].count += 1;
+        vehiclesByClient[v.client_id].totalValue += Number(v.estimated_value || 0);
+        vehiclesByClient[v.client_id].dates.push(v.created_at);
+      });
+
+      // Average LTV (avg revenue per client with vehicles)
+      const clientsWithVehicles = Object.keys(vehiclesByClient).length;
+      const totalRevenue = Object.values(vehiclesByClient).reduce((s, v) => s + v.totalValue, 0);
+      const avgLTV = clientsWithVehicles > 0 ? totalRevenue / clientsWithVehicles : 0;
+
+      // Repurchase rate (clients with 2+ vehicles)
+      const repeatBuyers = Object.values(vehiclesByClient).filter(v => v.count >= 2).length;
+      const repurchaseRate = clientsWithVehicles > 0 ? (repeatBuyers / clientsWithVehicles) * 100 : 0;
+
+      // Average time to second purchase
+      let avgDaysToSecond = 0;
+      let secondPurchaseCount = 0;
+      Object.values(vehiclesByClient).forEach(v => {
+        if (v.dates.length >= 2) {
+          const sorted = v.dates.map(d => new Date(d).getTime()).sort();
+          const daysDiff = (sorted[1] - sorted[0]) / (1000 * 60 * 60 * 24);
+          avgDaysToSecond += daysDiff;
+          secondPurchaseCount += 1;
+        }
+      });
+      avgDaysToSecond = secondPurchaseCount > 0 ? avgDaysToSecond / secondPurchaseCount : 0;
+
+      // Lifecycle stages distribution
+      const lifecycleStages = [
+        { name: "Novos", value: clients.filter(c => c.pipeline_stage === "new").length, color: "hsl(var(--info))" },
+        { name: "Em contato", value: clients.filter(c => ["contacted", "interested", "attending"].includes(c.pipeline_stage)).length, color: "hsl(var(--warning))" },
+        { name: "Negociando", value: clients.filter(c => ["negotiating", "scheduled"].includes(c.pipeline_stage)).length, color: "hsl(var(--primary))" },
+        { name: "Fechados", value: closedWon, color: "hsl(var(--success))" },
+        { name: "Perdidos", value: clients.filter(c => c.pipeline_stage === "closed_lost").length, color: "hsl(var(--muted-foreground))" },
+      ].filter(s => s.value > 0);
+
+      // Monthly revenue trend (from vehicles created_at)
+      const revenueByMonth: Record<string, number> = {};
+      (allVehicles || []).forEach(v => {
+        const d = new Date(v.created_at);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+        revenueByMonth[key] = (revenueByMonth[key] || 0) + Number(v.estimated_value || 0);
+      });
+      const revenueTrend = Object.entries(revenueByMonth)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .slice(-6)
+        .map(([key, val]) => ({
+          month: monthNames[parseInt(key.split("-")[1]) - 1],
+          revenue: val,
+        }));
+
+      // Client retention (active vs churned)
+      const retentionRate = totalClients > 0 ? ((totalClients - clients.filter(c => c.status === "lost").length) / totalClients) * 100 : 100;
+
       return {
         birthdaysToday,
         birthdaysThisMonth,
@@ -126,6 +207,19 @@ const useLTVStats = () =>
         npsTrend,
         npsAvg,
         npsTotal: allScores.length,
+        // LTV metrics
+        avgLTV,
+        totalRevenue,
+        repurchaseRate,
+        repeatBuyers,
+        clientsWithVehicles,
+        avgDaysToSecond,
+        lifecycleStages,
+        revenueTrend,
+        retentionRate,
+        totalClients,
+        activeClients,
+        closedWon,
       };
     },
   });
