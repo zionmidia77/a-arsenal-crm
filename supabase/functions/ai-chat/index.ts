@@ -310,6 +310,47 @@ const tools = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "save_conversation_notes",
+      description:
+        "Save a structured summary of ALL relevant information collected during the conversation. Call this EVERY FEW MESSAGES with a cumulative summary. Include: preferences, objections, personal details mentioned, family situation, work context, buying timeline, anything useful for future sales.",
+      parameters: {
+        type: "object",
+        properties: {
+          client_id: { type: "string", description: "Client UUID" },
+          notes: {
+            type: "string",
+            description: "Structured notes with all relevant info collected. Use bullet points. Example: '• Prefere motos esportivas\n• Trabalha como entregador, precisa da moto pra trabalhar\n• Esposa também anda de moto\n• Quer parcela até R$500\n• Mora perto da loja\n• Tem medo de financiar por já ter tido nome sujo'",
+          },
+        },
+        required: ["client_id", "notes"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "process_cnh_data",
+      description:
+        "Process CNH (driver's license) data extracted from a photo or text. Automatically registers the birthdate, full name, and CPF in the lead profile, marks CNH as received in financing docs, and adds the client to the birthday alerts system. Call this whenever the client shares CNH information — either by photo OCR results or by providing CNH details in text.",
+      parameters: {
+        type: "object",
+        properties: {
+          client_id: { type: "string", description: "Client UUID" },
+          full_name: { type: "string", description: "Full name as on CNH" },
+          cpf: { type: "string", description: "CPF number from CNH" },
+          birthdate: { type: "string", description: "Birth date in YYYY-MM-DD format from CNH" },
+          cnh_number: { type: "string", description: "CNH number" },
+          birth_city: { type: "string", description: "City of birth from CNH" },
+        },
+        required: ["client_id"],
+        additionalProperties: false,
+      },
+    },
+  },
 ];
 
 // ── Execute tool calls ──
