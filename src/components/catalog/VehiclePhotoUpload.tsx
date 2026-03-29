@@ -85,7 +85,7 @@ const VehiclePhotoUpload = ({
               </span>
             )}
 
-            <div className="absolute inset-x-2 bottom-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="absolute inset-x-2 bottom-2 flex gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
               <button
                 type="button"
                 onClick={() => onCoverPhotoChange?.(url)}
