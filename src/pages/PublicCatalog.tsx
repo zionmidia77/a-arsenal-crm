@@ -119,34 +119,38 @@ const CardCarousel = ({ photos, alt }: { photos: string[]; alt: string }) => {
         <img
           src={photos[current]}
           alt={alt}
-          className="w-full h-full object-cover cursor-pointer transition-transform duration-300 group-hover:scale-105"
+          className="w-full h-full object-cover cursor-pointer transition-transform duration-300"
           onClick={() => setLightboxOpen(true)}
+          loading="lazy"
         />
 
         {photos.length > 1 && (
           <>
             <button
               onClick={(e) => { e.stopPropagation(); setCurrent(i => (i > 0 ? i - 1 : photos.length - 1)); }}
-              className="absolute left-1 top-1/2 -translate-y-1/2 p-1 rounded-full bg-black/40 text-white opacity-0 group-hover/carousel:opacity-100 transition"
+              className="absolute left-1.5 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-black/50 text-white opacity-100 md:opacity-0 md:group-hover/carousel:opacity-100 transition hover:bg-black/70"
             >
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="h-5 w-5" />
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); setCurrent(i => (i < photos.length - 1 ? i + 1 : 0)); }}
-              className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded-full bg-black/40 text-white opacity-0 group-hover/carousel:opacity-100 transition"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-black/50 text-white opacity-100 md:opacity-0 md:group-hover/carousel:opacity-100 transition hover:bg-black/70"
             >
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-5 w-5" />
             </button>
 
             {/* Dots */}
-            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
-              {photos.map((_, i) => (
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
+              {photos.slice(0, 7).map((_, i) => (
                 <button
                   key={i}
                   onClick={(e) => { e.stopPropagation(); setCurrent(i); }}
-                  className={`w-1.5 h-1.5 rounded-full transition ${i === current ? "bg-white" : "bg-white/50"}`}
+                  className={`w-2 h-2 rounded-full transition ${i === current ? "bg-white scale-125" : "bg-white/50 hover:bg-white/80"}`}
                 />
               ))}
+              {photos.length > 7 && (
+                <span className="text-white/70 text-[10px] leading-none self-center">+{photos.length - 7}</span>
+              )}
             </div>
           </>
         )}
