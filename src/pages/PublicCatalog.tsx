@@ -449,7 +449,7 @@ const PublicCatalog = () => {
                     <div>
                       <div className="flex items-center gap-2 mb-1">
                         <Badge variant={v.condition === "new" ? "default" : "secondary"}>
-                          {v.condition === "new" ? "0km" : "Seminova"}
+                          {v.condition === "new" ? "0km" : "Seminovo"}
                         </Badge>
                       </div>
                       <h2 className="text-2xl font-bold">{v.brand} {v.model}</h2>
