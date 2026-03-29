@@ -269,6 +269,9 @@ const AdminCatalog = () => {
         </div>
       )}
 
+      </>
+      )}
+
       {/* Dialogs */}
       <VehicleFormDialog
         open={showForm}
