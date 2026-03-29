@@ -7,10 +7,11 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-type FilterType = "all" | "docs" | "leads" | "tasks";
+type FilterType = "all" | "docs" | "leads" | "ai" | "tasks";
 
 const FILTERS: { key: FilterType; label: string; emoji: string }[] = [
   { key: "all", label: "Todos", emoji: "📋" },
+  { key: "ai", label: "Chat IA", emoji: "🤖" },
   { key: "docs", label: "Docs", emoji: "📄" },
   { key: "leads", label: "Leads", emoji: "🔥" },
   { key: "tasks", label: "Tarefas", emoji: "⚠️" },
