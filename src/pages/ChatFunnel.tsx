@@ -132,9 +132,9 @@ const ChatBubble = ({ msg }: { msg: ChatMessage }) => {
 // ── Quick suggestion chips ──
 const SuggestionChips = ({ onSelect }: { onSelect: (text: string) => void }) => {
   const suggestions = [
-    "Quero comprar uma moto",
-    "Quero trocar minha moto",
-    "Quero vender minha moto",
+    "Quero comprar um veículo",
+    "Quero trocar meu veículo",
+    "Quero vender meu veículo",
     "Preciso de dinheiro",
   ];
 
