@@ -663,7 +663,7 @@ async function executeTool(
         await supabase.from("interactions").insert({
           client_id: args.client_id as string,
           type: "system",
-          content: `Simulação Aqui Financiamentos (Moto Leve, Coef. ${coef}): Veículo ${vehicleYear} R$ ${vehicleValue.toLocaleString()}, Entrada R$ ${downPayment.toLocaleString()}, ${closest}x de R$ ${selectedMonthly}`,
+          content: `Simulação: R$ ${vehicleValue.toLocaleString()}, Entrada R$ ${downPayment.toLocaleString()}, ${closest}x de R$ ${selectedMonthly}`,
           created_by: "ai-consultant",
         });
 
@@ -671,25 +671,17 @@ async function executeTool(
           success: true,
           simulation: {
             vehicle_value: vehicleValue,
-            vehicle_year: vehicleYear,
-            vehicle_age: vehicleAge,
             down_payment: downPayment,
             financed_amount: financed,
-            coeficiente: coef,
             selected_plan: {
               installments: closest,
               monthly_payment: selectedMonthly,
               coeficiente_used: selectedCoef,
             },
             all_options: options,
-            rate_info: `Tabela Aqui Financiamentos — Moto Leve, Coef. ${coef} (idade do veículo: ${vehicleAge} anos)`,
             display_hint: `Mostre em tabela markdown com colunas: Parcelas | Valor | Total Pago | Juros. Inclua:
-- Banco: Aqui Financiamentos
-- Método: Moto Leve
-- Coeficiente: ${coef}
-- Ano do veículo: ${vehicleYear}
 - Entrada e valor financiado abaixo da tabela
-- Nota: *Valores sujeitos a análise de crédito. Coeficiente pode variar.*`,
+- Nota: *Valores sujeitos a análise de crédito.*`,
           },
         });
       }
