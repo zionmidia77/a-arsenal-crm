@@ -364,7 +364,7 @@ const PublicCatalog = () => {
               { label: "Ano", values: selected.map(v => v.year ? String(v.year) : "—") },
               { label: "Km", values: selected.map(v => v.km ? `${v.km.toLocaleString()} km` : "—") },
               { label: "Cor", values: selected.map(v => v.color || "—") },
-              { label: "Condição", values: selected.map(v => v.condition === "new" ? "0km" : "Seminova") },
+              { label: "Condição", values: selected.map(v => v.condition === "new" ? "0km" : "Seminovo") },
               { label: "Preço", values: selected.map(v => fmt(Number(v.selling_price || v.price || 0))), highlight: true },
               { label: "FIPE", values: selected.map(v => v.fipe_value ? fmt(Number(v.fipe_value)) : "—") },
               ...Object.entries(COEFS).map(([months, coef]) => ({
