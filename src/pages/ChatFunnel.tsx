@@ -461,6 +461,7 @@ const ChatFunnel = () => {
   const sendMessage = useCallback(
     async (text: string) => {
       if (!text.trim() || isLoading || isTransferred) return;
+      let latestClientId = clientId;
 
       setShowSuggestions(false);
       const userMsg: ChatMessage = {
