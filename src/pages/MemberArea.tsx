@@ -111,6 +111,16 @@ const MemberArea = () => {
 
   const firstName = client?.name?.split(" ")[0] || user?.email?.split("@")[0] || "Cliente";
 
+  const shareText = `Quer comprar uma moto com as melhores condições? Fala que o ${firstName} indicou! Arsenal Motors 🏍️`;
+  const handleShare = () => {
+    if (navigator.share) {
+      navigator.share({ text: shareText });
+    } else {
+      navigator.clipboard.writeText(shareText);
+      toast.success("Link copiado!");
+    }
+  };
+
   const stageLabels: Record<string, { label: string; color: string }> = {
     new: { label: "Cadastro recebido", color: "text-info" },
     contacted: { label: "Em contato", color: "text-warning" },
