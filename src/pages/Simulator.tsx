@@ -96,6 +96,17 @@ const Simulator = () => {
           </div>
         </motion.div>
 
+        {/* Ano do veículo */}
+        <motion.div variants={fadeUp} className="glass-card p-5 space-y-4">
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-muted-foreground flex items-center gap-2"><Calendar className="w-4 h-4 text-primary" /> Ano do veículo</span>
+            <span className="font-display font-bold text-lg">{vehicleYear[0]}</span>
+          </div>
+          <Slider value={vehicleYear} onValueChange={setVehicleYear} min={2005} max={currentYear} step={1} className="[&_[role=slider]]:bg-primary [&_[role=slider]]:border-primary [&_[role=slider]]:h-5 [&_[role=slider]]:w-5 [&_[role=slider]]:shadow-lg" />
+          <div className="flex justify-between text-[10px] text-muted-foreground">
+            <span>2005</span><span>{currentYear}</span>
+          </div>
+
         {/* Results */}
         <motion.div variants={fadeUp} className="glass-card gradient-border p-6 space-y-5">
           <div className="text-center">
