@@ -29,6 +29,9 @@ const NotificationCenter = () => {
     return diff < 24 * 60 * 60 * 1000;
   });
 
+  const aiLeads = newLeads.filter(c => c.source === "ai-chat");
+  const nonAiLeads = newLeads.filter(c => c.source !== "ai-chat");
+
   const docsReadyLeads = (recentClients || []).filter(c => {
     const docs = c.financing_docs as Record<string, boolean> | null;
     if (!docs) return false;
