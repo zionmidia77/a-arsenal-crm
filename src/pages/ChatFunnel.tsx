@@ -630,10 +630,10 @@ const ChatFunnel = () => {
                 : m
             );
             setPendingVehicles(null);
-            saveConversation(updated);
+            saveConversation(updated, latestClientId);
             return updated;
           }
-          saveConversation(prev);
+          saveConversation(prev, latestClientId);
           return prev;
         });
       }
