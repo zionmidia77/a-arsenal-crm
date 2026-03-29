@@ -74,7 +74,12 @@ const FipeLookup = ({ brand, model, year, onFipeValue, vehicleType = "carros", o
       setFipeResult(result);
       const priceStr = result.Valor?.replace("R$ ", "").replace(/\./g, "").replace(",", ".");
       const price = parseFloat(priceStr);
-      if (!isNaN(price)) onFipeValue(price);
+      if (!isNaN(price)) onFipeValue(price, {
+        brandCode: selectedBrand,
+        modelCode: selectedModel,
+        yearCode: selectedYear,
+        vehicleType,
+      });
       toast.success(`FIPE encontrado: ${result.Valor}`);
     } catch (e: any) {
       toast.error(`Erro ao buscar FIPE: ${e.message}`);
