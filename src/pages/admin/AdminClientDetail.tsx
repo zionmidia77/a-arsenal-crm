@@ -23,6 +23,7 @@ import LTVOpportunities from "@/components/admin/LTVOpportunities";
 import NPSSection from "@/components/admin/NPSSection";
 import ClientReportSection from "@/components/admin/ClientReportSection";
 import ExclusiveOffersSection from "@/components/admin/ExclusiveOffersSection";
+import ChatHistorySection from "@/components/admin/ChatHistorySection";
 import { useAIChat } from "@/hooks/useAIChat";
 
 
@@ -536,6 +537,11 @@ const AdminClientDetail = () => {
       {/* 🎁 Ofertas Exclusivas */}
       <motion.div variants={fadeUp}>
         <ExclusiveOffersSection client={client} />
+      </motion.div>
+
+      {/* 💬 Histórico de Conversas com IA */}
+      <motion.div variants={fadeUp}>
+        <ChatHistorySection clientId={client.id} />
       </motion.div>
 
       {/* Vehicles */}
