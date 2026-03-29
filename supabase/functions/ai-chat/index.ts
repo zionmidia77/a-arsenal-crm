@@ -600,7 +600,7 @@ async function executeTool(
               km: v.km,
               color: v.color,
               price: v.selling_price || v.price,
-              condition: v.condition === "new" ? "0km" : "Seminova",
+              condition: v.condition === "new" ? "0km" : "Seminovo",
               description: v.description,
               features: v.features,
               photos: allPhotos,
