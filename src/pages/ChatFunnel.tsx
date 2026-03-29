@@ -340,6 +340,7 @@ const ChatFunnel = () => {
   const [messageCount, setMessageCount] = useState(0);
   const [isAnalyzingDoc, setIsAnalyzingDoc] = useState(false);
   const [pendingVehicles, setPendingVehicles] = useState<StockVehicle[] | null>(null);
+  const pendingVehiclesRef = useRef<StockVehicle[] | null>(null);
   const [isRestoringChat, setIsRestoringChat] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -620,6 +621,7 @@ const ChatFunnel = () => {
                 }
                 if (parsed.metadata.vehicles?.length) {
                   setPendingVehicles(parsed.metadata.vehicles);
+                  pendingVehiclesRef.current = parsed.metadata.vehicles;
                 }
                 continue;
               }
@@ -661,14 +663,16 @@ const ChatFunnel = () => {
         inputRef.current?.focus();
 
         // Attach pending vehicles to the last assistant message
+        const vehiclesToAttach = pendingVehiclesRef.current;
         setMessages(prev => {
-          if (pendingVehicles && pendingVehicles.length > 0) {
+          if (vehiclesToAttach && vehiclesToAttach.length > 0) {
             const updated = prev.map((m, i) =>
               i === prev.length - 1 && m.role === "assistant"
-                ? { ...m, vehicles: pendingVehicles }
+                ? { ...m, vehicles: vehiclesToAttach }
                 : m
             );
             setPendingVehicles(null);
+            pendingVehiclesRef.current = null;
             saveConversation(updated, latestClientId);
             return updated;
           }
@@ -677,7 +681,7 @@ const ChatFunnel = () => {
         });
       }
     },
-    [messages, isLoading, isTransferred, clientId, scrollToBottom, saveConversation, pendingVehicles]
+    [messages, isLoading, isTransferred, clientId, scrollToBottom, saveConversation]
   );
 
   const handleSubmit = (e?: React.FormEvent) => {
