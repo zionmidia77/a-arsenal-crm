@@ -340,6 +340,7 @@ const ChatFunnel = () => {
   const [messageCount, setMessageCount] = useState(0);
   const [isAnalyzingDoc, setIsAnalyzingDoc] = useState(false);
   const [pendingVehicles, setPendingVehicles] = useState<StockVehicle[] | null>(null);
+  const pendingVehiclesRef = useRef<StockVehicle[] | null>(null);
   const [isRestoringChat, setIsRestoringChat] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
