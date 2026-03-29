@@ -686,6 +686,17 @@ const ChatFunnel = () => {
     [messages, isLoading, isTransferred, clientId, scrollToBottom, saveConversation]
   );
 
+  // Auto-send message when coming from catalog with ?veiculo= param
+  const vehicleParamSent = useRef(false);
+  useEffect(() => {
+    if (vehicleParamSent.current || isRestoringChat || isLoading) return;
+    const vehicleName = searchParams.get("veiculo") || searchParams.get("moto");
+    if (vehicleName && messages.length >= 1 && !messages.some(m => m.role === "user")) {
+      vehicleParamSent.current = true;
+      sendMessage(`Tenho interesse no ${vehicleName.trim()}`);
+    }
+  }, [isRestoringChat, isLoading, searchParams, messages, sendMessage]);
+
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     sendMessage(inputValue);
