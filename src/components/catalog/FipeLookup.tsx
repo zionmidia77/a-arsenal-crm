@@ -93,7 +93,27 @@ const FipeLookup = ({ brand, model, year, onFipeValue, vehicleType = "carros", o
       <h4 className="font-semibold flex items-center gap-2">
         <Search className="h-4 w-4" /> Consulta Tabela FIPE
       </h4>
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-4 gap-3">
+        <div>
+          <Label className="text-xs">Tipo</Label>
+          <Select value={vehicleType} onValueChange={(v) => {
+            onVehicleTypeChange?.(v);
+            setSelectedBrand("");
+            setModels([]);
+            setSelectedModel("");
+            setYears([]);
+            setSelectedYear("");
+            setFipeResult(null);
+            callFipe("brands").then(setBrands).catch(() => {});
+          }}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="carros">Carros</SelectItem>
+              <SelectItem value="motos">Motos</SelectItem>
+              <SelectItem value="caminhoes">Caminhões</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
         <div>
           <Label className="text-xs">Marca</Label>
           <Select value={selectedBrand} onValueChange={setSelectedBrand}>
