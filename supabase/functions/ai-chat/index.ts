@@ -519,6 +519,7 @@ async function executeTool(
 
         return JSON.stringify({
           success: true,
+          client_id: client_id,
           message: `Lead atualizado com: ${Object.keys(cleanFields).join(", ")}`,
         });
       }
@@ -1262,7 +1263,7 @@ serve(async (req) => {
     ];
 
     // Track client_id and vehicles found during tool calls
-    let createdClientId: string | null = null;
+    let createdClientId: string | null = context?.clientId || null;
     let foundVehicles: unknown[] = [];
 
     // Tool calling loop (max 5 iterations for complex flows)
@@ -1318,8 +1319,8 @@ serve(async (req) => {
         const toolResult = await executeTool(tc.function.name, args);
         console.log(`Tool result: ${toolResult}`);
 
-        // Track client_id from create_lead
-        if (tc.function.name === "create_lead") {
+        // Track client_id from create_lead or update_lead
+        if (tc.function.name === "create_lead" || tc.function.name === "update_lead") {
           try {
             const parsed = JSON.parse(toolResult);
             if (parsed.client_id) createdClientId = parsed.client_id;
