@@ -6,11 +6,20 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Search, Loader2 } from "lucide-react";
 
+interface FipeCodes {
+  brandCode: string;
+  modelCode: string;
+  yearCode: string;
+  vehicleType: string;
+}
+
 interface Props {
   brand: string;
   model: string;
   year: string | number;
-  onFipeValue: (value: number) => void;
+  onFipeValue: (value: number, codes: FipeCodes) => void;
+  vehicleType?: string;
+  onVehicleTypeChange?: (type: string) => void;
 }
 
 const FipeLookup = ({ brand, model, year, onFipeValue }: Props) => {
