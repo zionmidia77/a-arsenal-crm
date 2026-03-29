@@ -147,7 +147,7 @@ const Simulator = () => {
               financed_amount: financed,
               months: months[0],
               monthly_payment: Math.round(monthly),
-              interest_rate: rate,
+              interest_rate: coef,
               total_interest: Math.round(totalInterest),
               source: "simulator",
             });
