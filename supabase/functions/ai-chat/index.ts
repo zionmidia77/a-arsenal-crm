@@ -1143,7 +1143,7 @@ Se o cliente mencionar data de nascimento em qualquer contexto:
 ## INFORMAÇÕES DA LOJA
 - Arsenal Motors — Motos novas e seminovas
 - Todas as marcas (Honda, Yamaha, Suzuki, Kawasaki, BMW, etc.)
-- Financiamento em até 48x com as melhores taxas
+- Financiamento via Aqui Financiamentos em até 48x (Moto Leve, coeficientes A/B/C)
 - Aceita motos na troca (avaliação gratuita!)
 - Consórcio disponível
 - Horário: Seg-Sáb 8h às 18h
