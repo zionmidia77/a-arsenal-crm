@@ -365,6 +365,9 @@ const AdminDashboard = () => {
         )}
       </motion.div>
 
+      {/* 🧠 Smart Alerts */}
+      <SmartAlerts />
+
       {/* LTV Automations Dashboard */}
       <LTVDashboard />
 
