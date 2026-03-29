@@ -1,5 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ChevronLeft, ChevronRight as ChevronRightIcon } from "lucide-react";
 import {
   Users, Flame, AlertTriangle, TrendingUp, CalendarCheck,
   MessageCircle, Eye, ChevronRight, BarChart3, Target, Trophy, Activity,
