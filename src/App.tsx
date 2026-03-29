@@ -21,6 +21,7 @@ import AdminGoals from "./pages/admin/AdminGoals";
 import AdminCalendar from "./pages/admin/AdminCalendar";
 import AdminChatHistory from "./pages/admin/AdminChatHistory";
 import AdminSimulations from "./pages/admin/AdminSimulations";
+import AdminCatalog from "./pages/admin/AdminCatalog";
 import MemberArea from "./pages/MemberArea";
 import Login from "./pages/auth/Login";
 import Signup from "./pages/auth/Signup";
