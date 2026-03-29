@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Search, Bike, MessageCircle, Filter, ChevronLeft, ChevronRight, X, ZoomIn, Camera, GitCompareArrows, Trash2 } from "lucide-react";
+import { Search, Bike, MessageCircle, Filter, ChevronLeft, ChevronRight, X, ZoomIn, Camera, GitCompareArrows, Trash2, Eye, Fuel, Gauge, Palette, Calendar, Info } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -173,6 +173,7 @@ const PublicCatalog = () => {
   const [brandFilter, setBrandFilter] = useState("all");
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [showCompare, setShowCompare] = useState(false);
+  const [detailVehicle, setDetailVehicle] = useState<any>(null);
   const navigate = useNavigate();
 
   const toggleCompare = (id: string) => {
@@ -186,7 +187,7 @@ const PublicCatalog = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("stock_vehicles")
-        .select("id, brand, model, year, km, color, price, selling_price, condition, photos, image_url, description, features, fipe_value")
+        .select("id, brand, model, year, km, color, price, selling_price, condition, photos, image_url, description, features, fipe_value, fuel")
         .eq("status", "available")
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -298,9 +299,14 @@ const PublicCatalog = () => {
                       </div>
                     )}
 
-                    <Button className="w-full gap-2" onClick={() => navigate(`/chat?moto=${encodeURIComponent(`${v.brand} ${v.model} ${v.year || ""}`)}`)}>
-                      <MessageCircle className="h-4 w-4" /> Tenho interesse!
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button variant="outline" className="flex-1 gap-1.5" onClick={() => setDetailVehicle({ ...v, allPhotos })}>
+                        <Eye className="h-4 w-4" /> Ver detalhes
+                      </Button>
+                      <Button className="flex-1 gap-1.5" onClick={() => navigate(`/chat?moto=${encodeURIComponent(`${v.brand} ${v.model} ${v.year || ""}`)}`)}>
+                        <MessageCircle className="h-4 w-4" /> Interesse
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               );
@@ -410,6 +416,109 @@ const PublicCatalog = () => {
                   ))}
                 </div>
               </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
+
+      {/* Vehicle Detail Dialog */}
+      <Dialog open={!!detailVehicle} onOpenChange={(open) => !open && setDetailVehicle(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-auto p-0">
+          {detailVehicle && (() => {
+            const v = detailVehicle;
+            const photos = v.allPhotos || [];
+            const displayPrice = Number(v.selling_price || v.price || 0);
+            const specs = [
+              { icon: Calendar, label: "Ano", value: v.year || "—" },
+              { icon: Gauge, label: "Quilometragem", value: v.km != null ? `${v.km.toLocaleString("pt-BR")} km` : "—" },
+              { icon: Palette, label: "Cor", value: v.color || "—" },
+              { icon: Fuel, label: "Combustível", value: v.fuel || "—" },
+              { icon: Info, label: "Condição", value: v.condition === "new" ? "0km" : "Seminova" },
+            ];
+
+            return (
+              <>
+                {/* Photo carousel */}
+                <div className="h-72 sm:h-80 bg-muted relative">
+                  <CardCarousel photos={photos} alt={`${v.brand} ${v.model}`} />
+                </div>
+
+                <div className="p-6 space-y-5">
+                  {/* Title & price */}
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <Badge variant={v.condition === "new" ? "default" : "secondary"}>
+                          {v.condition === "new" ? "0km" : "Seminova"}
+                        </Badge>
+                      </div>
+                      <h2 className="text-2xl font-bold">{v.brand} {v.model}</h2>
+                      <p className="text-sm text-muted-foreground">
+                        {v.year && `${v.year}`}{v.km ? ` · ${v.km.toLocaleString()} km` : ""}{v.color ? ` · ${v.color}` : ""}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-3xl font-bold text-primary">R$ {displayPrice.toLocaleString("pt-BR")}</p>
+                      {v.fipe_value && (
+                        <p className="text-xs text-muted-foreground">FIPE: R$ {Number(v.fipe_value).toLocaleString("pt-BR")}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Parcelas */}
+                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                    {Object.entries(COEFS).map(([months, coef]) => (
+                      <div key={months} className="text-center p-2 rounded-lg bg-muted/50 border border-border/40">
+                        <p className="text-[10px] text-muted-foreground font-medium">{months}x</p>
+                        <p className="text-xs font-bold text-foreground">R$ {(displayPrice * coef).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Ficha técnica */}
+                  <div>
+                    <h3 className="text-sm font-semibold mb-3 flex items-center gap-1.5">
+                      <Info className="h-4 w-4 text-primary" /> Ficha Técnica
+                    </h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      {specs.map((s) => (
+                        <div key={s.label} className="flex items-center gap-2.5 p-2.5 rounded-lg bg-muted/40 border border-border/30">
+                          <s.icon className="h-4 w-4 text-muted-foreground shrink-0" />
+                          <div>
+                            <p className="text-[10px] text-muted-foreground leading-none">{s.label}</p>
+                            <p className="text-sm font-medium">{s.value}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Diferenciais */}
+                  {v.features?.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-semibold mb-2">✨ Diferenciais</h3>
+                      <div className="flex flex-wrap gap-1.5">
+                        {v.features.map((f: string, i: number) => (
+                          <Badge key={i} variant="outline" className="text-xs">{f}</Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Descrição */}
+                  {v.description && (
+                    <div>
+                      <h3 className="text-sm font-semibold mb-2">📝 Descrição</h3>
+                      <p className="text-sm text-muted-foreground whitespace-pre-line leading-relaxed">{v.description}</p>
+                    </div>
+                  )}
+
+                  {/* CTA */}
+                  <Button className="w-full gap-2" size="lg" onClick={() => { setDetailVehicle(null); navigate(`/chat?moto=${encodeURIComponent(`${v.brand} ${v.model} ${v.year || ""}`)}`); }}>
+                    <MessageCircle className="h-5 w-5" /> Tenho interesse nessa moto!
+                  </Button>
+                </div>
+              </>
             );
           })()}
         </DialogContent>
