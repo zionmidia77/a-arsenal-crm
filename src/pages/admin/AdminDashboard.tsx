@@ -1,5 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ChevronLeft } from "lucide-react";
 import {
   Users, Flame, AlertTriangle, TrendingUp, CalendarCheck,
   MessageCircle, Eye, ChevronRight, BarChart3, Target, Trophy, Activity,
@@ -71,14 +73,19 @@ const AdminDashboard = () => {
   const { data: chartData } = useLeadsChartData();
   const [dismissedBirthday, setDismissedBirthday] = useState(false);
   const [generatingPDF, setGeneratingPDF] = useState(false);
+  const [reportMonth, setReportMonth] = useState(new Date().getMonth() + 1);
+  const [reportYear, setReportYear] = useState(new Date().getFullYear());
+  const [showMonthPicker, setShowMonthPicker] = useState(false);
+
+  const MONTH_NAMES_SHORT = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
   const handleGenerateReport = async () => {
     setGeneratingPDF(true);
+    setShowMonthPicker(false);
     try {
-      const now = new Date();
-      const data = await fetchMonthlyData(now.getMonth() + 1, now.getFullYear());
+      const data = await fetchMonthlyData(reportMonth, reportYear);
       generateMonthlyPDF(data);
-      toast.success("Relatório PDF gerado com sucesso!");
+      toast.success(`Relatório de ${MONTH_NAMES_SHORT[reportMonth - 1]}/${reportYear} gerado!`);
     } catch (e) {
       console.error(e);
       toast.error("Erro ao gerar relatório");
@@ -134,10 +141,49 @@ const AdminDashboard = () => {
             }
           </p>
         </div>
-        <Button variant="outline" size="sm" className="gap-2" onClick={handleGenerateReport} disabled={generatingPDF}>
-          {generatingPDF ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
-          Relatório PDF
-        </Button>
+        <Popover open={showMonthPicker} onOpenChange={setShowMonthPicker}>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-2" disabled={generatingPDF}>
+              {generatingPDF ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
+              Relatório PDF
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-72 p-4" align="end">
+            <div className="space-y-3">
+              <p className="text-sm font-medium">Selecione o período</p>
+              <div className="flex items-center justify-between">
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setReportYear(y => y - 1)}>
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-sm font-semibold">{reportYear}</span>
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setReportYear(y => y + 1)} disabled={reportYear >= new Date().getFullYear()}>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="grid grid-cols-4 gap-1.5">
+                {MONTH_NAMES_SHORT.map((m, i) => {
+                  const isFuture = reportYear === new Date().getFullYear() && i + 1 > new Date().getMonth() + 1;
+                  return (
+                    <Button
+                      key={m}
+                      variant={reportMonth === i + 1 ? "default" : "ghost"}
+                      size="sm"
+                      className="h-8 text-xs"
+                      disabled={isFuture}
+                      onClick={() => setReportMonth(i + 1)}
+                    >
+                      {m}
+                    </Button>
+                  );
+                })}
+              </div>
+              <Button className="w-full gap-2" size="sm" onClick={handleGenerateReport} disabled={generatingPDF}>
+                {generatingPDF ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
+                Gerar {MONTH_NAMES_SHORT[reportMonth - 1]}/{reportYear}
+              </Button>
+            </div>
+          </PopoverContent>
+        </Popover>
       </motion.div>
 
       {/* 🎂 Birthday Banner */}
