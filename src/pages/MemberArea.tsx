@@ -171,6 +171,7 @@ const MemberArea = () => {
           {([
             { key: "status", label: "Status" },
             { key: "vehicles", label: "Veículos" },
+            { key: "referrals", label: "Indicações" },
             { key: "history", label: "Histórico" },
           ] as const).map(tab => (
             <Button
