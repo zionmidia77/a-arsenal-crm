@@ -108,7 +108,7 @@ const CardCarousel = ({ photos, alt }: { photos: string[]; alt: string }) => {
   if (photos.length === 0) {
     return (
       <div className="w-full h-full flex items-center justify-center">
-        <Bike className="h-16 w-16 text-muted-foreground" />
+        <Car className="h-16 w-16 text-muted-foreground" />
       </div>
     );
   }
