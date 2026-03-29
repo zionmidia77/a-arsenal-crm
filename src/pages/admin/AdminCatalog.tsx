@@ -22,6 +22,7 @@ import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 const AdminCatalog = () => {
+  const [activeTab, setActiveTab] = useState("catalog");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
