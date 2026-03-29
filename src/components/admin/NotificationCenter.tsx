@@ -1,14 +1,17 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Bell, Flame, AlertTriangle, FileCheck, ChevronRight } from "lucide-react";
+import { Bell, Flame, AlertTriangle, FileCheck, ChevronRight, Bot } from "lucide-react";
 import { useOverdueTasks, useClients } from "@/hooks/useSupabase";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
-type FilterType = "all" | "docs" | "leads" | "tasks";
+type FilterType = "all" | "docs" | "leads" | "ai" | "tasks";
 
 const FILTERS: { key: FilterType; label: string; emoji: string }[] = [
   { key: "all", label: "Todos", emoji: "📋" },
+  { key: "ai", label: "Chat IA", emoji: "🤖" },
   { key: "docs", label: "Docs", emoji: "📄" },
   { key: "leads", label: "Leads", emoji: "🔥" },
   { key: "tasks", label: "Tarefas", emoji: "⚠️" },
@@ -25,6 +28,9 @@ const NotificationCenter = () => {
     const diff = Date.now() - new Date(c.created_at).getTime();
     return diff < 24 * 60 * 60 * 1000;
   });
+
+  const aiLeads = newLeads.filter(c => c.source === "ai-chat");
+  const nonAiLeads = newLeads.filter(c => c.source !== "ai-chat");
 
   const docsReadyLeads = (recentClients || []).filter(c => {
     const docs = c.financing_docs as Record<string, boolean> | null;
@@ -54,7 +60,7 @@ const NotificationCenter = () => {
     action: () => { navigate("/admin/tasks"); setOpen(false); },
   }));
 
-  const leadNotifications = newLeads.slice(0, 10).map(c => ({
+  const leadNotifications = nonAiLeads.slice(0, 10).map(c => ({
     id: `lead-${c.id}`,
     type: "leads" as const,
     icon: Flame,
@@ -65,7 +71,18 @@ const NotificationCenter = () => {
     action: () => { navigate(`/admin/client/${c.id}`); setOpen(false); },
   }));
 
-  const allNotifications = [...docsNotifications, ...taskNotifications, ...leadNotifications];
+  const aiNotifications = aiLeads.slice(0, 10).map(c => ({
+    id: `ai-${c.id}`,
+    type: "ai" as const,
+    icon: Bot,
+    color: "text-blue-400",
+    bg: "bg-blue-500/10",
+    title: "🤖 Novo lead via Chat IA!",
+    desc: `${c.name} · ${c.interest || "sem interesse"} · capturado automaticamente`,
+    action: () => { navigate(`/admin/client/${c.id}`); setOpen(false); },
+  }));
+
+  const allNotifications = [...aiNotifications, ...docsNotifications, ...taskNotifications, ...leadNotifications];
 
   const filtered = filter === "all"
     ? allNotifications
@@ -73,6 +90,7 @@ const NotificationCenter = () => {
 
   const counts: Record<FilterType, number> = {
     all: allNotifications.length,
+    ai: aiNotifications.length,
     docs: docsNotifications.length,
     leads: leadNotifications.length,
     tasks: taskNotifications.length,
