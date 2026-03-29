@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Send, ArrowLeft, Sparkles, UserCheck, Camera, FileCheck, Loader2, Car, ChevronLeft, ChevronRight, RotateCcw } from "lucide-react";
+import { Send, ArrowLeft, Sparkles, UserCheck, Camera, FileCheck, Loader2, Car, ChevronLeft, ChevronRight, RotateCcw, Mic, Square } from "lucide-react";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
@@ -343,6 +343,12 @@ const ChatFunnel = () => {
   const [pendingVehicles, setPendingVehicles] = useState<StockVehicle[] | null>(null);
   const pendingVehiclesRef = useRef<StockVehicle[] | null>(null);
   const [isRestoringChat, setIsRestoringChat] = useState(true);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -846,6 +852,94 @@ const ChatFunnel = () => {
     }
   }, [clientId, isLoading, isTransferred, scrollToBottom, saveConversation]);
 
+  // Audio recording
+  const startRecording = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "audio/mp4" });
+      audioChunksRef.current = [];
+      mediaRecorderRef.current = mediaRecorder;
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        stream.getTracks().forEach(t => t.stop());
+        if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+        setRecordingDuration(0);
+
+        const blob = new Blob(audioChunksRef.current, { type: mediaRecorder.mimeType });
+        if (blob.size < 1000) { toast.error("Áudio muito curto"); return; }
+
+        setIsTranscribing(true);
+        try {
+          const reader = new FileReader();
+          const base64 = await new Promise<string>((resolve, reject) => {
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+
+          const resp = await fetch(
+            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/transcribe-audio`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+              },
+              body: JSON.stringify({ audio_base64: base64 }),
+            }
+          );
+
+          if (!resp.ok) throw new Error("Erro na transcrição");
+          const result = await resp.json();
+          const text = result.transcription?.trim();
+
+          if (text && text !== "[áudio inaudível]") {
+            sendMessage(text);
+          } else {
+            toast.error("Não consegui entender o áudio. Tente novamente.");
+          }
+        } catch (err) {
+          console.error("Transcription error:", err);
+          toast.error("Erro ao transcrever áudio");
+        } finally {
+          setIsTranscribing(false);
+        }
+      };
+
+      mediaRecorder.start(250);
+      setIsRecording(true);
+      setRecordingDuration(0);
+      recordingTimerRef.current = setInterval(() => setRecordingDuration(d => d + 1), 1000);
+    } catch (err) {
+      console.error("Mic error:", err);
+      toast.error("Permita o acesso ao microfone para enviar áudios");
+    }
+  }, [sendMessage]);
+
+  const stopRecording = useCallback(() => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      mediaRecorderRef.current.stop();
+    }
+    setIsRecording(false);
+  }, []);
+
+  const cancelRecording = useCallback(() => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      mediaRecorderRef.current.stream.getTracks().forEach(t => t.stop());
+      mediaRecorderRef.current.stop();
+      audioChunksRef.current = [];
+    }
+    if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+    setIsRecording(false);
+    setRecordingDuration(0);
+  }, []);
+
+  const formatDuration = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
+
   // Show transfer button after 4+ user messages (lead likely qualified)
   const showTransferButton = messageCount >= 4 && !isTransferred;
 
@@ -992,7 +1086,7 @@ const ChatFunnel = () => {
               type="button"
               variant="ghost"
               size="icon"
-              disabled={isLoading || isAnalyzingDoc}
+              disabled={isLoading || isAnalyzingDoc || isRecording || isTranscribing}
               onClick={() => fileInputRef.current?.click()}
               className="rounded-full shrink-0 h-11 w-11 text-muted-foreground hover:text-primary transition-colors"
               title="Enviar documento (CNH, holerite, comprovante)"
@@ -1003,31 +1097,72 @@ const ChatFunnel = () => {
                 <Camera className="h-4 w-4" />
               )}
             </Button>
-            <div className="flex-1 relative">
-              <textarea
-                ref={inputRef}
-                value={inputValue}
-                onChange={(e) => {
-                  setInputValue(e.target.value);
-                  e.target.style.height = "auto";
-                  e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
-                }}
-                onKeyDown={handleKeyDown}
-                placeholder={isAnalyzingDoc ? "Analisando documento..." : "Digite sua mensagem..."}
-                rows={1}
-                disabled={isLoading || isAnalyzingDoc}
-                className="w-full resize-none rounded-2xl bg-secondary border border-border/50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all disabled:opacity-50 placeholder:text-muted-foreground"
-                style={{ maxHeight: "120px" }}
-              />
-            </div>
-            <Button
-              type="submit"
-              size="icon"
-              disabled={!inputValue.trim() || isLoading || isAnalyzingDoc}
-              className="rounded-full shrink-0 h-11 w-11 glow-red transition-all"
-            >
-              <Send className="h-4 w-4" />
-            </Button>
+
+            {isRecording ? (
+              <div className="flex-1 flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-destructive/10 border border-destructive/30">
+                <span className="w-2.5 h-2.5 rounded-full bg-destructive animate-pulse shrink-0" />
+                <span className="text-sm font-medium text-destructive flex-1">
+                  Gravando... {formatDuration(recordingDuration)}
+                </span>
+                <button type="button" onClick={cancelRecording} className="text-xs text-muted-foreground hover:text-foreground transition px-2">
+                  Cancelar
+                </button>
+              </div>
+            ) : isTranscribing ? (
+              <div className="flex-1 flex items-center gap-3 px-4 py-3 rounded-2xl bg-secondary border border-border/50">
+                <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                <span className="text-sm text-muted-foreground">Transcrevendo áudio...</span>
+              </div>
+            ) : (
+              <div className="flex-1 relative">
+                <textarea
+                  ref={inputRef}
+                  value={inputValue}
+                  onChange={(e) => {
+                    setInputValue(e.target.value);
+                    e.target.style.height = "auto";
+                    e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
+                  }}
+                  onKeyDown={handleKeyDown}
+                  placeholder={isAnalyzingDoc ? "Analisando documento..." : "Digite ou envie um áudio..."}
+                  rows={1}
+                  disabled={isLoading || isAnalyzingDoc}
+                  className="w-full resize-none rounded-2xl bg-secondary border border-border/50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all disabled:opacity-50 placeholder:text-muted-foreground"
+                  style={{ maxHeight: "120px" }}
+                />
+              </div>
+            )}
+
+            {isRecording ? (
+              <Button
+                type="button"
+                size="icon"
+                onClick={stopRecording}
+                className="rounded-full shrink-0 h-11 w-11 bg-destructive hover:bg-destructive/90 transition-all"
+              >
+                <Square className="h-4 w-4 fill-current" />
+              </Button>
+            ) : inputValue.trim() ? (
+              <Button
+                type="submit"
+                size="icon"
+                disabled={isLoading || isAnalyzingDoc || isTranscribing}
+                className="rounded-full shrink-0 h-11 w-11 glow-red transition-all"
+              >
+                <Send className="h-4 w-4" />
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                size="icon"
+                disabled={isLoading || isAnalyzingDoc || isTranscribing}
+                onClick={startRecording}
+                className="rounded-full shrink-0 h-11 w-11 bg-primary/80 hover:bg-primary transition-all"
+                title="Gravar áudio"
+              >
+                <Mic className="h-4 w-4" />
+              </Button>
+            )}
           </form>
         )}
         <p className="text-[9px] text-muted-foreground text-center mt-2 opacity-50">
