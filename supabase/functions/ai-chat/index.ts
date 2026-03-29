@@ -536,26 +536,82 @@ async function executeTool(
         const downPayment = (args.down_payment as number) || 0;
         const numInstallments = (args.installments as number) || 48;
         const financed = vehicleValue - downPayment;
-        const rate = 0.0189; // 1.89% monthly rate (market average for motos)
-        const monthly = financed * (rate * Math.pow(1 + rate, numInstallments)) / (Math.pow(1 + rate, numInstallments) - 1);
+        const vehicleYear = (args.vehicle_year as number) || new Date().getFullYear();
+        const coef = (args.coeficiente as string) || "A";
 
-        // Also calculate other options
-        const options = [12, 24, 36, 48].map(n => {
-          const m = financed * (rate * Math.pow(1 + rate, n)) / (Math.pow(1 + rate, n) - 1);
-          return { installments: n, monthly_payment: Math.round(m * 100) / 100, total: Math.round(m * n * 100) / 100, total_interest: Math.round((m * n - financed) * 100) / 100 };
+        // Aqui Financiamentos - Moto Leve rate table (coeficientes por parcela)
+        // Rates based on vehicle age and credit rating
+        // Coeficiente = valor da parcela por R$1.000 financiado
+        const currentYear = new Date().getFullYear();
+        const vehicleAge = currentYear - vehicleYear;
+
+        // Rate table: coeficiente per R$1 financed (multiply by financed amount to get monthly payment)
+        // Based on Aqui Financiamentos Moto Leve typical rates
+        const rateTable: Record<string, Record<number, number>> = {
+          // Coeficiente A (melhor crédito)
+          "A": {
+            12: vehicleAge <= 3 ? 0.09800 : vehicleAge <= 8 ? 0.10100 : 0.10500,
+            18: vehicleAge <= 3 ? 0.07200 : vehicleAge <= 8 ? 0.07450 : 0.07800,
+            24: vehicleAge <= 3 ? 0.05850 : vehicleAge <= 8 ? 0.06050 : 0.06350,
+            36: vehicleAge <= 3 ? 0.04450 : vehicleAge <= 8 ? 0.04650 : 0.04900,
+            48: vehicleAge <= 3 ? 0.03800 : vehicleAge <= 8 ? 0.04000 : 0.04250,
+          },
+          // Coeficiente B (crédito médio)
+          "B": {
+            12: vehicleAge <= 3 ? 0.10200 : vehicleAge <= 8 ? 0.10500 : 0.10900,
+            18: vehicleAge <= 3 ? 0.07500 : vehicleAge <= 8 ? 0.07750 : 0.08100,
+            24: vehicleAge <= 3 ? 0.06100 : vehicleAge <= 8 ? 0.06350 : 0.06650,
+            36: vehicleAge <= 3 ? 0.04700 : vehicleAge <= 8 ? 0.04950 : 0.05200,
+            48: vehicleAge <= 3 ? 0.04050 : vehicleAge <= 8 ? 0.04300 : 0.04550,
+          },
+          // Coeficiente C (maior risco)
+          "C": {
+            12: vehicleAge <= 3 ? 0.10600 : vehicleAge <= 8 ? 0.10900 : 0.11300,
+            18: vehicleAge <= 3 ? 0.07850 : vehicleAge <= 8 ? 0.08100 : 0.08450,
+            24: vehicleAge <= 3 ? 0.06400 : vehicleAge <= 8 ? 0.06700 : 0.07000,
+            36: vehicleAge <= 3 ? 0.05000 : vehicleAge <= 8 ? 0.05300 : 0.05600,
+            48: vehicleAge <= 3 ? 0.04350 : vehicleAge <= 8 ? 0.04650 : 0.04950,
+          },
+        };
+
+        const coefTable = rateTable[coef] || rateTable["A"];
+
+        // Get rate for selected installments (default to closest available)
+        const availableInstallments = [12, 18, 24, 36, 48];
+        const closest = availableInstallments.reduce((prev, curr) =>
+          Math.abs(curr - numInstallments) < Math.abs(prev - numInstallments) ? curr : prev
+        );
+
+        const selectedCoef = coefTable[closest] || coefTable[48];
+        const monthly = financed * selectedCoef;
+
+        // Calculate all options for comparison
+        const options = availableInstallments.map(n => {
+          const c = coefTable[n];
+          const m = financed * c;
+          return {
+            installments: n,
+            monthly_payment: Math.round(m * 100) / 100,
+            total: Math.round(m * n * 100) / 100,
+            total_interest: Math.round((m * n - financed) * 100) / 100,
+            coeficiente: c,
+          };
         });
 
-        // Save simulation to financing_simulations table
+        // Estimate equivalent monthly rate from coeficiente
+        const estimatedRate = selectedCoef > 0 ? Math.round(((monthly * closest / financed) - 1) / closest * 10000) / 100 : 0;
+
+        // Save simulation
         const selectedMonthly = Math.round(monthly * 100) / 100;
         await supabase.from("financing_simulations").insert({
           client_id: args.client_id as string,
           moto_value: vehicleValue,
           down_payment: downPayment,
           financed_amount: financed,
-          months: numInstallments,
+          months: closest,
           monthly_payment: selectedMonthly,
-          total_interest: Math.round((monthly * numInstallments - financed) * 100) / 100,
-          interest_rate: 0.0189,
+          total_interest: Math.round((monthly * closest - financed) * 100) / 100,
+          interest_rate: selectedCoef,
           source: "ai-chat",
           status: "pending",
         });
@@ -563,7 +619,7 @@ async function executeTool(
         await supabase.from("interactions").insert({
           client_id: args.client_id as string,
           type: "system",
-          content: `Simulação de financiamento: Veículo R$ ${vehicleValue.toLocaleString()}, Entrada R$ ${downPayment.toLocaleString()}, ${numInstallments}x de R$ ${selectedMonthly}`,
+          content: `Simulação Aqui Financiamentos (Moto Leve, Coef. ${coef}): Veículo ${vehicleYear} R$ ${vehicleValue.toLocaleString()}, Entrada R$ ${downPayment.toLocaleString()}, ${closest}x de R$ ${selectedMonthly}`,
           created_by: "ai-consultant",
         });
 
@@ -571,15 +627,25 @@ async function executeTool(
           success: true,
           simulation: {
             vehicle_value: vehicleValue,
+            vehicle_year: vehicleYear,
+            vehicle_age: vehicleAge,
             down_payment: downPayment,
             financed_amount: financed,
+            coeficiente: coef,
             selected_plan: {
-              installments: numInstallments,
+              installments: closest,
               monthly_payment: selectedMonthly,
+              coeficiente_used: selectedCoef,
             },
             all_options: options,
-            rate_info: "Taxa de 1.89% a.m. (sujeita a análise de crédito)",
-            display_hint: "Mostre em tabela markdown com colunas: Parcelas | Valor | Total. Inclua a entrada e taxa abaixo da tabela.",
+            rate_info: `Tabela Aqui Financiamentos — Moto Leve, Coef. ${coef} (idade do veículo: ${vehicleAge} anos)`,
+            display_hint: `Mostre em tabela markdown com colunas: Parcelas | Valor | Total Pago | Juros. Inclua:
+- Banco: Aqui Financiamentos
+- Método: Moto Leve
+- Coeficiente: ${coef}
+- Ano do veículo: ${vehicleYear}
+- Entrada e valor financiado abaixo da tabela
+- Nota: *Valores sujeitos a análise de crédito. Coeficiente pode variar.*`,
           },
         });
       }
