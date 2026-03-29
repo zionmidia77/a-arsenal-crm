@@ -519,6 +519,7 @@ async function executeTool(
 
         return JSON.stringify({
           success: true,
+          client_id: client_id,
           message: `Lead atualizado com: ${Object.keys(cleanFields).join(", ")}`,
         });
       }
