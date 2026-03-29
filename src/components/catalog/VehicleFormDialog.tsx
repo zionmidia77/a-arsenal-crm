@@ -79,13 +79,18 @@ const VehicleFormDialog = ({ open, onOpenChange, vehicle, onSuccess }: Props) =>
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const photosRaw = Array.isArray(form.photos) ? form.photos.filter(Boolean) : [];
-      const photosWithCover = form.image_url && !photosRaw.includes(form.image_url)
-        ? [form.image_url, ...photosRaw]
-        : photosRaw;
-      const normalizedPhotos = [...new Set(photosWithCover)];
-      const coverPhoto = form.image_url && normalizedPhotos.includes(form.image_url)
+      const photosRaw: string[] = Array.isArray(form.photos)
+        ? form.photos.filter((photo: unknown): photo is string => typeof photo === "string" && photo.length > 0)
+        : [];
+      const imageUrl = typeof form.image_url === "string" && form.image_url.length > 0
         ? form.image_url
+        : null;
+      const photosWithCover: string[] = imageUrl && !photosRaw.includes(imageUrl)
+        ? [imageUrl, ...photosRaw]
+        : photosRaw;
+      const normalizedPhotos: string[] = Array.from(new Set(photosWithCover));
+      const coverPhoto = imageUrl && normalizedPhotos.includes(imageUrl)
+        ? imageUrl
         : normalizedPhotos[0] || null;
 
       const payload = {
