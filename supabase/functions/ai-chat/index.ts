@@ -1262,7 +1262,7 @@ serve(async (req) => {
     ];
 
     // Track client_id and vehicles found during tool calls
-    let createdClientId: string | null = null;
+    let createdClientId: string | null = context?.clientId || null;
     let foundVehicles: unknown[] = [];
 
     // Tool calling loop (max 5 iterations for complex flows)
