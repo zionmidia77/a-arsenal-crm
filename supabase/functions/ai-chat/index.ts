@@ -191,7 +191,7 @@ const tools = [
     function: {
       name: "register_trade_in",
       description:
-        "Register a vehicle the client wants to trade in. Captures details for evaluation. Call when client says they have a moto to give as entrada/troca.",
+        "Register a vehicle the client wants to trade in. Captures details for evaluation. Call when client says they have a vehicle (car or moto) to give as entrada/troca.",
       parameters: {
         type: "object",
         properties: {
