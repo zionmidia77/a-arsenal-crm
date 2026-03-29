@@ -87,6 +87,24 @@ const AdminLeads = () => {
     },
   });
 
+  const { data: templates } = useMessageTemplates("all");
+
+  const replaceVars = (msg: string, client: Tables<"clients">) => {
+    const firstName = client.name.split(" ")[0];
+    return msg
+      .replace(/\{nome\}/gi, firstName)
+      .replace(/\{interesse\}/gi, (client.interest || "motos").toLowerCase())
+      .replace(/\{orcamento\}/gi, client.budget_range || "a combinar");
+  };
+
+  const sendWhatsApp = (client: Tables<"clients">, msg: string) => {
+    if (!client.phone) { toast.error("Cliente sem telefone"); return; }
+    const phone = client.phone.replace(/\D/g, "");
+    const finalMsg = replaceVars(msg, client);
+    window.open(`https://wa.me/55${phone}?text=${encodeURIComponent(finalMsg)}`);
+    toast.success("Abrindo WhatsApp...");
+  };
+
   const copyMsg = (client: Tables<"clients">) => {
     const firstName = client.name.split(" ")[0];
     navigator.clipboard.writeText(
