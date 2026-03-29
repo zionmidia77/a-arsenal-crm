@@ -23,7 +23,9 @@ const fadeUp = {
 const MemberArea = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<"status" | "vehicles" | "history">("status");
+  const [activeTab, setActiveTab] = useState<"status" | "vehicles" | "history" | "referrals">("status");
+  const [refForm, setRefForm] = useState({ name: "", phone: "" });
+  const [showRefForm, setShowRefForm] = useState(false);
 
   // Find client by email
   const { data: client } = useQuery({
