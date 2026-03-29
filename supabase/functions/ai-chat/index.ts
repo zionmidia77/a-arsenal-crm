@@ -558,7 +558,7 @@ async function executeTool(
         return JSON.stringify({
           success: true,
           vehicle_id: data.id,
-          message: `Moto ${vehicleData.brand} ${vehicleData.model} registrada para avaliação de troca.`,
+          message: `Veículo ${vehicleData.brand} ${vehicleData.model} registrado para avaliação de troca.`,
         });
       }
 
