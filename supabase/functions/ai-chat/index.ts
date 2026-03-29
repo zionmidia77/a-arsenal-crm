@@ -1129,7 +1129,7 @@ Quando o cliente decidir financiar ou após coletar dados suficientes:
 SEMPRE use detect_urgency quando detectar sinais de compra:
 
 **Sinais CRÍTICOS (urgency=critical):**
-- "preciso pra hoje", "é urgente", "minha moto quebrou", "preciso trabalhar", "não tenho como ir trabalhar", "acidente", "roubaram minha moto"
+- "preciso pra hoje", "é urgente", "meu carro quebrou", "minha moto quebrou", "preciso trabalhar", "não tenho como ir trabalhar", "acidente", "roubaram meu veículo"
 
 **Sinais ALTOS (urgency=high):**
 - "quero fechar essa semana", "já tenho a entrada pronta", "vim decidido", "quero resolver logo", "preciso pra semana que vem"
