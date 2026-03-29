@@ -343,6 +343,12 @@ const ChatFunnel = () => {
   const [pendingVehicles, setPendingVehicles] = useState<StockVehicle[] | null>(null);
   const pendingVehiclesRef = useRef<StockVehicle[] | null>(null);
   const [isRestoringChat, setIsRestoringChat] = useState(true);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
