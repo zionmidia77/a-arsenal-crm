@@ -219,7 +219,7 @@ const PublicCatalog = () => {
         <div className="flex flex-col sm:flex-row gap-3 mb-6">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Buscar moto..." value={search} onChange={e => setSearch(e.target.value)} className="pl-10" />
+            <Input placeholder="Buscar veículo..." value={search} onChange={e => setSearch(e.target.value)} className="pl-10" />
           </div>
           <Select value={brandFilter} onValueChange={setBrandFilter}>
             <SelectTrigger className="w-[180px]">
