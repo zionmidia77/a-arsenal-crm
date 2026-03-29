@@ -618,48 +618,19 @@ async function executeTool(
         const downPayment = (args.down_payment as number) || 0;
         const numInstallments = (args.installments as number) || 48;
         const financed = vehicleValue - downPayment;
-        const vehicleYear = (args.vehicle_year as number) || new Date().getFullYear();
-        const coef = (args.coeficiente as string) || "A";
 
-        // Aqui Financiamentos - Moto Leve rate table (coeficientes por parcela)
-        // Rates based on vehicle age and credit rating
-        // Coeficiente = valor da parcela por R$1.000 financiado
-        const currentYear = new Date().getFullYear();
-        const vehicleAge = currentYear - vehicleYear;
-
-        // Rate table: coeficiente per R$1 financed (multiply by financed amount to get monthly payment)
-        // Based on Aqui Financiamentos Moto Leve typical rates
-        const rateTable: Record<string, Record<number, number>> = {
-          // Coeficiente A (melhor crédito)
-          "A": {
-            12: vehicleAge <= 3 ? 0.09800 : vehicleAge <= 8 ? 0.10100 : 0.10500,
-            18: vehicleAge <= 3 ? 0.07200 : vehicleAge <= 8 ? 0.07450 : 0.07800,
-            24: vehicleAge <= 3 ? 0.05850 : vehicleAge <= 8 ? 0.06050 : 0.06350,
-            36: vehicleAge <= 3 ? 0.04450 : vehicleAge <= 8 ? 0.04650 : 0.04900,
-            48: vehicleAge <= 3 ? 0.03800 : vehicleAge <= 8 ? 0.04000 : 0.04250,
-          },
-          // Coeficiente B (crédito médio)
-          "B": {
-            12: vehicleAge <= 3 ? 0.10200 : vehicleAge <= 8 ? 0.10500 : 0.10900,
-            18: vehicleAge <= 3 ? 0.07500 : vehicleAge <= 8 ? 0.07750 : 0.08100,
-            24: vehicleAge <= 3 ? 0.06100 : vehicleAge <= 8 ? 0.06350 : 0.06650,
-            36: vehicleAge <= 3 ? 0.04700 : vehicleAge <= 8 ? 0.04950 : 0.05200,
-            48: vehicleAge <= 3 ? 0.04050 : vehicleAge <= 8 ? 0.04300 : 0.04550,
-          },
-          // Coeficiente C (maior risco)
-          "C": {
-            12: vehicleAge <= 3 ? 0.10600 : vehicleAge <= 8 ? 0.10900 : 0.11300,
-            18: vehicleAge <= 3 ? 0.07850 : vehicleAge <= 8 ? 0.08100 : 0.08450,
-            24: vehicleAge <= 3 ? 0.06400 : vehicleAge <= 8 ? 0.06700 : 0.07000,
-            36: vehicleAge <= 3 ? 0.05000 : vehicleAge <= 8 ? 0.05300 : 0.05600,
-            48: vehicleAge <= 3 ? 0.04350 : vehicleAge <= 8 ? 0.04650 : 0.04950,
-          },
+        // Tabela de coeficientes fixos por número de parcelas
+        // parcela = valor financiado × coeficiente
+        const coefTable: Record<number, number> = {
+          12: 0.095,
+          24: 0.070,
+          36: 0.065,
+          48: 0.060,
+          60: 0.058,
         };
 
-        const coefTable = rateTable[coef] || rateTable["A"];
-
         // Get rate for selected installments (default to closest available)
-        const availableInstallments = [12, 18, 24, 36, 48];
+        const availableInstallments = [12, 24, 36, 48, 60];
         const closest = availableInstallments.reduce((prev, curr) =>
           Math.abs(curr - numInstallments) < Math.abs(prev - numInstallments) ? curr : prev
         );
@@ -679,9 +650,6 @@ async function executeTool(
             coeficiente: c,
           };
         });
-
-        // Estimate equivalent monthly rate from coeficiente
-        const estimatedRate = selectedCoef > 0 ? Math.round(((monthly * closest / financed) - 1) / closest * 10000) / 100 : 0;
 
         // Save simulation
         const selectedMonthly = Math.round(monthly * 100) / 100;
