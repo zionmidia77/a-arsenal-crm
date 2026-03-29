@@ -123,6 +123,10 @@ const VehicleFormDialog = ({ open, onOpenChange, vehicle, onSuccess }: Props) =>
         features: form.features?.length ? form.features : null,
         photos: normalizedPhotos,
         image_url: coverPhoto,
+        fipe_brand_code: form.fipe_brand_code || null,
+        fipe_model_code: form.fipe_model_code || null,
+        fipe_year_code: form.fipe_year_code || null,
+        fipe_vehicle_type: form.fipe_vehicle_type || null,
       };
 
       if (isEdit) {
