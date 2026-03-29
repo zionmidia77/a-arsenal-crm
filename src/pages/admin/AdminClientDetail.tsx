@@ -23,6 +23,7 @@ import LTVOpportunities from "@/components/admin/LTVOpportunities";
 import NPSSection from "@/components/admin/NPSSection";
 import ClientReportSection from "@/components/admin/ClientReportSection";
 import ExclusiveOffersSection from "@/components/admin/ExclusiveOffersSection";
+import ChatHistorySection from "@/components/admin/ChatHistorySection";
 import { useAIChat } from "@/hooks/useAIChat";
 
 
