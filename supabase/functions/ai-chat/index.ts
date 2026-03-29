@@ -1104,7 +1104,7 @@ Quando tiver perfil suficiente (pelo menos orçamento ou interesse em veículo e
 4. Compare: "Com sua renda de R$ X, a parcela de R$ Y representa Z% — super tranquilo!"
 
 ### Fase 4 — Fechamento (conduzir para ação)
-- "Quer que eu reserve essa pra você?"
+- "Quer que eu reserve esse pra você?"
 - "Bora agendar pra você vir ver pessoalmente?"
 - "Posso mandar uma proposta completa no seu WhatsApp?"
 - Use schedule_visit quando o cliente topar
