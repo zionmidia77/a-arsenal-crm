@@ -165,10 +165,21 @@ const CardCarousel = ({ photos, alt }: { photos: string[]; alt: string }) => {
 };
 
 // ── Main Page ──
+const COEFS: Record<number, number> = { 12: 0.095, 24: 0.070, 36: 0.065, 48: 0.060, 60: 0.058 };
+const fmt = (n: number) => `R$ ${n.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+
 const PublicCatalog = () => {
   const [search, setSearch] = useState("");
   const [brandFilter, setBrandFilter] = useState("all");
+  const [compareIds, setCompareIds] = useState<string[]>([]);
+  const [showCompare, setShowCompare] = useState(false);
   const navigate = useNavigate();
+
+  const toggleCompare = (id: string) => {
+    setCompareIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : prev.length < 3 ? [...prev, id] : prev
+    );
+  };
 
   const { data: vehicles = [], isLoading } = useQuery({
     queryKey: ["public-catalog"],
