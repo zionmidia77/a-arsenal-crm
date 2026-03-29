@@ -3,8 +3,10 @@ import { useState, useEffect, useRef } from "react";
 import {
   Users, Flame, AlertTriangle, TrendingUp, CalendarCheck,
   MessageCircle, Eye, ChevronRight, BarChart3, Target, Trophy, Activity,
-  Cake, X, Gift
+  Cake, X, Gift, FileDown, Loader2
 } from "lucide-react";
+import { fetchMonthlyData, generateMonthlyPDF } from "@/lib/generateMonthlyReport";
+import { toast } from "sonner";
 import { AreaChart, Area, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import { useDashboardStats, useClients, useOverdueTasks, useAllPendingTasks, useLeadsChartData } from "@/hooks/useSupabase";
 import { useNavigate } from "react-router-dom";
