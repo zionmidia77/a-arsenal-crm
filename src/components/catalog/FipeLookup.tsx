@@ -34,7 +34,7 @@ const FipeLookup = ({ brand, model, year, onFipeValue, vehicleType = "carros", o
 
   const callFipe = async (action: string, params: any = {}) => {
     const { data, error } = await supabase.functions.invoke("fipe-lookup", {
-      body: { action, ...params },
+      body: { action, vehicle_type: vehicleType, ...params },
     });
     if (error) throw error;
     if (!data.success) throw new Error(data.error);
