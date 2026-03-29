@@ -1091,11 +1091,11 @@ Quando tiver perfil suficiente (pelo menos orçamento ou interesse em moto espec
 📊 **Simulação de Financiamento:**
 | Parcelas | Valor |
 |----------|-------|
-| 12x | R$ 1.580 |
-| 24x | R$ 890 |
-| 36x | R$ 670 |
-| 48x | R$ 560 |
-*Entrada: R$ 3.000 · Banco: Aqui Financiamentos (Moto Leve)*
+| 12x | R$ 950 |
+| 24x | R$ 700 |
+| 36x | R$ 650 |
+| 48x | R$ 600 |
+| 60x | R$ 580 |
 
 4. Compare: "Com sua renda de R$ X, a parcela de R$ Y representa Z% — super tranquilo!"
 
