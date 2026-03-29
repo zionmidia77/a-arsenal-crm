@@ -23,10 +23,17 @@ const Simulator = () => {
   const [months, setMonths] = useState([36]);
 
   const financed = motoValue[0] - downPayment[0];
-  const rate = 0.019;
-  const monthly = financed > 0 ? (financed * rate * Math.pow(1 + rate, months[0])) / (Math.pow(1 + rate, months[0]) - 1) : 0;
+  // Aqui Financiamentos - Moto Leve, Coeficiente A, veículo até 8 anos
+  const coefTable: Record<number, number> = {
+    12: 0.10100, 18: 0.07450, 24: 0.06050, 36: 0.04650, 48: 0.04000,
+  };
+  const closest = [12, 18, 24, 36, 48].reduce((prev, curr) =>
+    Math.abs(curr - months[0]) < Math.abs(prev - months[0]) ? curr : prev
+  );
+  const coef = coefTable[closest] || 0.04000;
+  const monthly = financed > 0 ? financed * coef : 0;
   const freeValue = Math.max(0, motoValue[0] * 0.4 - downPayment[0] * 0.1);
-  const totalPaid = monthly * months[0];
+  const totalPaid = monthly * closest;
   const totalInterest = totalPaid - financed;
 
   return (
@@ -140,7 +147,7 @@ const Simulator = () => {
               financed_amount: financed,
               months: months[0],
               monthly_payment: Math.round(monthly),
-              interest_rate: rate,
+              interest_rate: coef,
               total_interest: Math.round(totalInterest),
               source: "simulator",
             });
