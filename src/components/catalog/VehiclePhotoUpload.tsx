@@ -1,83 +1,121 @@
 import { useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Camera, X, Upload, Image } from "lucide-react";
+import { X, Upload } from "lucide-react";
 
 interface Props {
   photos: string[];
   onPhotosChange: (photos: string[]) => void;
   vehicleId?: string;
+  coverPhoto?: string | null;
+  onCoverPhotoChange?: (photo: string | null) => void;
 }
 
-const VehiclePhotoUpload = ({ photos, onPhotosChange, vehicleId }: Props) => {
+const VehiclePhotoUpload = ({
+  photos,
+  onPhotosChange,
+  vehicleId,
+  coverPhoto,
+  onCoverPhotoChange,
+}: Props) => {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const uploadPhoto = async (file: File) => {
-    setUploading(true);
-    try {
-      const ext = file.name.split(".").pop();
-      const fileName = `${vehicleId || "temp"}-${Date.now()}.${ext}`;
-      const { data, error } = await supabase.storage
-        .from("vehicle-photos")
-        .upload(fileName, file, { upsert: true });
+  const uploadSinglePhoto = async (file: File) => {
+    const ext = file.name.split(".").pop();
+    const fileName = `${vehicleId || "temp"}-${crypto.randomUUID()}.${ext}`;
 
-      if (error) throw error;
+    const { data, error } = await supabase.storage
+      .from("vehicle-photos")
+      .upload(fileName, file, { upsert: true });
 
-      const { data: urlData } = supabase.storage
-        .from("vehicle-photos")
-        .getPublicUrl(data.path);
+    if (error) throw error;
 
-      const newPhotos = [...photos, urlData.publicUrl];
-      onPhotosChange(newPhotos);
-      toast.success("Foto enviada!");
-    } catch (e: any) {
-      toast.error(`Erro ao enviar foto: ${e.message}`);
-    } finally {
-      setUploading(false);
-    }
+    const { data: urlData } = supabase.storage
+      .from("vehicle-photos")
+      .getPublicUrl(data.path);
+
+    return urlData.publicUrl;
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files) return;
-    for (const file of Array.from(files)) {
-      await uploadPhoto(file);
+    if (!files?.length) return;
+
+    setUploading(true);
+    try {
+      const uploadedUrls = await Promise.all(Array.from(files).map((file) => uploadSinglePhoto(file)));
+      const dedupedPhotos = [...new Set([...photos, ...uploadedUrls])];
+
+      onPhotosChange(dedupedPhotos);
+
+      if (!coverPhoto || !dedupedPhotos.includes(coverPhoto)) {
+        onCoverPhotoChange?.(dedupedPhotos[0] || null);
+      }
+
+      toast.success(`${uploadedUrls.length} foto(s) enviada(s)!`);
+    } catch (error: any) {
+      toast.error(`Erro ao enviar foto: ${error.message}`);
+    } finally {
+      setUploading(false);
+      e.target.value = "";
     }
-    e.target.value = "";
   };
 
   const removePhoto = (index: number) => {
+    const removedPhoto = photos[index];
     const newPhotos = photos.filter((_, i) => i !== index);
     onPhotosChange(newPhotos);
+
+    if (removedPhoto === coverPhoto) {
+      onCoverPhotoChange?.(newPhotos[0] || null);
+    }
   };
 
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         {photos.map((url, i) => (
-          <div key={i} className="relative group aspect-video rounded-lg overflow-hidden border">
-            <img src={url} alt={`Foto ${i + 1}`} className="w-full h-full object-cover" />
-            <button
-              onClick={() => removePhoto(i)}
-              className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-            >
-              <X className="h-3 w-3" />
-            </button>
+          <div key={url} className="relative group aspect-video rounded-lg overflow-hidden border border-border bg-card">
+            <img src={url} alt={`Foto ${i + 1}`} className="w-full h-full object-cover" loading="lazy" />
+
+            {coverPhoto === url && (
+              <span className="absolute top-2 left-2 text-[10px] px-2 py-0.5 rounded-full bg-primary text-primary-foreground font-medium">
+                Capa
+              </span>
+            )}
+
+            <div className="absolute inset-x-2 bottom-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button
+                type="button"
+                onClick={() => onCoverPhotoChange?.(url)}
+                className="flex-1 text-[10px] px-2 py-1 rounded-md bg-background/90 text-foreground border border-border hover:bg-accent"
+              >
+                {coverPhoto === url ? "Foto de capa" : "Usar como capa"}
+              </button>
+              <button
+                type="button"
+                onClick={() => removePhoto(i)}
+                className="p-1.5 rounded-md bg-destructive text-destructive-foreground hover:opacity-90"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
           </div>
         ))}
+
         <button
+          type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
-          className="aspect-video rounded-lg border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center gap-2 hover:border-primary/50 transition-colors cursor-pointer"
+          className="aspect-video rounded-lg border-2 border-dashed border-border flex flex-col items-center justify-center gap-2 hover:border-primary/50 transition-colors cursor-pointer bg-card"
         >
           {uploading ? (
             <span className="text-sm text-muted-foreground">Enviando...</span>
           ) : (
             <>
               <Upload className="h-8 w-8 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Adicionar foto</span>
+              <span className="text-sm text-muted-foreground">Adicionar fotos</span>
             </>
           )}
         </button>
@@ -93,7 +131,7 @@ const VehiclePhotoUpload = ({ photos, onPhotosChange, vehicleId }: Props) => {
       />
 
       <p className="text-xs text-muted-foreground">
-        Dica: Tire fotos da moto de frente, lateral, traseira e painel. As fotos ficam visíveis no catálogo público e para a IA no chat.
+        Você pode subir várias fotos ao mesmo tempo e escolher qual fica na frente no catálogo público.
       </p>
     </div>
   );

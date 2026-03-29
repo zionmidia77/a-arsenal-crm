@@ -245,7 +245,9 @@ const PublicCatalog = () => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filtered.map((v: any) => {
-              const allPhotos = [...(v.photos || []), ...(v.image_url && !(v.photos || []).includes(v.image_url) ? [v.image_url] : [])];
+              const allPhotos = v.image_url
+                ? [v.image_url, ...(v.photos || []).filter((p: string) => p !== v.image_url)]
+                : (v.photos || []);
               const displayPrice = Number(v.selling_price || v.price || 0);
               const coef48 = 0.060;
               const parcela48 = displayPrice * coef48;
