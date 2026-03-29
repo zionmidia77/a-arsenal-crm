@@ -299,9 +299,14 @@ const PublicCatalog = () => {
                       </div>
                     )}
 
-                    <Button className="w-full gap-2" onClick={() => navigate(`/chat?moto=${encodeURIComponent(`${v.brand} ${v.model} ${v.year || ""}`)}`)}>
-                      <MessageCircle className="h-4 w-4" /> Tenho interesse!
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button variant="outline" className="flex-1 gap-1.5" onClick={() => setDetailVehicle({ ...v, allPhotos })}>
+                        <Eye className="h-4 w-4" /> Ver detalhes
+                      </Button>
+                      <Button className="flex-1 gap-1.5" onClick={() => navigate(`/chat?moto=${encodeURIComponent(`${v.brand} ${v.model} ${v.year || ""}`)}`)}>
+                        <MessageCircle className="h-4 w-4" /> Interesse
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               );
