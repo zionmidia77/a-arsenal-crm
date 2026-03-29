@@ -104,6 +104,27 @@ const PhotoLightbox = ({
 const CardCarousel = ({ photos, alt }: { photos: string[]; alt: string }) => {
   const [current, setCurrent] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const touchStart = useRef<number | null>(null);
+  const touchEnd = useRef<number | null>(null);
+  const minSwipe = 50;
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchEnd.current = null;
+    touchStart.current = e.targetTouches[0].clientX;
+  };
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEnd.current = e.targetTouches[0].clientX;
+  };
+  const handleTouchEnd = () => {
+    if (!touchStart.current || !touchEnd.current) return;
+    const diff = touchStart.current - touchEnd.current;
+    if (Math.abs(diff) >= minSwipe) {
+      if (diff > 0) setCurrent(i => (i < photos.length - 1 ? i + 1 : 0));
+      else setCurrent(i => (i > 0 ? i - 1 : photos.length - 1));
+    }
+    touchStart.current = null;
+    touchEnd.current = null;
+  };
 
   if (photos.length === 0) {
     return (
