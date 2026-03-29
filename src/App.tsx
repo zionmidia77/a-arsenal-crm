@@ -23,6 +23,7 @@ import AdminChatHistory from "./pages/admin/AdminChatHistory";
 import AdminSimulations from "./pages/admin/AdminSimulations";
 import AdminCatalog from "./pages/admin/AdminCatalog";
 import MemberArea from "./pages/MemberArea";
+import PublicCatalog from "./pages/PublicCatalog";
 import Login from "./pages/auth/Login";
 import Signup from "./pages/auth/Signup";
 import ForgotPassword from "./pages/auth/ForgotPassword";
