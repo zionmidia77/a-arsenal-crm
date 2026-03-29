@@ -335,7 +335,7 @@ const PublicCatalog = () => {
           >
             <div className="flex items-center gap-2">
               <GitCompareArrows className="h-5 w-5" />
-              <span className="font-semibold text-sm">{compareIds.length}/3 selecionadas</span>
+              <span className="font-semibold text-sm">{compareIds.length}/3 selecionados</span>
             </div>
             <Button size="sm" variant="secondary" className="gap-1" onClick={() => setShowCompare(true)} disabled={compareIds.length < 2}>
               Comparar
