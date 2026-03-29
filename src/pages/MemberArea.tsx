@@ -305,6 +305,122 @@ const MemberArea = () => {
               </>
             )}
 
+            {activeTab === "referrals" && (
+              <>
+                {/* Indica e Ganha Hero */}
+                <motion.div variants={fadeUp} className="glass-card gradient-border p-5">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Trophy className="w-6 h-6 text-primary" />
+                    <h2 className="text-lg font-display font-bold">Indica e Ganha</h2>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Indique amigos e ganhe <span className="text-primary font-bold">R$ 200</span> por cada indicação que fechar negócio!
+                  </p>
+                  <Button onClick={handleShare} className="w-full rounded-xl glow-red h-11 gap-2">
+                    <Share2 className="w-4 h-4" /> Compartilhar convite
+                  </Button>
+                </motion.div>
+
+                {/* Stats */}
+                <motion.div variants={fadeUp} className="grid grid-cols-3 gap-2">
+                  <div className="glass-card p-3 text-center">
+                    <Users className="w-4 h-4 mx-auto text-primary mb-1" />
+                    <p className="text-xl font-bold font-mono">{referrals?.length || 0}</p>
+                    <p className="text-[9px] text-muted-foreground">Indicações</p>
+                  </div>
+                  <div className="glass-card p-3 text-center">
+                    <Check className="w-4 h-4 mx-auto text-green-400 mb-1" />
+                    <p className="text-xl font-bold font-mono text-green-400">{convertedCount}</p>
+                    <p className="text-[9px] text-muted-foreground">Convertidos</p>
+                  </div>
+                  <div className="glass-card p-3 text-center">
+                    <Gift className="w-4 h-4 mx-auto text-amber-400 mb-1" />
+                    <p className="text-xl font-bold font-mono text-amber-400">
+                      {totalBonus > 0 ? `R$${totalBonus}` : "R$0"}
+                    </p>
+                    <p className="text-[9px] text-muted-foreground">Bônus total</p>
+                  </div>
+                </motion.div>
+
+                {/* Referral list */}
+                {referrals && referrals.length > 0 && (
+                  <motion.div variants={fadeUp} className="space-y-2">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-1">
+                      Suas indicações
+                    </p>
+                    {referrals.map(ref => {
+                      const statusMap: Record<string, { label: string; color: string; icon: typeof Check }> = {
+                        pending: { label: "Em análise", color: "text-amber-400", icon: Loader2 },
+                        converted: { label: "Convertido! +R$200", color: "text-green-400", icon: Check },
+                        lost: { label: "Não convertido", color: "text-muted-foreground", icon: Clock },
+                      };
+                      const st = statusMap[ref.status] || statusMap.pending;
+                      return (
+                        <div key={ref.id} className="glass-card p-3.5 flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                            <User className="w-4 h-4 text-primary" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{ref.referred_name || "—"}</p>
+                            <p className="text-[10px] text-muted-foreground">
+                              {new Date(ref.created_at).toLocaleDateString("pt-BR")}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <span className={`text-xs font-medium ${st.color}`}>{st.label}</span>
+                            {ref.status === "converted" && (
+                              <p className="text-[10px] text-green-400 font-mono">🎉</p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </motion.div>
+                )}
+
+                {/* Add referral */}
+                {showRefForm ? (
+                  <motion.div variants={fadeUp} className="glass-card p-4 space-y-3">
+                    <p className="text-xs font-medium">Nova indicação</p>
+                    <Input
+                      placeholder="Nome do amigo"
+                      value={refForm.name}
+                      onChange={e => setRefForm({ ...refForm, name: e.target.value })}
+                      className="rounded-xl h-10"
+                    />
+                    <Input
+                      placeholder="Telefone (WhatsApp)"
+                      value={refForm.phone}
+                      onChange={e => setRefForm({ ...refForm, phone: e.target.value })}
+                      className="rounded-xl h-10"
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        className="flex-1 rounded-xl h-10"
+                        disabled={!refForm.name.trim()}
+                        onClick={handleSubmitReferral}
+                      >
+                        Enviar indicação
+                      </Button>
+                      <Button variant="outline" className="rounded-xl h-10" onClick={() => setShowRefForm(false)}>
+                        Cancelar
+                      </Button>
+                    </div>
+                  </motion.div>
+                ) : (
+                  <motion.div variants={fadeUp}>
+                    <Button
+                      variant="outline"
+                      className="w-full rounded-xl h-11 gap-2 border-primary/30"
+                      onClick={() => setShowRefForm(true)}
+                    >
+                      <Users className="w-4 h-4" /> Indicar um amigo
+                    </Button>
+                  </motion.div>
+                )}
+              </>
+            )}
+
             {activeTab === "history" && (
               <>
                 {interactions && interactions.length > 0 ? (

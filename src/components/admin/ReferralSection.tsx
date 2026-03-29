@@ -217,13 +217,11 @@ const ReferralSection = ({ client }: ReferralSectionProps) => {
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
                 className="rounded-xl bg-secondary border-border/50 h-8 text-xs"
               />
-              <Input
-                placeholder="Recompensa (R$) — opcional"
-                type="number"
-                value={form.reward}
-                onChange={(e) => setForm({ ...form, reward: e.target.value })}
-                className="rounded-xl bg-secondary border-border/50 h-8 text-xs"
-              />
+              <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-2 text-center">
+                <p className="text-[10px] text-green-400 font-medium">
+                  💰 Bônus automático: R$ 200 por indicação convertida
+                </p>
+              </div>
               <div className="flex gap-2">
                 <Button
                   size="sm"
