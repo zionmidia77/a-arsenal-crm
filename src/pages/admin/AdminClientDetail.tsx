@@ -509,7 +509,7 @@ const AdminClientDetail = () => {
                 </h2>
               </div>
               <div className="p-4">
-                <LeadCopilotPanel clientId={client.id} clientName={client.name} />
+                <LeadCopilotPanel clientId={client.id} clientName={client.name} clientPhone={client.phone || undefined} />
               </div>
             </div>
           </ResizablePanel>
