@@ -33,7 +33,7 @@ const KanbanColumn = ({ stage, clients, highlightId }: KanbanColumnProps) => {
             }`}
           >
             {clients.map((client, index) => (
-              <KanbanCard key={client.id} client={client} index={index} />
+              <KanbanCard key={client.id} client={client} index={index} highlight={highlightId === client.id} />
             ))}
             {provided.placeholder}
             {clients.length === 0 && !snapshot.isDraggingOver && (
