@@ -1006,7 +1006,7 @@ const ChatFunnel = () => {
         <div className="relative">
           <Avatar className="h-10 w-10 border-2 border-primary/40 glow-red">
             <AvatarImage src={consultantAvatar} alt="Consultor Arsenal" />
-            <AvatarFallback className="bg-primary/20 text-primary font-bold text-sm">A</AvatarFallback>
+            <AvatarFallback className="bg-primary/20 text-primary font-bold text-sm">L</AvatarFallback>
           </Avatar>
           <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-background ${isOnline ? "bg-emerald-500" : "bg-muted-foreground"}`} />
         </div>
