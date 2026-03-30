@@ -641,7 +641,7 @@ const ChatFunnel = () => {
       await supabase.from("interactions").insert({
         client_id: clientId,
         type: "system" as const,
-        content: "Lead transferido do chat IA para atendente humano",
+        content: "Lead transferido do chat para o gerente",
         created_by: "ai-consultant",
       });
     }
