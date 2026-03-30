@@ -156,7 +156,11 @@ export const useLeadCopilot = (clientId: string) => {
         body: JSON.stringify({ client_id: clientId, whatsapp_paste: conversation }),
       });
 
-      if (!resp.ok || !resp.body) throw new Error("Failed");
+      if (!resp.ok || !resp.body) {
+        if (resp.status === 402) throw new Error("Créditos de IA esgotados. Vá em Settings → Workspace → Usage para adicionar créditos.");
+        if (resp.status === 429) throw new Error("Muitas requisições. Aguarde alguns segundos e tente novamente.");
+        throw new Error("Falha ao conectar com a IA");
+      }
 
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();
