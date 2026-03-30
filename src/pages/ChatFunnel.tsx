@@ -1143,14 +1143,20 @@ const ChatFunnel = () => {
             )}
 
             <AnimatePresence mode="popLayout">
-              {messages.map((msg) => (
-                <div key={msg.id}>
-                  <ChatBubble msg={msg} />
-                  {msg.vehicles && msg.vehicles.length > 0 && (
-                    <VehicleCarousel vehicles={msg.vehicles} />
-                  )}
-                </div>
-              ))}
+              {messages.map((msg, idx) => {
+                // User messages are "read" if there's a subsequent assistant message
+                const isRead = msg.role === "user"
+                  ? messages.slice(idx + 1).some(m => m.role === "assistant")
+                  : undefined;
+                return (
+                  <div key={msg.id}>
+                    <ChatBubble msg={msg} isRead={isRead} />
+                    {msg.vehicles && msg.vehicles.length > 0 && (
+                      <VehicleCarousel vehicles={msg.vehicles} />
+                    )}
+                  </div>
+                );
+              })}
             </AnimatePresence>
           </>
         )}
