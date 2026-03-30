@@ -19,7 +19,7 @@ interface KanbanCardProps {
   highlight?: boolean;
 }
 
-const KanbanCard = ({ client, index }: KanbanCardProps) => {
+const KanbanCard = ({ client, index, highlight }: KanbanCardProps) => {
   const navigate = useNavigate();
 
   return (
