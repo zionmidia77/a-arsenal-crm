@@ -143,7 +143,7 @@ const AdminTasks = () => {
 
       {/* Task list */}
       {isLoading ? (
-        <div className="space-y-2">{[1, 2, 3].map(i => <Skeleton key={i} className="h-16 rounded-2xl" />)}</div>
+        <div className="space-y-2">{[1, 2, 3, 4].map(i => <TaskCardSkeleton key={i} />)}</div>
       ) : (
         <div className="space-y-2">
           <AnimatePresence>
