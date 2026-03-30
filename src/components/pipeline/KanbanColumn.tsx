@@ -8,7 +8,7 @@ interface KanbanColumnProps {
   highlightId?: string | null;
 }
 
-const KanbanColumn = ({ stage, clients }: KanbanColumnProps) => {
+const KanbanColumn = ({ stage, clients, highlightId }: KanbanColumnProps) => {
   return (
     <div className={`flex flex-col min-w-[260px] max-w-[280px] rounded-2xl border border-border/40 bg-secondary/30 backdrop-blur-sm`}>
       {/* Header */}
