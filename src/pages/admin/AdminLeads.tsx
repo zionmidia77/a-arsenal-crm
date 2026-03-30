@@ -69,6 +69,7 @@ const AdminLeads = () => {
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [mergeOpen, setMergeOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<"expanded" | "compact">("expanded");
   const navigate = useNavigate();
 
   const { data: clients, isLoading } = useClients(
