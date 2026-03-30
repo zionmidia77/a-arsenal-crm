@@ -35,7 +35,6 @@ const LeadCopilotPanel = ({ clientId, clientName, clientPhone, vehiclePhotos }: 
   const copilot = useLeadCopilot(clientId);
   const { data: memory } = useLeadMemory(clientId);
   const [isExporting, setIsExporting] = useState(false);
-  const { data: memory } = useLeadMemory(clientId);
   const [input, setInput] = useState("");
   const [showPaste, setShowPaste] = useState(false);
   const [pasteText, setPasteText] = useState("");
