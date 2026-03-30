@@ -104,7 +104,7 @@ const ChatBubble = ({ msg }: { msg: ChatMessage }) => {
       {!isUser && (
         <Avatar className="h-8 w-8 border border-primary/30 shrink-0">
           <AvatarImage src={consultantAvatar} alt="Consultor" />
-          <AvatarFallback className="bg-primary/20 text-primary text-xs font-bold">A</AvatarFallback>
+          <AvatarFallback className="bg-primary/20 text-primary text-xs font-bold">L</AvatarFallback>
         </Avatar>
       )}
       <div
