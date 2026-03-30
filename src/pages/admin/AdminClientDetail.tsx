@@ -179,8 +179,8 @@ const AdminClientDetail = () => {
   const daysAgo = Math.floor((Date.now() - new Date(client.created_at).getTime()) / 86400000);
   const lastContactDays = client.last_contact_at ? Math.floor((Date.now() - new Date(client.last_contact_at).getTime()) / 86400000) : null;
 
-  return (
-    <motion.div variants={stagger} initial="initial" animate="animate" className="p-5 md:p-6 space-y-5 max-w-4xl">
+  const leadContent = (
+    <motion.div variants={stagger} initial="initial" animate="animate" className="p-5 md:p-6 space-y-5">
       {/* Header */}
       <motion.div variants={fadeUp} className="flex items-center gap-3">
         <Button variant="ghost" size="icon" className="rounded-full" onClick={() => navigate(-1)}>
@@ -203,16 +203,31 @@ const AdminClientDetail = () => {
             <span className="text-[10px] text-muted-foreground">· {daysAgo === 0 ? "hoje" : `${daysAgo}d atrás`}</span>
           </div>
         </div>
-        <div className="text-right">
-          <p className="text-xs text-muted-foreground">Score</p>
-          <p className="text-lg font-display font-bold text-primary">{client.lead_score}</p>
+        <div className="flex items-center gap-2">
+          {!isMobile && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-full"
+              onClick={() => setCopilotOpen(!copilotOpen)}
+              title={copilotOpen ? "Fechar Copilot" : "Abrir Copilot"}
+            >
+              {copilotOpen ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
+            </Button>
+          )}
+          <div className="text-right">
+            <p className="text-xs text-muted-foreground">Score</p>
+            <p className="text-lg font-display font-bold text-primary">{client.lead_score}</p>
+          </div>
         </div>
       </motion.div>
 
-      {/* 🤖 AI Copilot - TOP POSITION */}
-      <motion.div variants={fadeUp}>
-        <LeadCopilotPanel clientId={client.id} clientName={client.name} />
-      </motion.div>
+      {/* 🤖 AI Copilot - Only on mobile (desktop uses split-view) */}
+      {isMobile && (
+        <motion.div variants={fadeUp}>
+          <LeadCopilotPanel clientId={client.id} clientName={client.name} />
+        </motion.div>
+      )}
 
       {/* Tags */}
       <motion.div variants={fadeUp} className="glass-card p-3">
