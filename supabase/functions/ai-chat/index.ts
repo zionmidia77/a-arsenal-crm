@@ -1344,27 +1344,46 @@ serve(async (req) => {
 
       const result = await toolResponse.json();
       const choice = result.choices?.[0];
-      if (!choice) throw new Error("No response from AI");
+      if (!choice) {
+        console.error("No choice in AI response:", JSON.stringify(result).slice(0, 500));
+        throw new Error("No response from AI");
+      }
 
       const toolCalls = choice.message?.tool_calls;
 
       if (!toolCalls || toolCalls.length === 0) break;
 
-      aiMessages.push(choice.message);
+      // Ensure message has content field (some models return null)
+      const msgToPush = { ...choice.message };
+      if (msgToPush.content === null || msgToPush.content === undefined) {
+        msgToPush.content = "";
+      }
+      aiMessages.push(msgToPush);
 
       for (const tc of toolCalls) {
-        const args = JSON.parse(tc.function.arguments);
+        let args: Record<string, unknown>;
+        try {
+          args = JSON.parse(tc.function.arguments);
+        } catch (parseErr) {
+          console.error(`Failed to parse args for ${tc.function.name}:`, tc.function.arguments);
+          aiMessages.push({
+            role: "tool",
+            tool_call_id: tc.id,
+            content: JSON.stringify({ error: "Failed to parse arguments" }),
+          });
+          continue;
+        }
         
         // Auto-inject created client_id for tools that need it but have placeholder
         const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-        if (createdClientId && args.client_id && !uuidRegex.test(args.client_id)) {
+        if (createdClientId && args.client_id && !uuidRegex.test(args.client_id as string)) {
           console.log(`Auto-replacing invalid client_id "${args.client_id}" with "${createdClientId}"`);
           args.client_id = createdClientId;
         }
         
-        console.log(`Executing tool: ${tc.function.name}`, args);
+        console.log(`Executing tool: ${tc.function.name}`, JSON.stringify(args));
         const toolResult = await executeTool(tc.function.name, args);
-        console.log(`Tool result: ${toolResult}`);
+        console.log(`Tool result (${tc.function.name}):`, toolResult.slice(0, 300));
 
         // Track client_id from create_lead or update_lead
         if (tc.function.name === "create_lead" || tc.function.name === "update_lead") {
