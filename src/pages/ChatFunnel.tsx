@@ -903,61 +903,70 @@ const ChatFunnel = () => {
     }
   }, [clientId, isLoading, isTransferred, scrollToBottom, saveConversation]);
 
-  // Audio recording
+  // Audio recording using Web Speech API
   const startRecording = useCallback(async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream, { mimeType: MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "audio/mp4" });
-      audioChunksRef.current = [];
-      mediaRecorderRef.current = mediaRecorder;
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast.error("Seu navegador não suporta reconhecimento de voz. Use o Chrome.");
+      return;
+    }
 
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+    try {
+      // Request mic permission first
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach(t => t.stop());
+
+      const recognition = new SpeechRecognition();
+      recognition.lang = "pt-BR";
+      recognition.continuous = true;
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      let finalTranscript = "";
+
+      recognition.onresult = (event: any) => {
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript + " ";
+          }
+        }
       };
 
-      mediaRecorder.onstop = async () => {
-        stream.getTracks().forEach(t => t.stop());
+      recognition.onend = () => {
         if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
         setRecordingDuration(0);
+        setIsRecording(false);
 
-        const blob = new Blob(audioChunksRef.current, { type: mediaRecorder.mimeType });
-        if (blob.size < 1000) { toast.error("Áudio muito curto"); return; }
+        const text = finalTranscript.trim();
+        if (text) {
+          sendMessage(text);
+        } else {
+          toast.error("Não consegui entender o áudio. Tente novamente.");
+        }
+      };
 
-        setIsTranscribing(true);
-        try {
-          const reader = new FileReader();
-          const base64 = await new Promise<string>((resolve, reject) => {
-            reader.onload = () => resolve(reader.result as string);
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-          });
+      recognition.onerror = (event: any) => {
+        console.error("Speech recognition error:", event.error);
+        if (event.error === "not-allowed") {
+          toast.error("Permita o acesso ao microfone para enviar áudios");
+        } else if (event.error !== "aborted") {
+          toast.error("Erro no reconhecimento de voz. Tente novamente.");
+        }
+        setIsRecording(false);
+        if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+        setRecordingDuration(0);
+      };
 
-          const resp = await fetch(
-            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/transcribe-audio`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-              },
-              body: JSON.stringify({ audio_base64: base64 }),
-            }
-          );
-
-          if (!resp.ok) throw new Error("Erro na transcrição");
-          const result = await resp.json();
-          const text = result.transcription?.trim();
-
-          if (text && text !== "[áudio inaudível]") {
-            sendMessage(text);
-          } else {
-            toast.error("Não consegui entender o áudio. Tente novamente.");
-          }
-        } catch (err) {
-          console.error("Transcription error:", err);
-          toast.error("Erro ao transcrever áudio");
-        } finally {
-          setIsTranscribing(false);
+      mediaRecorderRef.current = recognition as any;
+      recognition.start();
+      setIsRecording(true);
+      setRecordingDuration(0);
+      recordingTimerRef.current = setInterval(() => setRecordingDuration(d => d + 1), 1000);
+    } catch (err) {
+      console.error("Mic error:", err);
+      toast.error("Permita o acesso ao microfone para enviar áudios");
+    }
+  }, [sendMessage]);
         }
       };
 
