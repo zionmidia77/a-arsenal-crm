@@ -240,6 +240,18 @@ const tools = [
             type: "number",
             description: "Minimum price in BRL",
           },
+          color: {
+            type: "string",
+            description: "Color filter (e.g. Branco, Preto, Vermelho, Prata)",
+          },
+          year: {
+            type: "number",
+            description: "Year filter (e.g. 2023, 2024)",
+          },
+          min_year: {
+            type: "number",
+            description: "Minimum year filter",
+          },
         },
         additionalProperties: false,
       },
