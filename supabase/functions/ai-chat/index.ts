@@ -405,6 +405,24 @@ const tools = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "send_vehicle_photos",
+      description:
+        "Send individual photos of a specific vehicle to the client. Use when the client asks to see photos/pictures of a vehicle, asks 'tem foto?', 'mostra foto', 'quero ver', etc. Returns photo URLs that will be displayed as images in the chat.",
+      parameters: {
+        type: "object",
+        properties: {
+          brand: { type: "string", description: "Vehicle brand to search" },
+          model: { type: "string", description: "Vehicle model to search" },
+          year: { type: "number", description: "Vehicle year (optional)" },
+        },
+        required: ["brand", "model"],
+        additionalProperties: false,
+      },
+    },
+  },
 ];
 
 // ── Execute tool calls ──
@@ -1035,6 +1053,50 @@ Se faltam itens, pergunte o próximo dado pendente de forma natural.`,
         });
       }
 
+      case "send_vehicle_photos": {
+        let query = supabase
+          .from("stock_vehicles")
+          .select("id, brand, model, year, photos, image_url")
+          .eq("status", "available")
+          .ilike("brand", `%${args.brand}%`)
+          .ilike("model", `%${args.model}%`);
+
+        if (args.year) {
+          query = query.eq("year", args.year as number);
+        }
+
+        const { data, error } = await query.limit(1).maybeSingle();
+        if (error) throw error;
+
+        if (!data) {
+          return JSON.stringify({
+            success: false,
+            message: "Veículo não encontrado no estoque.",
+          });
+        }
+
+        const allPhotos = [
+          ...(data.photos || []),
+          ...(data.image_url && !(data.photos || []).includes(data.image_url) ? [data.image_url] : []),
+        ];
+
+        if (allPhotos.length === 0) {
+          return JSON.stringify({
+            success: true,
+            photos: [],
+            message: "Esse veículo ainda não tem fotos cadastradas. Diga ao cliente que vai providenciar.",
+          });
+        }
+
+        return JSON.stringify({
+          success: true,
+          vehicle: `${data.brand} ${data.model}${data.year ? ` ${data.year}` : ""}`,
+          photos: allPhotos,
+          total: allPhotos.length,
+          display_hint: "As fotos serão exibidas automaticamente no chat. Diga algo como 'Olha só as fotos!' e descreva brevemente o veículo.",
+        });
+      }
+
       default:
         return JSON.stringify({ error: `Unknown tool: ${name}` });
     }
@@ -1152,6 +1214,13 @@ SEMPRE use detect_urgency quando detectar sinais de compra:
 Para leads CRÍTICOS: priorize motos pronta-entrega, ofereça atendimento expresso, sugira retirada no mesmo dia.
 Para leads ALTOS: crie senso de oportunidade, mostre condições especiais.
 
+## 📸 ENVIO DE FOTOS INDIVIDUAIS
+Quando o cliente pedir para ver fotos de um veículo específico ("tem foto?", "mostra foto", "quero ver", "manda foto", "como ele é?"):
+1. Use send_vehicle_photos com a marca e modelo do veículo
+2. As fotos serão enviadas AUTOMATICAMENTE como imagens separadas no chat
+3. Diga algo como "Olha só as fotos!" antes de enviar
+4. NUNCA cole URLs de fotos no texto — use SEMPRE a ferramenta send_vehicle_photos
+
 ## REGRAS DE OURO
 1. NUNCA faça mais de UMA pergunta por mensagem
 2. NUNCA invente preços — use search_vehicles e simulate_financing
@@ -1234,6 +1303,7 @@ serve(async (req) => {
     // Track client_id and vehicles found during tool calls
     let createdClientId: string | null = context?.clientId || null;
     let foundVehicles: unknown[] = [];
+    let individualPhotos: string[] = [];
 
     // Tool calling loop (max 5 iterations for complex flows)
     for (let i = 0; i < 5; i++) {
@@ -1312,6 +1382,14 @@ serve(async (req) => {
           } catch {}
         }
 
+        // Track individual photos from send_vehicle_photos
+        if (tc.function.name === "send_vehicle_photos") {
+          try {
+            const parsed = JSON.parse(toolResult);
+            if (parsed.photos?.length) individualPhotos = parsed.photos;
+          } catch {}
+        }
+
         aiMessages.push({
           role: "tool",
           tool_call_id: tc.id,
@@ -1344,11 +1422,12 @@ serve(async (req) => {
     }
 
     // If we have metadata (client_id or vehicles), prepend SSE events
-    const hasMetadata = createdClientId || foundVehicles.length > 0;
+    const hasMetadata = createdClientId || foundVehicles.length > 0 || individualPhotos.length > 0;
     if (hasMetadata) {
       const metaPayload: Record<string, unknown> = {};
       if (createdClientId) metaPayload.client_id = createdClientId;
       if (foundVehicles.length > 0) metaPayload.vehicles = foundVehicles;
+      if (individualPhotos.length > 0) metaPayload.individual_photos = individualPhotos;
 
       const metaEvent = `data: ${JSON.stringify({ metadata: metaPayload })}\n\n`;
       const encoder = new TextEncoder();

@@ -16,6 +16,7 @@ interface ChatMessage {
   content: string;
   timestamp: Date;
   vehicles?: StockVehicle[];
+  photos?: string[];
 }
 
 interface StockVehicle {
@@ -61,10 +62,37 @@ const TypingIndicator = () => (
 // ── Chat Bubble ──
 const ChatBubble = ({ msg }: { msg: ChatMessage }) => {
   const isUser = msg.role === "user";
+  const isPhotoOnly = !isUser && msg.photos && msg.photos.length > 0 && !msg.content;
   const time = msg.timestamp.toLocaleTimeString("pt-BR", {
     hour: "2-digit",
     minute: "2-digit",
   });
+
+  // Photo-only message (individual photo sent by AI)
+  if (isPhotoOnly) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 12, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+        className="flex mb-3 items-end gap-2.5"
+      >
+        <Avatar className="h-8 w-8 border border-primary/30 shrink-0">
+          <AvatarImage src={consultantAvatar} alt="Consultor" />
+          <AvatarFallback className="bg-primary/20 text-primary text-xs font-bold">A</AvatarFallback>
+        </Avatar>
+        <div className="max-w-[82%] rounded-2xl rounded-bl-sm overflow-hidden border border-border/40">
+          <img
+            src={msg.photos![0]}
+            alt="Foto do veículo"
+            className="w-full max-w-[300px] h-auto rounded-2xl rounded-bl-sm object-cover"
+            loading="lazy"
+          />
+          <p className="text-[10px] text-muted-foreground px-3 py-1 bg-card/80">{time}</p>
+        </div>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div
@@ -342,6 +370,8 @@ const ChatFunnel = () => {
   const [isAnalyzingDoc, setIsAnalyzingDoc] = useState(false);
   const [pendingVehicles, setPendingVehicles] = useState<StockVehicle[] | null>(null);
   const pendingVehiclesRef = useRef<StockVehicle[] | null>(null);
+  const [pendingPhotos, setPendingPhotos] = useState<string[] | null>(null);
+  const pendingPhotosRef = useRef<string[] | null>(null);
   const [isRestoringChat, setIsRestoringChat] = useState(true);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
@@ -631,6 +661,10 @@ const ChatFunnel = () => {
                   setPendingVehicles(parsed.metadata.vehicles);
                   pendingVehiclesRef.current = parsed.metadata.vehicles;
                 }
+                if (parsed.metadata.individual_photos?.length) {
+                  setPendingPhotos(parsed.metadata.individual_photos);
+                  pendingPhotosRef.current = parsed.metadata.individual_photos;
+                }
                 continue;
               }
 
@@ -672,20 +706,37 @@ const ChatFunnel = () => {
 
         // Attach pending vehicles to the last assistant message
         const vehiclesToAttach = pendingVehiclesRef.current;
+        const photosToAttach = pendingPhotosRef.current;
         setMessages(prev => {
+          let updated = [...prev];
+
+          // Attach vehicles to last assistant message
           if (vehiclesToAttach && vehiclesToAttach.length > 0) {
-            const updated = prev.map((m, i) =>
-              i === prev.length - 1 && m.role === "assistant"
+            updated = updated.map((m, i) =>
+              i === updated.length - 1 && m.role === "assistant"
                 ? { ...m, vehicles: vehiclesToAttach }
                 : m
             );
             setPendingVehicles(null);
             pendingVehiclesRef.current = null;
-            saveConversation(updated, latestClientId);
-            return updated;
           }
-          saveConversation(prev, latestClientId);
-          return prev;
+
+          // Add individual photos as separate messages after the assistant text
+          if (photosToAttach && photosToAttach.length > 0) {
+            const photoMessages: ChatMessage[] = photosToAttach.map((url, i) => ({
+              id: `photo-${Date.now()}-${i}`,
+              role: "assistant" as const,
+              content: "",
+              timestamp: new Date(),
+              photos: [url],
+            }));
+            updated = [...updated, ...photoMessages];
+            setPendingPhotos(null);
+            pendingPhotosRef.current = null;
+          }
+
+          saveConversation(updated, latestClientId);
+          return updated;
         });
       }
     },
