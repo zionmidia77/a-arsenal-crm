@@ -40,11 +40,28 @@ type Step = "upload" | "processing" | "review" | "duplicates" | "done";
 
 const MAX_IMAGES = 5;
 
-const fileToDataUrl = (file: File) =>
-  new Promise<string>((resolve, reject) => {
+const compressImage = (file: File, maxWidth = 1200, quality = 0.7): Promise<string> =>
+  new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
     reader.onerror = () => reject(new Error("Falha ao ler imagem"));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error("Imagem inválida"));
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let { width, height } = img;
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d")!;
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.src = reader.result as string;
+    };
     reader.readAsDataURL(file);
   });
 
