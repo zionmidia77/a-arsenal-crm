@@ -179,10 +179,10 @@ const AdminLayout = () => {
           
           <div className="flex-1" />
           
-          <GlobalSearch />
+          <div data-tour="global-search"><GlobalSearch /></div>
           <PhotoLeadCapture />
-          <AddLeadDialog externalOpen={addLeadOpen} onExternalOpenChange={setAddLeadOpen} />
-          <NotificationCenter />
+          <div data-tour="add-lead"><AddLeadDialog externalOpen={addLeadOpen} onExternalOpenChange={setAddLeadOpen} /></div>
+          <div data-tour="notifications"><NotificationCenter /></div>
           <Button
             variant="ghost"
             size="icon"
