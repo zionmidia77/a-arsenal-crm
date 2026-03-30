@@ -82,7 +82,13 @@ export const useLeadCopilot = (clientId: string) => {
 
       if (!resp.ok || !resp.body) {
         const err = await resp.json().catch(() => ({}));
-        throw new Error(err.error || "Failed");
+        if (resp.status === 402) {
+          throw new Error("Créditos de IA esgotados. Vá em Settings → Workspace → Usage para adicionar créditos.");
+        }
+        if (resp.status === 429) {
+          throw new Error("Muitas requisições. Aguarde alguns segundos e tente novamente.");
+        }
+        throw new Error(err.error || "Falha ao conectar com a IA");
       }
 
       const reader = resp.body.getReader();
@@ -117,7 +123,8 @@ export const useLeadCopilot = (clientId: string) => {
       qc.invalidateQueries({ queryKey: ["lead-timeline", clientId] });
     } catch (e) {
       console.error("Copilot error:", e);
-      upsertAssistant("Erro ao processar. Tente novamente.");
+      const msg = e instanceof Error ? e.message : "Erro ao processar. Tente novamente.";
+      upsertAssistant(`⚠️ ${msg}`);
     } finally {
       setIsLoading(false);
     }
@@ -149,7 +156,11 @@ export const useLeadCopilot = (clientId: string) => {
         body: JSON.stringify({ client_id: clientId, whatsapp_paste: conversation }),
       });
 
-      if (!resp.ok || !resp.body) throw new Error("Failed");
+      if (!resp.ok || !resp.body) {
+        if (resp.status === 402) throw new Error("Créditos de IA esgotados. Vá em Settings → Workspace → Usage para adicionar créditos.");
+        if (resp.status === 429) throw new Error("Muitas requisições. Aguarde alguns segundos e tente novamente.");
+        throw new Error("Falha ao conectar com a IA");
+      }
 
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();
@@ -183,7 +194,8 @@ export const useLeadCopilot = (clientId: string) => {
       qc.invalidateQueries({ queryKey: ["lead-timeline", clientId] });
     } catch (e) {
       console.error("WhatsApp paste error:", e);
-      upsertAssistant("Erro ao analisar conversa. Tente novamente.");
+      const msg = e instanceof Error ? e.message : "Erro ao analisar conversa. Tente novamente.";
+      upsertAssistant(`⚠️ ${msg}`);
     } finally {
       setIsLoading(false);
     }
