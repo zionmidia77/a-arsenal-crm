@@ -376,16 +376,15 @@ serve(async (req) => {
     }
 
     const supabase = createClient(supabaseUrl, serviceRoleKey);
-    const userClient = createClient(supabaseUrl, anonKey, {
+    
+    // Validate token by getting user
+    const { data: { user }, error: userError } = await createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
-    });
+    }).auth.getUser(token);
+    const userId = user?.id;
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
-    const userId = claimsData?.claims?.sub;
-
-    if (claimsError || !userId) {
-      console.error("[extract-lead-from-image] invalid token", claimsError);
+    if (userError || !userId) {
+      console.error("[extract-lead-from-image] invalid token", userError);
       return jsonResponse({ error: "Token inválido" }, 401);
     }
 
