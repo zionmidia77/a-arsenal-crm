@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { MessageSquare, User, Clock, UserCheck, X, Search, CalendarIcon, Filter, Send, Phone, Mail, MapPin, Bike, DollarSign, Flame, Thermometer, FileText, ExternalLink, Sparkles, Link2, Columns3 } from "lucide-react";
 import { toast } from "sonner";
 import { format, isAfter, isBefore, startOfDay, endOfDay } from "date-fns";
@@ -373,16 +374,38 @@ const AdminChatHistory = () => {
                       <CardContent className="p-3">
                         <div className="flex items-start justify-between mb-1">
                           <div className="flex items-center gap-1.5">
-                            {nameSource === "linked" ? (
-                              <UserCheck className="w-3.5 h-3.5 text-emerald-400" />
-                            ) : nameSource === "extracted" ? (
-                              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                            ) : (
-                              <User className="w-3.5 h-3.5 text-muted-foreground" />
-                            )}
+                            <TooltipProvider delayDuration={200}>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  {nameSource === "linked" ? (
+                                    <UserCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                                  ) : nameSource === "extracted" ? (
+                                    <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                                  ) : (
+                                    <User className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                                  )}
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="text-xs max-w-[180px]">
+                                  {nameSource === "linked"
+                                    ? "Lead vinculado no CRM"
+                                    : nameSource === "extracted"
+                                    ? "Nome extraído automaticamente pela IA"
+                                    : "Visitante — lead não identificado"}
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
                             <span className="text-sm font-medium truncate max-w-[120px]">{clientName}</span>
                             {nameSource === "extracted" && (
-                              <span className="text-[8px] px-1 py-0.5 rounded bg-amber-500/15 text-amber-400 shrink-0">IA</span>
+                              <TooltipProvider delayDuration={200}>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span className="text-[8px] px-1 py-0.5 rounded bg-amber-500/15 text-amber-400 shrink-0 cursor-help">IA</span>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top" className="text-xs">
+                                    Nome detectado por IA nas mensagens
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
                             )}
                           </div>
                           <Badge className={`text-[10px] ${statusColor(convo.status)}`}>
