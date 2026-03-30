@@ -124,9 +124,14 @@ const PhotoLeadCapture = () => {
   };
 
   const handleFiles = useCallback(async (files: File[]) => {
+    console.log("[PhotoCapture] handleFiles called with", files.length, "file(s)");
     if (!files.length) return;
 
-    const imageFiles = files.filter((file) => file.type.startsWith("image/"));
+    const imageFiles = files.filter((file) => {
+      const isImage = file.type.startsWith("image/");
+      console.log("[PhotoCapture] File:", file.name, "type:", file.type, "size:", (file.size / 1024).toFixed(0) + "KB", "isImage:", isImage);
+      return isImage;
+    });
     if (!imageFiles.length) {
       toast.error("Envie pelo menos uma imagem válida");
       return;
@@ -146,28 +151,33 @@ const PhotoLeadCapture = () => {
     setStep("processing");
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      console.log("[PhotoCapture] Checking auth session...");
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      console.log("[PhotoCapture] Session:", session ? "exists (user: " + session.user?.email + ")" : "NULL", "error:", sessionError);
       if (!session) {
         toast.error("Você precisa estar logado. Faça login novamente.");
         setStep("upload");
         return;
       }
 
+      console.log("[PhotoCapture] Compressing", imageFiles.length, "image(s)...");
       toast.info("Comprimindo imagens...");
       const base64Images: string[] = await Promise.all(imageFiles.map((f) => compressImage(f)));
+      console.log("[PhotoCapture] Compression done. Sizes:", base64Images.map((b) => (b.length / 1024).toFixed(0) + "KB"));
       setPreviews(base64Images);
 
+      console.log("[PhotoCapture] Invoking edge function extract-lead-from-image...");
       toast.info("Enviando para análise com IA...");
 
-      // Add timeout to prevent infinite loading
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 60000); // 60s timeout
-
+      const startTime = Date.now();
       const response = await supabase.functions.invoke("extract-lead-from-image", {
         body: { image_base64_list: base64Images, action: "extract_only" },
       });
+      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
 
-      clearTimeout(timeout);
+      console.log("[PhotoCapture] Response received in", elapsed + "s");
+      console.log("[PhotoCapture] response.error:", response.error);
+      console.log("[PhotoCapture] response.data:", JSON.stringify(response.data)?.slice(0, 500));
 
       if (response.error) {
         throw new Error(getInvokeErrorMessage(response.error));
@@ -176,6 +186,9 @@ const PhotoLeadCapture = () => {
       const data = response.data;
       if (data?.error) throw new Error(data.error);
       if (!data?.extracted) throw new Error("Não foi possível extrair os dados das imagens");
+
+      console.log("[PhotoCapture] Extracted data:", JSON.stringify(data.extracted));
+      console.log("[PhotoCapture] Similar candidates:", data.similar_candidates?.length || 0);
 
       setEditData(data.extracted);
       const similarCandidates: SimilarityCandidate[] = data.similar_candidates || [];
@@ -189,6 +202,8 @@ const PhotoLeadCapture = () => {
         toast.success(`${base64Images.length} imagem(ns) processada(s) — nenhum duplicado encontrado`);
       }
     } catch (err: any) {
+      console.error("[PhotoCapture] ERROR:", err);
+      console.error("[PhotoCapture] Error name:", err?.name, "message:", err?.message);
       const msg = err?.name === "AbortError" 
         ? "Tempo limite excedido. Tente com uma imagem menor." 
         : (err.message || "Erro ao processar imagens");
