@@ -929,7 +929,7 @@ const ChatFunnel = () => {
           </>
         )}
 
-        <AnimatePresence>{isLoading && <TypingIndicator />}</AnimatePresence>
+        <AnimatePresence>{isLoading && <TypingIndicator statusText={typingStatus} flickering />}</AnimatePresence>
 
         <AnimatePresence>
           {isAnalyzingDoc && (
