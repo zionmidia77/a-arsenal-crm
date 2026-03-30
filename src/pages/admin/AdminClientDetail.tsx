@@ -9,13 +9,11 @@ import { useClient, useClientInteractions, useClientVehicles, useCreateInteracti
 import {
   ArrowLeft, MessageCircle, Phone, Mail, MapPin, Calendar, Bike,
   TrendingUp, Clock, Plus, Star, CalendarPlus, Check, AlertTriangle,
-  Copy, Send, Bot, Tag, FileCheck, Trophy, Sparkles, CalendarIcon, Cake, Edit2,
-  Columns3
+  Copy, Send, Tag, FileCheck, Cake, Edit2, Columns3
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { format, parse } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import TagManager from "@/components/admin/TagManager";
 import FinancingSection from "@/components/admin/FinancingSection";
@@ -25,9 +23,8 @@ import NPSSection from "@/components/admin/NPSSection";
 import ClientReportSection from "@/components/admin/ClientReportSection";
 import ExclusiveOffersSection from "@/components/admin/ExclusiveOffersSection";
 import ChatHistorySection from "@/components/admin/ChatHistorySection";
-import { useAIChat } from "@/hooks/useAIChat";
-
-
+import LeadCopilotPanel from "@/components/admin/LeadCopilotPanel";
+import LeadTimeline from "@/components/admin/LeadTimeline";
 
 const tempBadge: Record<string, string> = {
   hot: "bg-primary/15 text-primary",
@@ -46,8 +43,13 @@ const STAGES = [
   { key: "waiting_response", label: "Aguardando" },
   { key: "scheduled", label: "Agendado" },
   { key: "negotiating", label: "Negociando" },
+  { key: "proposal_sent", label: "Proposta enviada" },
+  { key: "financing_analysis", label: "Financiamento" },
+  { key: "approved", label: "Aprovado ✅" },
+  { key: "rejected", label: "Reprovado ❌" },
   { key: "closed_won", label: "Fechado ✅" },
   { key: "closed_lost", label: "Perdido ❌" },
+  { key: "reactivation", label: "Reativação 🔄" },
 ];
 
 const stageBadge: Record<string, string> = {
@@ -59,12 +61,13 @@ const stageBadge: Record<string, string> = {
   waiting_response: "bg-cyan-400/15 text-cyan-400",
   scheduled: "bg-indigo-400/15 text-indigo-400",
   negotiating: "bg-success/15 text-success",
+  proposal_sent: "bg-primary/15 text-primary",
+  financing_analysis: "bg-warning/15 text-warning",
+  approved: "bg-success/15 text-success",
+  rejected: "bg-destructive/15 text-destructive",
   closed_won: "bg-success text-success-foreground",
   closed_lost: "bg-destructive/15 text-destructive",
-};
-
-const interactionIcons: Record<string, string> = {
-  whatsapp: "💬", call: "📞", visit: "🏪", system: "⚙️", email: "📧", sms: "📱",
+  reactivation: "bg-info/15 text-info",
 };
 
 const stagger = { animate: { transition: { staggerChildren: 0.06 } } };
@@ -74,7 +77,6 @@ const AdminClientDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: client, isLoading } = useClient(id || "");
-  const { data: interactions } = useClientInteractions(id || "");
   const { data: vehicles } = useClientVehicles(id || "");
   const createInteraction = useCreateInteraction();
   const updateClient = useUpdateClient();
@@ -82,10 +84,7 @@ const AdminClientDetail = () => {
   const [note, setNote] = useState("");
   const [noteType, setNoteType] = useState<string>("system");
   const [showSchedule, setShowSchedule] = useState(false);
-  const [showAIChat, setShowAIChat] = useState(false);
-  const [aiInput, setAIInput] = useState("");
   const [scheduleDate, setScheduleDate] = useState(new Date().toISOString().split("T")[0]);
-  const aiChat = useAIChat();
   const [scheduleReason, setScheduleReason] = useState("");
 
   if (isLoading) {
@@ -103,26 +102,6 @@ const AdminClientDetail = () => {
               <Skeleton className="h-3 w-24" />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            {[1, 2, 3, 4].map(i => (
-              <div key={i} className="space-y-1.5">
-                <Skeleton className="h-3 w-16" />
-                <Skeleton className="h-4 w-28" />
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="glass-card p-4 space-y-3">
-          <Skeleton className="h-4 w-32" />
-          {[1, 2, 3].map(i => (
-            <div key={i} className="flex items-center gap-3">
-              <Skeleton className="w-8 h-8 rounded-full" />
-              <div className="flex-1">
-                <Skeleton className="h-3.5 w-full mb-1" />
-                <Skeleton className="h-2.5 w-20" />
-              </div>
-            </div>
-          ))}
         </div>
       </div>
     );
@@ -150,13 +129,7 @@ const AdminClientDetail = () => {
     if (!client.phone) { toast.error("Cliente sem telefone"); return; }
     const phone = client.phone.replace(/\D/g, "");
     window.open(`https://wa.me/55${phone}?text=${encodeURIComponent(msg)}`);
-    // Log the interaction
-    createInteraction.mutate({
-      client_id: client.id,
-      type: "whatsapp",
-      content: `Mensagem enviada via WhatsApp: "${msg.slice(0, 100)}..."`,
-      created_by: "admin",
-    });
+    createInteraction.mutate({ client_id: client.id, type: "whatsapp", content: `Mensagem enviada via WhatsApp: "${msg.slice(0, 100)}..."`, created_by: "admin" });
     updateClient.mutate({ id: client.id, last_contact_at: new Date().toISOString() } as any);
   };
 
@@ -167,12 +140,7 @@ const AdminClientDetail = () => {
 
   const addNote = () => {
     if (!note.trim()) return;
-    createInteraction.mutate({
-      client_id: client.id,
-      type: noteType as any,
-      content: note,
-      created_by: "admin",
-    });
+    createInteraction.mutate({ client_id: client.id, type: noteType as any, content: note, created_by: "admin" });
     updateClient.mutate({ id: client.id, last_contact_at: new Date().toISOString() } as any);
     setNote("");
     toast.success("Interação registrada!");
@@ -180,11 +148,7 @@ const AdminClientDetail = () => {
 
   const changeStage = (stage: string) => {
     updateClient.mutate({ id: client.id, pipeline_stage: stage as any });
-    createInteraction.mutate({
-      client_id: client.id, type: "system",
-      content: `Pipeline alterado para: ${STAGES.find(s => s.key === stage)?.label}`,
-      created_by: "admin",
-    });
+    createInteraction.mutate({ client_id: client.id, type: "system", content: `Pipeline alterado para: ${STAGES.find(s => s.key === stage)?.label}`, created_by: "admin" });
     toast.success(`Status atualizado para ${STAGES.find(s => s.key === stage)?.label}`);
   };
 
@@ -195,34 +159,21 @@ const AdminClientDetail = () => {
 
   const markAttended = () => {
     updateClient.mutate({ id: client.id, pipeline_stage: "contacted" as any, last_contact_at: new Date().toISOString() } as any);
-    createInteraction.mutate({
-      client_id: client.id, type: "system",
-      content: "Marcado como atendido",
-      created_by: "admin",
-    });
+    createInteraction.mutate({ client_id: client.id, type: "system", content: "Marcado como atendido", created_by: "admin" });
     toast.success("Marcado como atendido!");
   };
 
   const scheduleFollowUp = () => {
     if (!scheduleReason.trim()) { toast.error("Adicione um motivo"); return; }
-    createTask.mutate({
-      client_id: client.id, type: "follow_up",
-      reason: scheduleReason, due_date: scheduleDate, status: "pending",
-    });
-    createInteraction.mutate({
-      client_id: client.id, type: "system",
-      content: `Follow-up agendado para ${new Date(scheduleDate + "T12:00:00").toLocaleDateString("pt-BR")}: ${scheduleReason}`,
-      created_by: "admin",
-    });
+    createTask.mutate({ client_id: client.id, type: "follow_up", reason: scheduleReason, due_date: scheduleDate, status: "pending" });
+    createInteraction.mutate({ client_id: client.id, type: "system", content: `Follow-up agendado para ${new Date(scheduleDate + "T12:00:00").toLocaleDateString("pt-BR")}: ${scheduleReason}`, created_by: "admin" });
     setShowSchedule(false);
     setScheduleReason("");
     toast.success("Follow-up agendado!");
   };
 
   const daysAgo = Math.floor((Date.now() - new Date(client.created_at).getTime()) / 86400000);
-  const lastContactDays = client.last_contact_at
-    ? Math.floor((Date.now() - new Date(client.last_contact_at).getTime()) / 86400000)
-    : null;
+  const lastContactDays = client.last_contact_at ? Math.floor((Date.now() - new Date(client.last_contact_at).getTime()) / 86400000) : null;
 
   return (
     <motion.div variants={stagger} initial="initial" animate="animate" className="p-5 md:p-6 space-y-5 max-w-4xl">
@@ -254,6 +205,11 @@ const AdminClientDetail = () => {
         </div>
       </motion.div>
 
+      {/* 🤖 AI Copilot - TOP POSITION */}
+      <motion.div variants={fadeUp}>
+        <LeadCopilotPanel clientId={client.id} clientName={client.name} />
+      </motion.div>
+
       {/* Tags */}
       <motion.div variants={fadeUp} className="glass-card p-3">
         <p className="text-xs font-medium mb-2 flex items-center gap-1.5">
@@ -270,7 +226,7 @@ const AdminClientDetail = () => {
         </motion.div>
       )}
 
-      {/* ⚡ Quick Actions Bar */}
+      {/* Quick Actions Bar */}
       <motion.div variants={fadeUp} className="grid grid-cols-4 gap-2">
         {client.phone && (
           <Button className="h-14 rounded-xl flex flex-col gap-1 text-xs glow-red" onClick={() => sendWhatsApp(quickMessages[0].msg)}>
@@ -294,7 +250,7 @@ const AdminClientDetail = () => {
         )}
       </motion.div>
 
-      {/* 📝 Quick Messages */}
+      {/* Quick Messages */}
       <motion.div variants={fadeUp} className="glass-card p-4">
         <p className="text-sm font-medium mb-3 flex items-center gap-2">
           <Send className="w-4 h-4 text-primary" /> Mensagens rápidas
@@ -315,101 +271,6 @@ const AdminClientDetail = () => {
             </div>
           ))}
         </div>
-      </motion.div>
-
-      {/* AI Chat Assistant */}
-      <motion.div variants={fadeUp} className="glass-card p-4">
-        <button
-          onClick={() => setShowAIChat(!showAIChat)}
-          className="w-full flex items-center gap-2 text-sm font-medium"
-        >
-          <Bot className="w-4 h-4 text-primary" />
-          Assistente IA
-          <span className="text-[10px] text-muted-foreground ml-auto">{showAIChat ? 'Fechar' : 'Abrir'}</span>
-        </button>
-        {showAIChat && (
-          <div className="mt-3 space-y-3">
-            <div className="bg-secondary/30 rounded-xl p-3 max-h-60 overflow-y-auto space-y-2">
-              {aiChat.messages.length === 0 && (
-                <p className="text-xs text-muted-foreground text-center py-4">
-                  Pergunte sobre estratégias de venda para este lead
-                </p>
-              )}
-              {aiChat.messages.map((msg, i) => (
-                <div key={i} className={`text-xs ${msg.role === 'user' ? 'text-right' : ''}`}>
-                  <span className={`inline-block px-3 py-1.5 rounded-xl max-w-[85%] ${
-                    msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-card border border-border/50'
-                  }`}>
-                    {msg.content}
-                  </span>
-                </div>
-              ))}
-              {aiChat.isLoading && aiChat.messages[aiChat.messages.length - 1]?.role !== 'assistant' && (
-                <div className="flex gap-1.5 px-3 py-2">
-                  {[0,1,2].map(i => <span key={i} className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-pulse" style={{animationDelay: `${i*0.2}s`}} />)}
-                </div>
-              )}
-            </div>
-            <div className="flex gap-2">
-              <Input
-                value={aiInput}
-                onChange={e => setAIInput(e.target.value)}
-                onKeyDown={e => {
-                  if (e.key === "Enter" && aiInput.trim()) {
-                    aiChat.sendMessage(aiInput.trim(), {
-                      clientName: client.name,
-                      interest: client.interest,
-                      budget: client.budget_range,
-                      temperature: client.temperature,
-                      stage: client.pipeline_stage,
-                    });
-                    setAIInput("");
-                  }
-                }}
-                placeholder="Ex: Como abordar este lead?"
-                className="rounded-xl bg-secondary border-border/50 h-9 text-xs"
-              />
-              <Button
-                size="icon"
-                className="rounded-xl h-9 w-9 shrink-0"
-                disabled={!aiInput.trim() || aiChat.isLoading}
-                onClick={() => {
-                  if (aiInput.trim()) {
-                    aiChat.sendMessage(aiInput.trim(), {
-                      clientName: client.name,
-                      interest: client.interest,
-                      budget: client.budget_range,
-                      temperature: client.temperature,
-                      stage: client.pipeline_stage,
-                    });
-                    setAIInput("");
-                  }
-                }}
-              >
-                <Send className="w-3.5 h-3.5" />
-              </Button>
-            </div>
-            <div className="flex gap-1.5 flex-wrap">
-              {["Como abordar?", "Sugerir mensagem", "Dicas de negociação", "Objeções comuns"].map(q => (
-                <button
-                  key={q}
-                  onClick={() => {
-                    aiChat.sendMessage(q, {
-                      clientName: client.name,
-                      interest: client.interest,
-                      budget: client.budget_range,
-                      temperature: client.temperature,
-                      stage: client.pipeline_stage,
-                    });
-                  }}
-                  className="text-[10px] px-2 py-1 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
-                >
-                  {q}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
       </motion.div>
 
       {/* Schedule Follow-up */}
@@ -451,7 +312,7 @@ const AdminClientDetail = () => {
         )}
         {client.interest && (
           <div className="flex items-center gap-3">
-            <Star className="w-4 h-4 text-muted-foreground" />
+            <Star className="w-3.5 h-3.5 text-muted-foreground" />
             <span className="text-sm">{client.interest}</span>
           </div>
         )}
@@ -467,22 +328,12 @@ const AdminClientDetail = () => {
             <span className="text-sm">Origem: {client.source}</span>
           </div>
         )}
-
-        {/* Birthdate - editable */}
         <div className="flex items-center gap-3">
           <Cake className="w-4 h-4 text-muted-foreground" />
           <Popover>
             <PopoverTrigger asChild>
-              <Button
-                variant="ghost"
-                className={cn(
-                  "h-auto p-0 text-sm font-normal hover:bg-transparent hover:underline",
-                  !client.birthdate && "text-muted-foreground"
-                )}
-              >
-                {client.birthdate
-                  ? `🎂 ${format(new Date(client.birthdate + "T12:00:00"), "dd/MM/yyyy")}`
-                  : "Adicionar data de nascimento"}
+              <Button variant="ghost" className={cn("h-auto p-0 text-sm font-normal hover:bg-transparent hover:underline", !client.birthdate && "text-muted-foreground")}>
+                {client.birthdate ? `🎂 ${format(new Date(client.birthdate + "T12:00:00"), "dd/MM/yyyy")}` : "Adicionar data de nascimento"}
                 <Edit2 className="w-3 h-3 ml-1.5 text-muted-foreground" />
               </Button>
             </PopoverTrigger>
@@ -492,8 +343,7 @@ const AdminClientDetail = () => {
                 selected={client.birthdate ? new Date(client.birthdate + "T12:00:00") : undefined}
                 onSelect={(date) => {
                   if (date) {
-                    const formatted = format(date, "yyyy-MM-dd");
-                    updateClient.mutate({ id: client.id, birthdate: formatted } as any);
+                    updateClient.mutate({ id: client.id, birthdate: format(date, "yyyy-MM-dd") } as any);
                     toast.success("Data de nascimento atualizada!");
                   }
                 }}
@@ -511,13 +361,7 @@ const AdminClientDetail = () => {
         <p className="text-sm font-medium mb-3">Temperatura</p>
         <div className="flex gap-2">
           {(["hot", "warm", "cold", "frozen"] as const).map(temp => (
-            <Button
-              key={temp}
-              size="sm"
-              variant={client.temperature === temp ? "default" : "outline"}
-              className="rounded-full text-xs flex-1 h-9"
-              onClick={() => changeTemperature(temp)}
-            >
+            <Button key={temp} size="sm" variant={client.temperature === temp ? "default" : "outline"} className="rounded-full text-xs flex-1 h-9" onClick={() => changeTemperature(temp)}>
               {tempLabel[temp]}
             </Button>
           ))}
@@ -529,20 +373,14 @@ const AdminClientDetail = () => {
         <p className="text-sm font-medium mb-3">Pipeline</p>
         <div className="flex gap-1.5 overflow-x-auto">
           {STAGES.map((stage) => (
-            <Button
-              key={stage.key}
-              size="sm"
-              variant={client.pipeline_stage === stage.key ? "default" : "outline"}
-              className="rounded-full text-[10px] shrink-0 h-7"
-              onClick={() => changeStage(stage.key)}
-            >
+            <Button key={stage.key} size="sm" variant={client.pipeline_stage === stage.key ? "default" : "outline"} className="rounded-full text-[10px] shrink-0 h-7" onClick={() => changeStage(stage.key)}>
               {stage.label}
             </Button>
           ))}
         </div>
       </motion.div>
 
-      {/* 📋 Financing Qualification */}
+      {/* Financing */}
       <motion.div variants={fadeUp}>
         <h2 className="font-display font-semibold text-sm mb-3 flex items-center gap-2">
           <FileCheck className="w-4 h-4 text-primary" /> Qualificação para Financiamento
@@ -550,32 +388,32 @@ const AdminClientDetail = () => {
         <FinancingSection client={client} />
       </motion.div>
 
-      {/* ✨ LTV Opportunities */}
+      {/* LTV */}
       <motion.div variants={fadeUp}>
         <LTVOpportunities clientId={client.id} clientName={client.name} clientPhone={client.phone} />
       </motion.div>
 
-      {/* 🏆 Referral Program */}
+      {/* Referral */}
       <motion.div variants={fadeUp}>
         <ReferralSection client={client} />
       </motion.div>
 
-      {/* 💬 NPS / Satisfação */}
+      {/* NPS */}
       <motion.div variants={fadeUp}>
         <NPSSection client={client} />
       </motion.div>
 
-      {/* 📊 Relatório do Cliente */}
+      {/* Report */}
       <motion.div variants={fadeUp}>
         <ClientReportSection client={client} vehicles={vehicles} />
       </motion.div>
 
-      {/* 🎁 Ofertas Exclusivas */}
+      {/* Offers */}
       <motion.div variants={fadeUp}>
         <ExclusiveOffersSection client={client} />
       </motion.div>
 
-      {/* 💬 Histórico de Conversas com IA */}
+      {/* Chat History */}
       <motion.div variants={fadeUp}>
         <ChatHistorySection clientId={client.id} />
       </motion.div>
@@ -608,13 +446,7 @@ const AdminClientDetail = () => {
             { key: "visit", label: "🏪 Visita" },
             { key: "system", label: "📝 Nota" },
           ].map(t => (
-            <Button
-              key={t.key}
-              size="sm"
-              variant={noteType === t.key ? "default" : "outline"}
-              className="rounded-full text-[10px] shrink-0 h-7"
-              onClick={() => setNoteType(t.key)}
-            >
+            <Button key={t.key} size="sm" variant={noteType === t.key ? "default" : "outline"} className="rounded-full text-[10px] shrink-0 h-7" onClick={() => setNoteType(t.key)}>
               {t.label}
             </Button>
           ))}
@@ -627,28 +459,10 @@ const AdminClientDetail = () => {
         </div>
       </motion.div>
 
-      {/* Timeline */}
+      {/* Unified Timeline */}
       <motion.div variants={fadeUp}>
-        <h2 className="font-display font-semibold text-sm mb-3 flex items-center gap-2"><Clock className="w-4 h-4" /> Timeline</h2>
-        {interactions && interactions.length > 0 ? (
-          <div className="space-y-2">
-            {interactions.map((int) => (
-              <div key={int.id} className="glass-card p-3 border-l-2 border-primary/30">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[10px] text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">
-                    {interactionIcons[int.type] || "⚙️"} {int.type}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground">{new Date(int.created_at).toLocaleString("pt-BR")}</span>
-                </div>
-                <p className="text-sm text-foreground/80">{int.content}</p>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="glass-card p-6 text-center">
-            <p className="text-sm text-muted-foreground">Nenhuma interação registrada</p>
-          </div>
-        )}
+        <h2 className="font-display font-semibold text-sm mb-3 flex items-center gap-2"><Clock className="w-4 h-4" /> Timeline Unificada</h2>
+        <LeadTimeline clientId={client.id} />
       </motion.div>
     </motion.div>
   );
