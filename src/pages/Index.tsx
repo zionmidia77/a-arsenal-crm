@@ -1,8 +1,9 @@
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Bike, ArrowRight, Shield, Zap, Users, Star, ChevronRight } from "lucide-react";
+import { Bike, ArrowRight, Shield, Zap, Users, Star, ChevronRight, ShoppingBag } from "lucide-react";
 import FloatingChatButton from "@/components/FloatingChatButton";
+import { Helmet } from "react-helmet-async";
 
 const stagger = {
   animate: { transition: { staggerChildren: 0.1 } },
@@ -24,6 +25,15 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background noise-bg overflow-hidden">
+      <Helmet>
+        <title>Arsenal Motors — Motos e Carros Novos e Seminovos</title>
+        <meta name="description" content="Arsenal Motors: compre, troque ou venda seu veículo com atendimento personalizado. Simulação de financiamento em até 60x. Avaliação gratuita do seu usado." />
+        <meta property="og:title" content="Arsenal Motors — Motos e Carros Novos e Seminovos" />
+        <meta property="og:description" content="Sua próxima moto está a uma conversa de distância. Simule, negocie e feche — tudo em um só lugar." />
+        <meta property="og:type" content="website" />
+        <link rel="canonical" href="https://a-arsenal-crm.lovable.app" />
+      </Helmet>
+
       {/* Nav */}
       <motion.nav
         initial={{ opacity: 0, y: -12 }}
@@ -38,11 +48,12 @@ const Index = () => {
           <span className="font-display font-bold text-sm">Arsenal <span className="text-primary">Motors</span></span>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={() => navigate("/catalogo")} className="text-xs text-muted-foreground gap-1">
+            <ShoppingBag className="w-3 h-3" />
+            Catálogo
+          </Button>
           <Button variant="ghost" size="sm" onClick={() => navigate("/member")} className="text-xs text-muted-foreground">
             Minha área
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => navigate("/admin")} className="text-xs text-muted-foreground">
-            Admin
           </Button>
         </div>
       </motion.nav>
@@ -85,11 +96,11 @@ const Index = () => {
           </Button>
           <div className="flex gap-3">
             <Button
-              onClick={() => navigate("/member")}
+              onClick={() => navigate("/catalogo")}
               variant="outline"
               className="flex-1 h-12 rounded-xl border-border/50 hover:border-primary/30 transition-colors"
             >
-              Área do cliente
+              Ver catálogo
             </Button>
             <Button
               onClick={() => navigate("/simulator")}
