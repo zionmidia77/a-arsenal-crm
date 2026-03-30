@@ -1667,8 +1667,9 @@ serve(async (req) => {
       ...messages,
     ];
 
-    // Track client_id and vehicles found during tool calls
+    // Track client_id, client_name and vehicles found during tool calls
     let createdClientId: string | null = context?.clientId || null;
+    let createdClientName: string | null = null;
     let foundVehicles: unknown[] = [];
     let individualPhotos: string[] = [];
 
