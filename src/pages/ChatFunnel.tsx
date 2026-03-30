@@ -981,8 +981,14 @@ const ChatFunnel = () => {
           if (ext.cnh_category) details.push(`📋 **Categoria:** ${ext.cnh_category}`);
           if (ext.cnh_expiry) details.push(`📅 **Validade:** ${ext.cnh_expiry}`);
           if (ext.employer) details.push(`🏢 **Empregador:** ${ext.employer}`);
+          if (ext.employer_cnpj) details.push(`🔢 **CNPJ:** ${ext.employer_cnpj}`);
           if (ext.position) details.push(`💼 **Cargo:** ${ext.position}`);
-          if (ext.salary) details.push(`💰 **Salário:** R$ ${Number(ext.salary).toLocaleString("pt-BR")}`);
+          if (ext.salary) details.push(`💰 **Salário bruto:** R$ ${Number(ext.salary).toLocaleString("pt-BR")}`);
+          if (ext.salary_net) details.push(`💵 **Salário líquido:** R$ ${Number(ext.salary_net).toLocaleString("pt-BR")}`);
+          if (ext.employer_address) details.push(`📍 **End. empresa:** ${ext.employer_address}`);
+          if (ext.employer_phone) details.push(`📞 **Tel. empresa:** ${ext.employer_phone}`);
+          if (ext.admission_date) details.push(`📅 **Admissão:** ${ext.admission_date}`);
+          if (ext.income_period) details.push(`📋 **Referência:** ${ext.income_period}`);
           if (ext.city) details.push(`📍 **Cidade:** ${ext.city}`);
           if (details.length > 0) responseContent += details.join("\n") + "\n\n";
         }
