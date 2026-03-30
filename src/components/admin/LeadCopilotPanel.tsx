@@ -12,6 +12,8 @@ import { generateProposalPdf } from "@/lib/generateProposalPdf";
 interface LeadCopilotPanelProps {
   clientId: string;
   clientName: string;
+  clientPhone?: string;
+  vehiclePhotos?: string[];
 }
 
 const QUICK_COMMANDS = [
