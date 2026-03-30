@@ -895,17 +895,25 @@ const ChatFunnel = () => {
 
   // Document photo handler
   const handleDocumentUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || isLoading || isTransferred) return;
+    const files = e.target.files;
+    if (!files?.length || isLoading || isTransferred) return;
     if (fileInputRef.current) fileInputRef.current.value = "";
 
-    if (!file.type.startsWith("image/")) {
-      toast.error("Envie apenas fotos/imagens");
-      return;
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error("Imagem muito grande (máx 10MB)");
-      return;
+    const validFiles = Array.from(files).filter(file => {
+      if (!file.type.startsWith("image/") && file.type !== "application/pdf") {
+        toast.error(`"${file.name}" não é uma imagem ou PDF`);
+        return false;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error(`"${file.name}" é muito grande (máx 10MB)`);
+        return false;
+      }
+      return true;
+    });
+    if (!validFiles.length) return;
+
+    for (const file of validFiles) {
+      await processDocumentFile(file);
     }
 
     setIsAnalyzingDoc(true);
