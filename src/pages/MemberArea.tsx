@@ -145,6 +145,34 @@ const MemberArea = () => {
     sms: MessageCircle,
   };
 
+  // Onboarding for new users without client profile
+  if (!client) {
+    return (
+      <div className="min-h-screen bg-background noise-bg flex flex-col items-center justify-center px-6 text-center">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-sm space-y-6">
+          <div className="w-16 h-16 mx-auto rounded-2xl bg-primary/15 flex items-center justify-center">
+            <Bike className="w-8 h-8 text-primary" />
+          </div>
+          <h1 className="text-2xl font-display font-bold">Bem-vindo à Arsenal Motors! 🏍️</h1>
+          <p className="text-muted-foreground">
+            Sua área exclusiva ainda está sendo preparada. Inicie uma conversa no chat para que possamos te conhecer melhor e criar seu perfil personalizado.
+          </p>
+          <div className="space-y-3">
+            <Button onClick={() => navigate("/chat")} className="w-full h-12 rounded-xl glow-red gap-2">
+              <MessageCircle className="w-4 h-4" /> Iniciar conversa
+            </Button>
+            <Button variant="outline" onClick={() => navigate("/")} className="w-full h-12 rounded-xl">
+              Voltar ao início
+            </Button>
+          </div>
+          <Button variant="ghost" size="sm" onClick={signOut} className="text-xs text-muted-foreground gap-1">
+            <LogOut className="w-3 h-3" /> Sair
+          </Button>
+        </motion.div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background noise-bg pb-28">
       {/* Header */}
