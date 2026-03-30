@@ -16,6 +16,7 @@ const tempEmoji: Record<string, string> = { hot: "🔥", warm: "🟡", cold: "�
 interface KanbanCardProps {
   client: Tables<"clients">;
   index: number;
+  highlight?: boolean;
 }
 
 const KanbanCard = ({ client, index }: KanbanCardProps) => {
