@@ -630,7 +630,7 @@ const ChatFunnel = () => {
     const transferMsg: ChatMessage = {
       id: `system-${Date.now()}`,
       role: "assistant",
-      content: "Entendi seu perfil! 🤝 Vou te transferir pro nosso especialista que vai finalizar tudo pra você. Ele já tem todas as informações da nossa conversa. Aguarde um momento...",
+      content: "Entendi seu perfil! 🤝 Vou passar pro meu gerente finalizar tudo pra você. Ele já tá por dentro da nossa conversa. Aguarda um minutinho...",
       timestamp: new Date(),
     };
     setMessages(prev => [...prev, transferMsg]);
