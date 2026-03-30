@@ -141,6 +141,7 @@ const AdminPipeline = () => {
                 key={stage.key}
                 stage={stage}
                 clients={getClientsForStage(stage.key)}
+                highlightId={highlightId}
               />
             ))}
           </div>
