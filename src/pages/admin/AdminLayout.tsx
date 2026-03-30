@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { NavLink } from "@/components/NavLink";
@@ -12,6 +12,7 @@ import GlobalSearch from "@/components/admin/GlobalSearch";
 import AddLeadDialog from "@/components/admin/AddLeadDialog";
 import PhotoLeadCapture from "@/components/admin/PhotoLeadCapture";
 import AdminBreadcrumb from "@/components/admin/AdminBreadcrumb";
+import KeyboardShortcuts from "@/components/admin/KeyboardShortcuts";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -32,10 +33,15 @@ const navItems = [
 
 const AdminLayout = () => {
   const [open, setOpen] = useState(false);
+  const [addLeadOpen, setAddLeadOpen] = useState(false);
   const location = useLocation();
   const isClientDetail = location.pathname.includes("/admin/client/");
   const { signOut, user } = useAuth();
   useRealtimeLeads();
+
+  const handleNewLead = useCallback(() => {
+    setAddLeadOpen(true);
+  }, []);
 
   useEffect(() => {
     if ("Notification" in window && Notification.permission === "default") {
@@ -174,7 +180,7 @@ const AdminLayout = () => {
           
           <GlobalSearch />
           <PhotoLeadCapture />
-          <AddLeadDialog />
+          <AddLeadDialog externalOpen={addLeadOpen} onExternalOpenChange={setAddLeadOpen} />
           <NotificationCenter />
           <Button
             variant="ghost"
@@ -203,6 +209,7 @@ const AdminLayout = () => {
       </div>
 
       {!isClientDetail && <BottomTabBar />}
+      <KeyboardShortcuts onNewLead={handleNewLead} />
     </div>
   );
 };
