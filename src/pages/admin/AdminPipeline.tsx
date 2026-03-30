@@ -215,6 +215,7 @@ const AdminPipeline = () => {
                 highlightId={highlightId}
                 chatDataByClient={chatDataByClient}
                 interactionsByClient={interactionsByClient}
+                compact={compactMode}
               />
             ))}
           </div>
