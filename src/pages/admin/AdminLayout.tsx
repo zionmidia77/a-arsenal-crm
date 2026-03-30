@@ -13,6 +13,7 @@ import AddLeadDialog from "@/components/admin/AddLeadDialog";
 import PhotoLeadCapture from "@/components/admin/PhotoLeadCapture";
 import AdminBreadcrumb from "@/components/admin/AdminBreadcrumb";
 import KeyboardShortcuts from "@/components/admin/KeyboardShortcuts";
+import OnboardingTour from "@/components/admin/OnboardingTour";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -127,7 +128,7 @@ const AdminLayout = () => {
           <span className="font-display font-bold text-sm">Arsenal <span className="text-primary">CRM</span></span>
         </div>
 
-        <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+        <nav data-tour="sidebar-nav" className="flex-1 p-3 space-y-1 overflow-y-auto">
           {navItems.map((item) => (
             <NavLink
               key={item.to}
@@ -178,10 +179,10 @@ const AdminLayout = () => {
           
           <div className="flex-1" />
           
-          <GlobalSearch />
+          <div data-tour="global-search"><GlobalSearch /></div>
           <PhotoLeadCapture />
-          <AddLeadDialog externalOpen={addLeadOpen} onExternalOpenChange={setAddLeadOpen} />
-          <NotificationCenter />
+          <div data-tour="add-lead"><AddLeadDialog externalOpen={addLeadOpen} onExternalOpenChange={setAddLeadOpen} /></div>
+          <div data-tour="notifications"><NotificationCenter /></div>
           <Button
             variant="ghost"
             size="icon"
@@ -193,7 +194,7 @@ const AdminLayout = () => {
           </Button>
         </header>
         <main className={`flex-1 overflow-y-auto ${!isClientDetail ? "pb-20 md:pb-0" : ""}`}>
-          <AdminBreadcrumb />
+          <div data-tour="breadcrumb"><AdminBreadcrumb /></div>
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}
@@ -210,6 +211,7 @@ const AdminLayout = () => {
 
       {!isClientDetail && <BottomTabBar />}
       <KeyboardShortcuts onNewLead={handleNewLead} />
+      <OnboardingTour />
     </div>
   );
 };
