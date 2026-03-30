@@ -555,6 +555,14 @@ async function executeTool(
             created_by: "ai-consultant",
           });
 
+          // Link conversation to existing client
+          if (args._session_id) {
+            await supabase
+              .from("chat_conversations")
+              .update({ client_id: existingClient.id })
+              .eq("session_id", args._session_id);
+          }
+
           return JSON.stringify({
             success: true,
             client_id: existingClient.id,
