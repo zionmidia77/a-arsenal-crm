@@ -1067,6 +1067,24 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       vehicle_costs: {
         Row: {
           amount: number
@@ -1179,8 +1197,16 @@ export type Database = {
         Args: { client_id_param: string }
         Returns: number
       }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
+      app_role: "admin" | "moderator" | "user"
       client_status: "lead" | "active" | "inactive" | "lost"
       interaction_type:
         | "whatsapp"
@@ -1337,6 +1363,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["admin", "moderator", "user"],
       client_status: ["lead", "active", "inactive", "lost"],
       interaction_type: ["whatsapp", "call", "visit", "system", "email", "sms"],
       lead_temperature: ["hot", "warm", "cold", "frozen"],
