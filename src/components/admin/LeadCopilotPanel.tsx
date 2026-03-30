@@ -1,16 +1,19 @@
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bot, Send, Copy, Clipboard, ChevronDown, ChevronUp, Sparkles, Target, AlertTriangle, MessageCircle, Zap, ThermometerSun, Tag, Clock, ImagePlus, X } from "lucide-react";
+import { Bot, Send, Copy, Clipboard, ChevronDown, ChevronUp, Sparkles, Target, AlertTriangle, MessageCircle, Zap, ThermometerSun, Tag, Clock, ImagePlus, X, FileDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useLeadCopilot, useLeadMemory } from "@/hooks/useLeadCopilot";
 import ReactMarkdown from "react-markdown";
+import { generateProposalPdf } from "@/lib/generateProposalPdf";
 
 interface LeadCopilotPanelProps {
   clientId: string;
   clientName: string;
+  clientPhone?: string;
+  vehiclePhotos?: string[];
 }
 
 const QUICK_COMMANDS = [
@@ -28,9 +31,10 @@ const QUICK_COMMANDS = [
   { label: "🔄 Reativação", cmd: "Crie uma estratégia de reativação com 3 mensagens progressivas usando gatilhos de escassez, novidade e prova social." },
 ];
 
-const LeadCopilotPanel = ({ clientId, clientName }: LeadCopilotPanelProps) => {
+const LeadCopilotPanel = ({ clientId, clientName, clientPhone, vehiclePhotos }: LeadCopilotPanelProps) => {
   const copilot = useLeadCopilot(clientId);
   const { data: memory } = useLeadMemory(clientId);
+  const [isExporting, setIsExporting] = useState(false);
   const [input, setInput] = useState("");
   const [showPaste, setShowPaste] = useState(false);
   const [pasteText, setPasteText] = useState("");
@@ -94,6 +98,31 @@ const LeadCopilotPanel = ({ clientId, clientName }: LeadCopilotPanelProps) => {
     toast.success("Mensagem copiada!");
   };
 
+  const handleExportPdf = async (content: string) => {
+    setIsExporting(true);
+    try {
+      const catalogUrl = `${window.location.origin}/catalogo`;
+      const blob = await generateProposalPdf({
+        clientName,
+        clientPhone,
+        proposalText: content,
+        vehiclePhotos,
+        qrUrl: catalogUrl,
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Proposta_${clientName.replace(/\s+/g, "_")}_${new Date().toISOString().slice(0, 10)}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("PDF exportado com sucesso!");
+    } catch (e) {
+      console.error("PDF export error:", e);
+      toast.error("Erro ao exportar PDF");
+    } finally {
+      setIsExporting(false);
+    }
+  };
   const tempColors: Record<string, string> = {
     hot: "text-primary bg-primary/10",
     warm: "text-warning bg-warning/10",
@@ -297,14 +326,25 @@ const LeadCopilotPanel = ({ clientId, clientName }: LeadCopilotPanelProps) => {
                         {msg.role === "assistant" ? (
                           <div className="prose prose-sm dark:prose-invert max-w-none text-xs [&_p]:mb-1 [&_ul]:mb-1 [&_li]:mb-0.5 [&_h1]:text-sm [&_h2]:text-xs [&_h3]:text-xs [&_strong]:text-foreground">
                             <ReactMarkdown>{msg.content}</ReactMarkdown>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-6 text-[10px] mt-1 gap-1 text-muted-foreground hover:text-foreground"
-                              onClick={() => copyToClipboard(msg.content)}
-                            >
-                              <Copy className="w-3 h-3" /> Copiar
-                            </Button>
+                            <div className="flex gap-1 mt-1">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 text-[10px] gap-1 text-muted-foreground hover:text-foreground"
+                                onClick={() => copyToClipboard(msg.content)}
+                              >
+                                <Copy className="w-3 h-3" /> Copiar
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 text-[10px] gap-1 text-muted-foreground hover:text-foreground"
+                                onClick={() => handleExportPdf(msg.content)}
+                                disabled={isExporting}
+                              >
+                                <FileDown className="w-3 h-3" /> {isExporting ? "Gerando..." : "PDF"}
+                              </Button>
+                            </div>
                           </div>
                         ) : (
                           <p className="text-xs">{msg.content}</p>
