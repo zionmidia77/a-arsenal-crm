@@ -183,7 +183,7 @@ const AdminPipeline = () => {
                 onClick={() =>
                   setActiveFilter(activeFilter === stage.key ? null : stage.key)
                 }
-                className="rounded-full shrink-0 text-xs gap-1 h-8"
+                className="rounded-full shrink-0 text-xs gap-1 min-h-[40px] md:min-h-[32px] h-auto px-4 md:px-3"
               >
                 {stage.emoji} {stage.label}
                 {count > 0 && (
