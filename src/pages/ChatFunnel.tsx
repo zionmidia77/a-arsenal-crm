@@ -419,6 +419,7 @@ const ChatFunnel = () => {
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [clientId, setClientId] = useState<string | null>(null);
+  const [clientName, setClientName] = useState<string | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(true);
   const [sessionId, setSessionId] = useState(getOrCreateSessionId);
   const [conversationSaved, setConversationSaved] = useState(false);
