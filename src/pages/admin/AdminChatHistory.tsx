@@ -386,9 +386,27 @@ const AdminChatHistory = () => {
                             <Clock className="w-2.5 h-2.5" />
                             {format(new Date(convo.updated_at), "dd/MM HH:mm", { locale: ptBR })}
                           </span>
-                          <span className="text-[10px] text-muted-foreground">
-                            {msgCount} msgs
-                          </span>
+                          <div className="flex items-center gap-1.5">
+                            {!convo.client_id && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-5 px-1.5 text-[9px] gap-0.5 text-primary hover:text-primary"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setLinkConvoId(convo.id);
+                                  setLinkSearch("");
+                                  setLinkDialogOpen(true);
+                                }}
+                              >
+                                <Link2 className="w-2.5 h-2.5" />
+                                Vincular
+                              </Button>
+                            )}
+                            <span className="text-[10px] text-muted-foreground">
+                              {msgCount} msgs
+                            </span>
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
