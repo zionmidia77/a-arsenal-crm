@@ -274,8 +274,6 @@ const PublicCatalog = () => {
                 ? [v.image_url, ...(v.photos || []).filter((p: string) => p !== v.image_url)]
                 : (v.photos || []);
               const displayPrice = Number(v.selling_price || v.price || 0);
-              const coef48 = 0.060;
-              const parcela48 = displayPrice * coef48;
 
               return (
                 <Card key={v.id} className={`overflow-hidden hover:shadow-xl transition-shadow ${compareIds.includes(v.id) ? "ring-2 ring-primary" : ""}`}>
@@ -307,9 +305,6 @@ const PublicCatalog = () => {
                     <div>
                       <p className="text-2xl font-bold text-primary">
                         R$ {displayPrice.toLocaleString("pt-BR")}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        ou 48x de <strong>R$ {parcela48.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong>
                       </p>
                       {v.fipe_value && (
                         <p className="text-xs text-muted-foreground mt-1">
