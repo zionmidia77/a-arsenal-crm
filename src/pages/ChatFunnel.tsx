@@ -1257,7 +1257,7 @@ const ChatFunnel = () => {
           >
             <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs px-4 py-2 rounded-full flex items-center gap-2">
               <UserCheck className="w-3.5 h-3.5" />
-              Transferido para especialista
+              Gerente vai te atender em breve
             </div>
           </motion.div>
         )}
