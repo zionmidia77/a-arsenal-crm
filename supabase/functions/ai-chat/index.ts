@@ -555,6 +555,14 @@ async function executeTool(
             created_by: "ai-consultant",
           });
 
+          // Link conversation to existing client
+          if (args._session_id) {
+            await supabase
+              .from("chat_conversations")
+              .update({ client_id: existingClient.id })
+              .eq("session_id", args._session_id);
+          }
+
           return JSON.stringify({
             success: true,
             client_id: existingClient.id,
@@ -630,6 +638,14 @@ async function executeTool(
           content: `Lead criado via chat IA. Interesse: ${args.interest || "a definir"}`,
           created_by: "ai-consultant",
         });
+
+        // Link conversation to client using session_id (passed via context)
+        if (args._session_id) {
+          await supabase
+            .from("chat_conversations")
+            .update({ client_id: data.id })
+            .eq("session_id", args._session_id);
+        }
 
         return JSON.stringify({
           success: true,
@@ -1633,6 +1649,7 @@ serve(async (req) => {
 
   try {
     const { messages, context } = await req.json();
+    const sessionId = context?.sessionId || null;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY)
       throw new Error("LOVABLE_API_KEY is not configured");
@@ -1731,6 +1748,12 @@ serve(async (req) => {
         }
         
         console.log(`Executing tool: ${tc.function.name}`, JSON.stringify(args));
+        
+        // Inject session_id for create_lead so it can link the conversation
+        if (tc.function.name === "create_lead" && sessionId) {
+          args._session_id = sessionId;
+        }
+        
         const toolResult = await executeTool(tc.function.name, args);
         console.log(`Tool result (${tc.function.name}):`, toolResult.slice(0, 300));
 

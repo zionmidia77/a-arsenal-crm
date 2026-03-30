@@ -317,7 +317,7 @@ const ChatFunnel = () => {
           },
           body: JSON.stringify({
             messages: apiMessages,
-            context: clientId ? { clientId } : undefined,
+            context: { ...(clientId ? { clientId } : {}), sessionId },
           }),
         });
 
