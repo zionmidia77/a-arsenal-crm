@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import ThemeToggle from "@/components/ThemeToggle";
 import { Bike, ArrowRight, Shield, Zap, Users, Star, ChevronRight, ShoppingBag } from "lucide-react";
 import FloatingChatButton from "@/components/FloatingChatButton";
 import { Helmet } from "react-helmet-async";
