@@ -1436,8 +1436,8 @@ serve(async (req) => {
 
     if (!streamResponse.ok) {
       const t = await streamResponse.text();
-      console.error("Stream error:", streamResponse.status, t);
-      throw new Error("Failed to stream response");
+      console.error("Stream error:", streamResponse.status, t.slice(0, 500));
+      throw new Error(`Failed to stream response: ${streamResponse.status}`);
     }
 
     // If we have metadata (client_id or vehicles), prepend SSE events
