@@ -1053,6 +1053,50 @@ Se faltam itens, pergunte o próximo dado pendente de forma natural.`,
         });
       }
 
+      case "send_vehicle_photos": {
+        let query = supabase
+          .from("stock_vehicles")
+          .select("id, brand, model, year, photos, image_url")
+          .eq("status", "available")
+          .ilike("brand", `%${args.brand}%`)
+          .ilike("model", `%${args.model}%`);
+
+        if (args.year) {
+          query = query.eq("year", args.year as number);
+        }
+
+        const { data, error } = await query.limit(1).maybeSingle();
+        if (error) throw error;
+
+        if (!data) {
+          return JSON.stringify({
+            success: false,
+            message: "Veículo não encontrado no estoque.",
+          });
+        }
+
+        const allPhotos = [
+          ...(data.photos || []),
+          ...(data.image_url && !(data.photos || []).includes(data.image_url) ? [data.image_url] : []),
+        ];
+
+        if (allPhotos.length === 0) {
+          return JSON.stringify({
+            success: true,
+            photos: [],
+            message: "Esse veículo ainda não tem fotos cadastradas. Diga ao cliente que vai providenciar.",
+          });
+        }
+
+        return JSON.stringify({
+          success: true,
+          vehicle: `${data.brand} ${data.model}${data.year ? ` ${data.year}` : ""}`,
+          photos: allPhotos,
+          total: allPhotos.length,
+          display_hint: "As fotos serão exibidas automaticamente no chat. Diga algo como 'Olha só as fotos!' e descreva brevemente o veículo.",
+        });
+      }
+
       default:
         return JSON.stringify({ error: `Unknown tool: ${name}` });
     }
