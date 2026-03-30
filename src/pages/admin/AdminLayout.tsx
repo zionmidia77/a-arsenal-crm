@@ -128,7 +128,7 @@ const AdminLayout = () => {
           <span className="font-display font-bold text-sm">Arsenal <span className="text-primary">CRM</span></span>
         </div>
 
-        <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+        <nav data-tour="sidebar-nav" className="flex-1 p-3 space-y-1 overflow-y-auto">
           {navItems.map((item) => (
             <NavLink
               key={item.to}
