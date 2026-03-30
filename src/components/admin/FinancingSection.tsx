@@ -66,6 +66,7 @@ const FinancingSection = ({ client }: FinancingSectionProps) => {
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
   const [verifyStep, setVerifyStep] = useState<number>(-1); // -1 = idle, 0-3 = steps
   const [verification, setVerification] = useState<any>(null);
   const [extractedPayStub, setExtractedPayStub] = useState<any>(null);
