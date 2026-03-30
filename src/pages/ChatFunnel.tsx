@@ -1325,6 +1325,26 @@ const ChatFunnel = () => {
 
         <AnimatePresence>{isLoading && <TypingIndicator />}</AnimatePresence>
 
+        <AnimatePresence>
+          {isAnalyzingDoc && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              className="flex items-end gap-2.5 mb-4"
+            >
+              <Avatar className="h-8 w-8 border border-primary/30 shrink-0">
+                <AvatarImage src={consultantAvatar} alt="Consultor" />
+                <AvatarFallback className="bg-primary/20 text-primary text-xs font-bold">L</AvatarFallback>
+              </Avatar>
+              <div className="glass-card px-4 py-3 rounded-2xl rounded-bl-sm flex items-center gap-2.5">
+                <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                <span className="text-sm text-muted-foreground">Analisando documento...</span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {showSuggestions && messages.length === 1 && !isLoading && !isRestoringChat && (
           <SuggestionChips onSelect={handleSuggestion} />
         )}
