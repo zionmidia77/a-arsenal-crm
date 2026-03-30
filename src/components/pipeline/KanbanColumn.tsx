@@ -8,9 +8,10 @@ interface KanbanColumnProps {
   highlightId?: string | null;
   chatDataByClient?: Record<string, { count: number; hasActive: boolean }>;
   interactionsByClient?: Record<string, number>;
+  compact?: boolean;
 }
 
-const KanbanColumn = ({ stage, clients, highlightId, chatDataByClient = {}, interactionsByClient = {} }: KanbanColumnProps) => {
+const KanbanColumn = ({ stage, clients, highlightId, chatDataByClient = {}, interactionsByClient = {}, compact = false }: KanbanColumnProps) => {
   return (
     <div className={`flex flex-col min-w-[260px] max-w-[280px] rounded-2xl border border-border/40 bg-secondary/30 backdrop-blur-sm`}>
       {/* Header */}
