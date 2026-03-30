@@ -500,6 +500,7 @@ const ChatFunnel = () => {
     try { localStorage.setItem(STORAGE_KEY, newId); } catch {}
     setSessionId(newId);
     setClientId(null);
+    setClientName(null);
     setIsTransferred(false);
     setMessageCount(0);
     setShowSuggestions(true);
