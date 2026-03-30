@@ -57,7 +57,7 @@ const ChatFunnel = () => {
     );
   }, []);
 
-  // Save conversation to DB
+  // Save conversation to DB (using upsert to avoid duplicates)
   const saveConversation = useCallback(async (msgs: ChatMessage[], cId?: string | null, status = "active") => {
     const serialized = msgs.map(m => ({
       role: m.role,
@@ -83,14 +83,15 @@ const ChatFunnel = () => {
           })
           .eq("id", existing.id);
       } else {
+        // Use upsert with session_id to prevent race condition duplicates
         await supabase
           .from("chat_conversations")
-          .insert({
+          .upsert({
             session_id: sessionId,
             messages: serialized as any,
             client_id: cId || clientId || null,
             status,
-          });
+          }, { onConflict: "session_id" });
         setConversationSaved(true);
       }
     } catch (err) {
