@@ -211,6 +211,7 @@ const AdminLayout = () => {
 
       {!isClientDetail && <BottomTabBar />}
       <KeyboardShortcuts onNewLead={handleNewLead} />
+      <OnboardingTour />
     </div>
   );
 };
