@@ -67,6 +67,10 @@ const AdminChatHistory = () => {
   const [isSending, setIsSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+  const [linkConvoId, setLinkConvoId] = useState<string | null>(null);
+  const [linkSearch, setLinkSearch] = useState("");
+  const [isLinking, setIsLinking] = useState(false);
 
   const navigate = useNavigate();
 
