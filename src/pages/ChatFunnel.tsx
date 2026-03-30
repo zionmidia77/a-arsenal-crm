@@ -405,6 +405,50 @@ const ChatFunnel = () => {
           upsertAssistant("Ops, tive um probleminha aqui. Pode mandar de novo? 😅");
         }
       } finally {
+        setTypingStatus(undefined);
+        
+        // Split the completed response into multiple bubbles for human-like delivery
+        const fullText = assistantSoFar;
+        const bubbles = splitIntoBubbles(fullText);
+        
+        if (bubbles.length > 1) {
+          // Remove the streaming message and replace with individual bubbles
+          setMessages(prev => prev.filter(m => m.id !== assistantId));
+          
+          for (let bi = 0; bi < bubbles.length; bi++) {
+            if (bi > 0) {
+              // Show typing indicator between bubbles
+              setIsLoading(true);
+              setTypingStatus(undefined);
+              const delay = calculateBubbleDelay(bi, bubbles[bi]);
+              await new Promise(r => setTimeout(r, delay));
+            }
+            
+            const bubbleMsg: ChatMessage = {
+              id: `${assistantId}-bubble-${bi}`,
+              role: "assistant",
+              content: bubbles[bi],
+              timestamp: new Date(),
+            };
+            
+            // Attach vehicles to the last bubble
+            const vehiclesToAttach = pendingVehiclesRef.current;
+            if (bi === bubbles.length - 1 && vehiclesToAttach && vehiclesToAttach.length > 0) {
+              bubbleMsg.vehicles = vehiclesToAttach;
+              setPendingVehicles(null);
+              pendingVehiclesRef.current = null;
+            }
+            
+            setMessages(prev => [...prev, bubbleMsg]);
+            setIsLoading(false);
+            scrollToBottom();
+            
+            if (bi < bubbles.length - 1) {
+              playNotificationSound();
+            }
+          }
+        }
+        
         setIsLoading(false);
         inputRef.current?.focus();
         playNotificationSound();
@@ -413,6 +457,7 @@ const ChatFunnel = () => {
         const photosToAttach = pendingPhotosRef.current;
         setMessages(prev => {
           let updated = [...prev];
+          // Only attach vehicles if not already attached via multi-bubble
           if (vehiclesToAttach && vehiclesToAttach.length > 0) {
             updated = updated.map((m, i) =>
               i === updated.length - 1 && m.role === "assistant" ? { ...m, vehicles: vehiclesToAttach } : m
