@@ -42,7 +42,7 @@ const TypingIndicator = () => (
   >
     <Avatar className="h-8 w-8 border border-primary/30 shrink-0">
       <AvatarImage src={consultantAvatar} alt="Consultor" />
-      <AvatarFallback className="bg-primary/20 text-primary text-xs font-bold">A</AvatarFallback>
+      <AvatarFallback className="bg-primary/20 text-primary text-xs font-bold">L</AvatarFallback>
     </Avatar>
     <div className="glass-card px-4 py-3.5 flex gap-1.5 rounded-2xl rounded-bl-sm">
       {[0, 1, 2].map((i) => (
@@ -79,7 +79,7 @@ const ChatBubble = ({ msg }: { msg: ChatMessage }) => {
       >
         <Avatar className="h-8 w-8 border border-primary/30 shrink-0">
           <AvatarImage src={consultantAvatar} alt="Consultor" />
-          <AvatarFallback className="bg-primary/20 text-primary text-xs font-bold">A</AvatarFallback>
+          <AvatarFallback className="bg-primary/20 text-primary text-xs font-bold">L</AvatarFallback>
         </Avatar>
         <div className="max-w-[82%] rounded-2xl rounded-bl-sm overflow-hidden border border-border/40">
           <img
@@ -104,7 +104,7 @@ const ChatBubble = ({ msg }: { msg: ChatMessage }) => {
       {!isUser && (
         <Avatar className="h-8 w-8 border border-primary/30 shrink-0">
           <AvatarImage src={consultantAvatar} alt="Consultor" />
-          <AvatarFallback className="bg-primary/20 text-primary text-xs font-bold">A</AvatarFallback>
+          <AvatarFallback className="bg-primary/20 text-primary text-xs font-bold">L</AvatarFallback>
         </Avatar>
       )}
       <div
@@ -450,7 +450,7 @@ const ChatFunnel = () => {
       id: "welcome",
       role: "assistant",
       content:
-        "E aí! Tudo bem? 👊\n\nSou o consultor da Arsenal Motors. Tô aqui pra te ajudar a encontrar o veículo perfeito, fazer uma troca ou o que precisar!\n\nComo posso te ajudar?",
+            "E aí! Tudo bem? 👊\n\nAqui é o Lucas da Arsenal Motors. Tô aqui pra te ajudar, seja pra comprar, trocar ou o que precisar!\n\nMe conta, o que tá procurando?",
       timestamp: new Date(),
     };
     setMessages([welcome]);
@@ -486,7 +486,7 @@ const ChatFunnel = () => {
             id: "welcome",
             role: "assistant",
             content:
-              "E aí! Tudo bem? 👊\n\nSou o consultor da Arsenal Motors. Tô aqui pra te ajudar a encontrar o veículo perfeito, fazer uma troca ou o que precisar!\n\nComo posso te ajudar?",
+              "E aí! Tudo bem? 👊\n\nAqui é o Lucas da Arsenal Motors. Tô aqui pra te ajudar, seja pra comprar, trocar ou o que precisar!\n\nMe conta, o que tá procurando?",
             timestamp: new Date(),
           };
           setMessages([welcome]);
@@ -497,7 +497,7 @@ const ChatFunnel = () => {
           id: "welcome",
           role: "assistant",
           content:
-            "E aí! Tudo bem? 👊\n\nSou o consultor da Arsenal Motors. Tô aqui pra te ajudar a encontrar o veículo perfeito, fazer uma troca ou o que precisar!\n\nComo posso te ajudar?",
+            "E aí! Tudo bem? 👊\n\nAqui é o Lucas da Arsenal Motors. Tô aqui pra te ajudar, seja pra comprar, trocar ou o que precisar!\n\nMe conta, o que tá procurando?",
           timestamp: new Date(),
         };
         setMessages([welcome]);
@@ -1006,13 +1006,13 @@ const ChatFunnel = () => {
         <div className="relative">
           <Avatar className="h-10 w-10 border-2 border-primary/40 glow-red">
             <AvatarImage src={consultantAvatar} alt="Consultor Arsenal" />
-            <AvatarFallback className="bg-primary/20 text-primary font-bold text-sm">A</AvatarFallback>
+            <AvatarFallback className="bg-primary/20 text-primary font-bold text-sm">L</AvatarFallback>
           </Avatar>
           <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-background ${isOnline ? "bg-emerald-500" : "bg-muted-foreground"}`} />
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-display font-semibold text-foreground text-sm">
-            Consultor Arsenal
+            Lucas — Arsenal Motors
           </p>
           <p className="text-xs text-muted-foreground flex items-center gap-1">
             {isOnline ? (
