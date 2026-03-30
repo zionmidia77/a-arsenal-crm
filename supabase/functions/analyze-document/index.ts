@@ -57,6 +57,18 @@ Tipos de documentos suportados:
 - RG / CPF
 - Outro documento
 
+Para HOLERITE/CONTRACHEQUE, extraia TUDO que encontrar:
+- Nome completo do funcionário
+- CPF do funcionário
+- Salário bruto e líquido
+- Cargo/função
+- Data de admissão (importante!)
+- Nome da empresa/empregador
+- CNPJ da empresa
+- Endereço da empresa (se disponível no cabeçalho)
+- Telefone da empresa (se disponível)
+- Mês/ano de referência
+
 Responda APENAS com JSON válido:
 {
   "document_type": "cnh" | "income_proof" | "address_proof" | "identity" | "other" | "not_document",
@@ -71,9 +83,15 @@ Responda APENAS com JSON válido:
     "cnh_expiry": "validade YYYY-MM-DD ou null",
     "address": "endereço completo ou null",
     "city": "cidade ou null",
-    "employer": "empregador ou null",
-    "position": "cargo ou null",
+    "employer": "nome da empresa/empregador ou null",
+    "employer_cnpj": "CNPJ da empresa ou null",
+    "employer_address": "endereço da empresa ou null",
+    "employer_phone": "telefone da empresa ou null",
+    "employer_cep": "CEP da empresa ou null",
+    "position": "cargo/função ou null",
     "salary": null ou número (salário bruto em reais),
+    "salary_net": null ou número (salário líquido em reais),
+    "admission_date": "data de admissão YYYY-MM-DD ou null",
     "income_period": "mês/ano referência ou null"
   },
   "summary": "Resumo breve do documento em 1-2 frases",
