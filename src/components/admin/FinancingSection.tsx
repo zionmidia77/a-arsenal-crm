@@ -348,10 +348,20 @@ const FinancingSection = ({ client }: FinancingSectionProps) => {
       client.notes ? `📝 *Obs:* ${client.notes}` : "",
     ].filter(Boolean);
 
+    // Add document links if available
+    const docLinks = Object.entries(docUrls);
+    if (docLinks.length > 0) {
+      lines.push("", "━━━ *ANEXOS (DOCS)* ━━━");
+      for (const [key, url] of docLinks) {
+        const label = DOC_LABELS.find(d => d.key === key);
+        if (label) lines.push(`📎 ${label.emoji} ${label.label}: ${url}`);
+      }
+    }
+
     return lines.join("\n");
   };
 
-  const sendFichaWhatsApp = () => {
+  const sendFichaWhatsApp = async () => {
     const FINANCEIRA_NUMBER = "5500000000000"; // placeholder
     const msg = buildWhatsAppFicha();
     window.open(`https://wa.me/${FINANCEIRA_NUMBER}?text=${encodeURIComponent(msg)}`);
@@ -360,7 +370,11 @@ const FinancingSection = ({ client }: FinancingSectionProps) => {
 
   const copyFicha = () => {
     navigator.clipboard.writeText(buildWhatsAppFicha());
-    toast.success("Ficha copiada!");
+    toast.success("Ficha copiada com links dos documentos!");
+  };
+
+  const openDocImage = (url: string) => {
+    window.open(url, "_blank");
   };
 
   return (
