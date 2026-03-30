@@ -535,6 +535,40 @@ async function executeTool(
           if (v !== undefined && v !== null) cleanFields[k] = v;
         }
 
+        // Check if references are being updated — auto-update financing_docs
+        const hasRef1 = cleanFields.reference_name && cleanFields.reference_phone && cleanFields.reference_relation;
+        const hasRef2 = cleanFields.reference_name_2 && cleanFields.reference_phone_2 && cleanFields.reference_relation_2;
+        
+        if (hasRef1 || hasRef2) {
+          // Fetch current client data to check existing references
+          const { data: currentClient } = await supabase
+            .from("clients")
+            .select("financing_docs, reference_name, reference_phone, reference_relation, reference_name_2, reference_phone_2, reference_relation_2")
+            .eq("id", client_id)
+            .single();
+          
+          const docs = (currentClient?.financing_docs as Record<string, boolean>) || {
+            cnh: false, pay_stub: false, proof_of_residence: false,
+          };
+          
+          // Check ref1: either being set now or already exists
+          const ref1Complete = !!(
+            (cleanFields.reference_name || currentClient?.reference_name) &&
+            (cleanFields.reference_phone || currentClient?.reference_phone) &&
+            (cleanFields.reference_relation || currentClient?.reference_relation)
+          );
+          // Check ref2: either being set now or already exists
+          const ref2Complete = !!(
+            (cleanFields.reference_name_2 || currentClient?.reference_name_2) &&
+            (cleanFields.reference_phone_2 || currentClient?.reference_phone_2) &&
+            (cleanFields.reference_relation_2 || currentClient?.reference_relation_2)
+          );
+          
+          docs.reference_1 = ref1Complete;
+          docs.reference_2 = ref2Complete;
+          cleanFields.financing_docs = docs;
+        }
+
         const { error } = await supabase
           .from("clients")
           .update({ ...cleanFields, last_contact_at: new Date().toISOString() })

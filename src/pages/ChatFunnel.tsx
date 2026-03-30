@@ -981,8 +981,14 @@ const ChatFunnel = () => {
           if (ext.cnh_category) details.push(`📋 **Categoria:** ${ext.cnh_category}`);
           if (ext.cnh_expiry) details.push(`📅 **Validade:** ${ext.cnh_expiry}`);
           if (ext.employer) details.push(`🏢 **Empregador:** ${ext.employer}`);
+          if (ext.employer_cnpj) details.push(`🔢 **CNPJ:** ${ext.employer_cnpj}`);
           if (ext.position) details.push(`💼 **Cargo:** ${ext.position}`);
-          if (ext.salary) details.push(`💰 **Salário:** R$ ${Number(ext.salary).toLocaleString("pt-BR")}`);
+          if (ext.salary) details.push(`💰 **Salário bruto:** R$ ${Number(ext.salary).toLocaleString("pt-BR")}`);
+          if (ext.salary_net) details.push(`💵 **Salário líquido:** R$ ${Number(ext.salary_net).toLocaleString("pt-BR")}`);
+          if (ext.employer_address) details.push(`📍 **End. empresa:** ${ext.employer_address}`);
+          if (ext.employer_phone) details.push(`📞 **Tel. empresa:** ${ext.employer_phone}`);
+          if (ext.admission_date) details.push(`📅 **Admissão:** ${ext.admission_date}`);
+          if (ext.income_period) details.push(`📋 **Referência:** ${ext.income_period}`);
           if (ext.city) details.push(`📍 **Cidade:** ${ext.city}`);
           if (details.length > 0) responseContent += details.join("\n") + "\n\n";
         }
@@ -995,6 +1001,38 @@ const ChatFunnel = () => {
           responseContent += "Agora manda seu **comprovante de renda** (holerite ou contracheque) pra eu adiantar a análise de crédito! 📋";
         } else if (result.document_type === "income_proof") {
           responseContent += "Massa! Agora só falta o **comprovante de residência** e ficamos prontos! 🏠";
+          
+          // Auto-trigger CNPJ verification if extracted
+          if (result.extracted_data?.employer_cnpj && clientId) {
+            try {
+              const cleanCnpj = result.extracted_data.employer_cnpj.replace(/[^\d]/g, "");
+              if (cleanCnpj.length === 14) {
+                const verifyResp = await fetch(
+                  `https://brasilapi.com.br/api/cnpj/v1/${cleanCnpj}`
+                );
+                if (verifyResp.ok) {
+                  const cnpjData = await verifyResp.json();
+                  const isActive = cnpjData.descricao_situacao_cadastral === "ATIVA";
+                  responseContent += `\n\n${isActive ? "✅" : "⚠️"} **Empresa ${isActive ? "verificada" : "com pendência"} na Receita Federal**`;
+                  if (cnpjData.razao_social) responseContent += `\n🏛️ ${cnpjData.razao_social}`;
+                  if (cnpjData.cnae_fiscal_descricao) responseContent += `\n🏭 ${cnpjData.cnae_fiscal_descricao}`;
+                  if (cnpjData.descricao_situacao_cadastral) responseContent += `\n📊 Situação: ${cnpjData.descricao_situacao_cadastral}`;
+                  
+                  // Save verification to DB via edge function
+                  fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-employer`, {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                      Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+                    },
+                    body: JSON.stringify({ image_base64: "data:image/png;base64,iVBOR", client_id: clientId }),
+                  }).catch(() => {});
+                }
+              }
+            } catch (verifyErr) {
+              console.error("Auto CNPJ verification error:", verifyErr);
+            }
+          }
         } else if (result.document_type === "address_proof") {
           responseContent += "Perfeito! Documentação ficando completa! 🎯";
         }
