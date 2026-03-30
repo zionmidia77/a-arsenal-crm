@@ -1019,11 +1019,21 @@ const ChatFunnel = () => {
 
   const handleDocumentUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files?.length || isLoading || isTransferred) return;
+    if (!files || files.length === 0) {
+      console.log("No files selected");
+      return;
+    }
+    if (isLoading || isTransferred) return;
+
+    // Copy files before clearing input
+    const fileList = Array.from(files);
+    // Reset input so same file can be re-selected
     if (fileInputRef.current) fileInputRef.current.value = "";
 
-    const validFiles = Array.from(files).filter(file => {
-      if (!file.type.startsWith("image/") && file.type !== "application/pdf") {
+    const validFiles = fileList.filter(file => {
+      const isImage = file.type.startsWith("image/") || /\.(jpg|jpeg|png|gif|webp|heic|heif)$/i.test(file.name);
+      const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+      if (!isImage && !isPdf) {
         toast.error(`"${file.name}" não é uma imagem ou PDF`);
         return false;
       }
