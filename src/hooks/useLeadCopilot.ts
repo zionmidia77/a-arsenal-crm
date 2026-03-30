@@ -194,7 +194,8 @@ export const useLeadCopilot = (clientId: string) => {
       qc.invalidateQueries({ queryKey: ["lead-timeline", clientId] });
     } catch (e) {
       console.error("WhatsApp paste error:", e);
-      upsertAssistant("Erro ao analisar conversa. Tente novamente.");
+      const msg = e instanceof Error ? e.message : "Erro ao analisar conversa. Tente novamente.";
+      upsertAssistant(`⚠️ ${msg}`);
     } finally {
       setIsLoading(false);
     }
