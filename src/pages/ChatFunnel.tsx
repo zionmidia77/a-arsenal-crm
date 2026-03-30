@@ -1363,7 +1363,7 @@ const ChatFunnel = () => {
           </form>
         )}
         <p className="text-[9px] text-muted-foreground text-center mt-2 opacity-50">
-          Arsenal Motors · Atendimento inteligente
+          Arsenal Motors
         </p>
       </div>
 
