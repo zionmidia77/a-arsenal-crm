@@ -44,6 +44,7 @@ const KanbanColumn = ({ stage, clients, highlightId, chatDataByClient = {}, inte
                 chatCount={chatDataByClient[client.id]?.count || 0}
                 hasActiveChat={chatDataByClient[client.id]?.hasActive || false}
                 interactionCount={interactionsByClient[client.id] || 0}
+                compact={compact}
               />
             ))}
             {provided.placeholder}
