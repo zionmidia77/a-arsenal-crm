@@ -15,6 +15,7 @@ import SuggestionChips from "@/components/chat/SuggestionChips";
 import VehicleCarousel from "@/components/chat/VehicleCarousel";
 import { WELCOME_MESSAGE, CHAT_URL, CHAT_STORAGE_KEY, MIN_MESSAGE_INTERVAL_MS } from "@/components/chat/ChatConstants";
 import { getOrCreateSessionId, playNotificationSound, formatDuration } from "@/components/chat/chatUtils";
+import { splitIntoBubbles, calculateTypingDelay, calculateBubbleDelay, getRealisticOnlineStatus, getThinkingPhrase, shouldShowThinking } from "@/components/chat/humanBehavior";
 import type { ChatMessage, StockVehicle } from "@/components/chat/types";
 
 const ChatFunnel = () => {
@@ -40,6 +41,7 @@ const ChatFunnel = () => {
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<string | null>(null);
+  const [typingStatus, setTypingStatus] = useState<string | undefined>(undefined);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -297,8 +299,12 @@ const ChatFunnel = () => {
         scrollToBottom();
       };
 
-      // Human-like delay (1-4s)
-      const humanDelay = 1000 + Math.random() * 3000;
+      // Human-like delay — proportional to message count
+      const showThinking = shouldShowThinking(messageCount, false);
+      if (showThinking) {
+        setTypingStatus(getThinkingPhrase());
+      }
+      const humanDelay = calculateTypingDelay(text, messageCount < 3);
       await new Promise(resolve => setTimeout(resolve, humanDelay));
 
       try {
@@ -399,6 +405,50 @@ const ChatFunnel = () => {
           upsertAssistant("Ops, tive um probleminha aqui. Pode mandar de novo? 😅");
         }
       } finally {
+        setTypingStatus(undefined);
+        
+        // Split the completed response into multiple bubbles for human-like delivery
+        const fullText = assistantSoFar;
+        const bubbles = splitIntoBubbles(fullText);
+        
+        if (bubbles.length > 1) {
+          // Remove the streaming message and replace with individual bubbles
+          setMessages(prev => prev.filter(m => m.id !== assistantId));
+          
+          for (let bi = 0; bi < bubbles.length; bi++) {
+            if (bi > 0) {
+              // Show typing indicator between bubbles
+              setIsLoading(true);
+              setTypingStatus(undefined);
+              const delay = calculateBubbleDelay(bi, bubbles[bi]);
+              await new Promise(r => setTimeout(r, delay));
+            }
+            
+            const bubbleMsg: ChatMessage = {
+              id: `${assistantId}-bubble-${bi}`,
+              role: "assistant",
+              content: bubbles[bi],
+              timestamp: new Date(),
+            };
+            
+            // Attach vehicles to the last bubble
+            const vehiclesToAttach = pendingVehiclesRef.current;
+            if (bi === bubbles.length - 1 && vehiclesToAttach && vehiclesToAttach.length > 0) {
+              bubbleMsg.vehicles = vehiclesToAttach;
+              setPendingVehicles(null);
+              pendingVehiclesRef.current = null;
+            }
+            
+            setMessages(prev => [...prev, bubbleMsg]);
+            setIsLoading(false);
+            scrollToBottom();
+            
+            if (bi < bubbles.length - 1) {
+              playNotificationSound();
+            }
+          }
+        }
+        
         setIsLoading(false);
         inputRef.current?.focus();
         playNotificationSound();
@@ -407,6 +457,7 @@ const ChatFunnel = () => {
         const photosToAttach = pendingPhotosRef.current;
         setMessages(prev => {
           let updated = [...prev];
+          // Only attach vehicles if not already attached via multi-bubble
           if (vehiclesToAttach && vehiclesToAttach.length > 0) {
             updated = updated.map((m, i) =>
               i === updated.length - 1 && m.role === "assistant" ? { ...m, vehicles: vehiclesToAttach } : m
@@ -793,15 +844,29 @@ const ChatFunnel = () => {
             <AvatarImage src={consultantAvatar} alt="Consultor Arsenal" />
             <AvatarFallback className="bg-primary/20 text-primary font-bold text-sm">L</AvatarFallback>
           </Avatar>
-          <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-background bg-emerald-500" />
+          {(() => {
+            const status = getRealisticOnlineStatus();
+            return <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-background ${status.online ? "bg-emerald-500" : "bg-muted-foreground"}`} />;
+          })()}
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-display font-semibold text-foreground text-sm">
-            {clientName ? `Lucas está atendendo ${clientName}` : "Lucas — Arsenal Motors"}
+            {isLoading && clientName
+              ? `Lucas digitando...`
+              : clientName
+              ? `Lucas está atendendo ${clientName}`
+              : "Lucas — Arsenal Motors"}
           </p>
           <p className="text-xs text-muted-foreground flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
-            online agora
+            {(() => {
+              const status = getRealisticOnlineStatus();
+              return (
+                <>
+                  <span className={`w-1.5 h-1.5 rounded-full inline-block ${status.online ? "bg-emerald-500 animate-pulse" : "bg-muted-foreground"}`} />
+                  {isLoading ? "digitando..." : status.lastSeen}
+                </>
+              );
+            })()}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -864,7 +929,7 @@ const ChatFunnel = () => {
           </>
         )}
 
-        <AnimatePresence>{isLoading && <TypingIndicator />}</AnimatePresence>
+        <AnimatePresence>{isLoading && <TypingIndicator statusText={typingStatus} flickering />}</AnimatePresence>
 
         <AnimatePresence>
           {isAnalyzingDoc && (
