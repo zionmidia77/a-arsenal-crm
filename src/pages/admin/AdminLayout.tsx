@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { NavLink } from "@/components/NavLink";
@@ -12,6 +12,7 @@ import GlobalSearch from "@/components/admin/GlobalSearch";
 import AddLeadDialog from "@/components/admin/AddLeadDialog";
 import PhotoLeadCapture from "@/components/admin/PhotoLeadCapture";
 import AdminBreadcrumb from "@/components/admin/AdminBreadcrumb";
+import KeyboardShortcuts from "@/components/admin/KeyboardShortcuts";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
