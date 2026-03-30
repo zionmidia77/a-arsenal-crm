@@ -153,7 +153,7 @@ const PhotoLeadCapture = () => {
         return;
       }
 
-      const base64Images = await Promise.all(imageFiles.map(fileToDataUrl));
+      const base64Images: string[] = await Promise.all(imageFiles.map((f) => compressImage(f)));
       setPreviews(base64Images);
 
       const response = await supabase.functions.invoke("extract-lead-from-image", {
