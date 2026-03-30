@@ -953,6 +953,7 @@ const ChatFunnel = () => {
       };
       setMessages(prev => [...prev, assistantMsg]);
       setMessages(prev => { saveConversation(prev); return prev; });
+      playNotificationSound();
     } catch (err) {
       console.error("Document analysis error:", err);
       const errorMsg: ChatMessage = {
