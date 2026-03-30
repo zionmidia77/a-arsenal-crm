@@ -59,10 +59,38 @@ const TypingIndicator = () => (
   </motion.div>
 );
 
+// ── Notification sound ──
+const playNotificationSound = () => {
+  try {
+    const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const oscillator = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
+    oscillator.frequency.setValueAtTime(1100, audioCtx.currentTime + 0.08);
+    gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
+    oscillator.start(audioCtx.currentTime);
+    oscillator.stop(audioCtx.currentTime + 0.25);
+  } catch {}
+};
+
+// ── Read receipts ──
+const ReadReceipt = ({ read }: { read: boolean }) => (
+  <span className={`inline-flex ml-1 ${read ? "text-blue-400" : "text-primary-foreground/40"}`}>
+    <svg viewBox="0 0 16 10" className="w-4 h-2.5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M1 5.5L4 8.5L10 1.5" />
+      <path d="M5 5.5L8 8.5L14 1.5" />
+    </svg>
+  </span>
+);
+
 // ── Chat Bubble ──
-const ChatBubble = ({ msg }: { msg: ChatMessage }) => {
+const ChatBubble = ({ msg, isRead }: { msg: ChatMessage; isRead?: boolean }) => {
   const isUser = msg.role === "user";
   const isPhotoOnly = !isUser && msg.photos && msg.photos.length > 0 && !msg.content;
+  const isDocUpload = isUser && msg.content.startsWith("📷");
   const time = msg.timestamp.toLocaleTimeString("pt-BR", {
     hour: "2-digit",
     minute: "2-digit",
@@ -89,6 +117,33 @@ const ChatBubble = ({ msg }: { msg: ChatMessage }) => {
             loading="lazy"
           />
           <p className="text-[10px] text-muted-foreground px-3 py-1 bg-card/80">{time}</p>
+        </div>
+      </motion.div>
+    );
+  }
+
+  // Document upload with thumbnail preview
+  if (isDocUpload && msg.thumbnail) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 12, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+        className="flex mb-3 justify-end"
+      >
+        <div className="max-w-[82%] bg-primary text-primary-foreground rounded-2xl rounded-br-sm overflow-hidden">
+          <img
+            src={msg.thumbnail}
+            alt="Documento enviado"
+            className="w-full max-w-[250px] h-auto max-h-[200px] object-cover"
+          />
+          <div className="px-4 py-2">
+            <p className="text-sm leading-relaxed">{msg.content}</p>
+            <p className="text-[10px] text-primary-foreground/50 text-right mt-1 flex items-center justify-end gap-0.5">
+              {time}
+              {isRead !== undefined && <ReadReceipt read={!!isRead} />}
+            </p>
+          </div>
         </div>
       </motion.div>
     );
@@ -146,11 +201,12 @@ const ChatBubble = ({ msg }: { msg: ChatMessage }) => {
           </div>
         )}
         <p
-          className={`text-[10px] mt-1 ${
-            isUser ? "text-primary-foreground/50 text-right" : "text-muted-foreground"
+          className={`text-[10px] mt-1 flex items-center ${
+            isUser ? "text-primary-foreground/50 justify-end gap-0.5" : "text-muted-foreground"
           }`}
         >
           {time}
+          {isUser && isRead !== undefined && <ReadReceipt read={!!isRead} />}
         </p>
       </div>
     </motion.div>
