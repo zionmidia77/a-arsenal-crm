@@ -764,6 +764,7 @@ const ChatFunnel = () => {
       } finally {
         setIsLoading(false);
         inputRef.current?.focus();
+        playNotificationSound();
 
         // Attach pending vehicles to the last assistant message
         const vehiclesToAttach = pendingVehiclesRef.current;
