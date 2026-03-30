@@ -299,8 +299,12 @@ const ChatFunnel = () => {
         scrollToBottom();
       };
 
-      // Human-like delay (1-4s)
-      const humanDelay = 1000 + Math.random() * 3000;
+      // Human-like delay — proportional to message count
+      const showThinking = shouldShowThinking(messageCount, false);
+      if (showThinking) {
+        setTypingStatus(getThinkingPhrase());
+      }
+      const humanDelay = calculateTypingDelay(text, messageCount < 3);
       await new Promise(resolve => setTimeout(resolve, humanDelay));
 
       try {
