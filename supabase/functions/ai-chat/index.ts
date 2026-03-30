@@ -423,6 +423,27 @@ const tools = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "auto_tag_lead",
+      description:
+        "Automatically tag a lead based on the conversation context. Call this after understanding the client's profile to categorize them. Tags help the sales team prioritize. Apply multiple tags as needed. Examples: 'urgente' (needs now), 'financiamento' (wants financing), 'troca' (has trade-in), 'à vista' (paying cash), 'autônomo' (self-employed), 'entregador' (delivery worker), 'primeiro-veiculo' (first vehicle), 'família' (buying for family).",
+      parameters: {
+        type: "object",
+        properties: {
+          client_id: { type: "string", description: "Client UUID" },
+          tags: {
+            type: "array",
+            items: { type: "string" },
+            description: "List of tag names to apply",
+          },
+        },
+        required: ["client_id", "tags"],
+        additionalProperties: false,
+      },
+    },
+  },
 ];
 
 // ── Execute tool calls ──
