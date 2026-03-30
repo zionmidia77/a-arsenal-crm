@@ -308,9 +308,6 @@ const PublicCatalog = () => {
                       <p className="text-2xl font-bold text-primary">
                         R$ {displayPrice.toLocaleString("pt-BR")}
                       </p>
-                      <p className="text-sm text-muted-foreground">
-                        ou 48x de <strong>R$ {parcela48.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong>
-                      </p>
                       {v.fipe_value && (
                         <p className="text-xs text-muted-foreground mt-1">
                           FIPE: R$ {Number(v.fipe_value).toLocaleString("pt-BR")}
