@@ -225,7 +225,7 @@ const AdminClientDetail = () => {
       {/* 🤖 AI Copilot - Only on mobile (desktop uses split-view) */}
       {isMobile && (
         <motion.div variants={fadeUp}>
-          <LeadCopilotPanel clientId={client.id} clientName={client.name} />
+          <LeadCopilotPanel clientId={client.id} clientName={client.name} clientPhone={client.phone || undefined} />
         </motion.div>
       )}
 
