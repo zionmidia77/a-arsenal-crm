@@ -1,7 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAllClients, useUpdateClient } from "@/hooks/useSupabase";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -29,13 +31,61 @@ const AdminPipeline = () => {
   const updateClient = useUpdateClient();
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
 
+  // Fetch chat conversations to show badges on cards
+  const { data: chatConvos = [] } = useQuery({
+    queryKey: ["pipeline-chat-convos"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("chat_conversations")
+        .select("client_id, status")
+        .not("client_id", "is", null);
+      if (error) throw error;
+      return data || [];
+    },
+    refetchInterval: 15000,
+  });
+
+  // Fetch interaction counts per client
+  const { data: interactionCounts = [] } = useQuery({
+    queryKey: ["pipeline-interaction-counts"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("interactions")
+        .select("client_id");
+      if (error) throw error;
+      return data || [];
+    },
+    refetchInterval: 30000,
+  });
+
+  // Build lookup maps
+  const chatDataByClient = useMemo(() => {
+    const map: Record<string, { count: number; hasActive: boolean }> = {};
+    for (const c of chatConvos) {
+      if (!c.client_id) continue;
+      if (!map[c.client_id]) map[c.client_id] = { count: 0, hasActive: false };
+      map[c.client_id].count++;
+      if (c.status === "active" || c.status === "transferred") {
+        map[c.client_id].hasActive = true;
+      }
+    }
+    return map;
+  }, [chatConvos]);
+
+  const interactionsByClient = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const i of interactionCounts) {
+      map[i.client_id] = (map[i.client_id] || 0) + 1;
+    }
+    return map;
+  }, [interactionCounts]);
+
   // Auto-filter to the highlighted client's stage
   useEffect(() => {
     if (highlightId && clients) {
       const c = clients.find(cl => cl.id === highlightId);
       if (c) {
         setActiveFilter(c.pipeline_stage);
-        // Scroll to card after render
         setTimeout(() => {
           const el = document.getElementById(`kanban-card-${highlightId}`);
           el?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -142,6 +192,8 @@ const AdminPipeline = () => {
                 stage={stage}
                 clients={getClientsForStage(stage.key)}
                 highlightId={highlightId}
+                chatDataByClient={chatDataByClient}
+                interactionsByClient={interactionsByClient}
               />
             ))}
           </div>

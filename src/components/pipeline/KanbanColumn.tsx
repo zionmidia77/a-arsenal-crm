@@ -6,9 +6,11 @@ interface KanbanColumnProps {
   stage: { key: string; label: string; emoji: string; color: string };
   clients: Tables<"clients">[];
   highlightId?: string | null;
+  chatDataByClient?: Record<string, { count: number; hasActive: boolean }>;
+  interactionsByClient?: Record<string, number>;
 }
 
-const KanbanColumn = ({ stage, clients, highlightId }: KanbanColumnProps) => {
+const KanbanColumn = ({ stage, clients, highlightId, chatDataByClient = {}, interactionsByClient = {} }: KanbanColumnProps) => {
   return (
     <div className={`flex flex-col min-w-[260px] max-w-[280px] rounded-2xl border border-border/40 bg-secondary/30 backdrop-blur-sm`}>
       {/* Header */}
@@ -33,7 +35,15 @@ const KanbanColumn = ({ stage, clients, highlightId }: KanbanColumnProps) => {
             }`}
           >
             {clients.map((client, index) => (
-              <KanbanCard key={client.id} client={client} index={index} highlight={highlightId === client.id} />
+              <KanbanCard
+                key={client.id}
+                client={client}
+                index={index}
+                highlight={highlightId === client.id}
+                chatCount={chatDataByClient[client.id]?.count || 0}
+                hasActiveChat={chatDataByClient[client.id]?.hasActive || false}
+                interactionCount={interactionsByClient[client.id] || 0}
+              />
             ))}
             {provided.placeholder}
             {clients.length === 0 && !snapshot.isDraggingOver && (
