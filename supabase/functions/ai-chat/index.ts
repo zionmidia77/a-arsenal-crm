@@ -1296,6 +1296,7 @@ serve(async (req) => {
     // Track client_id and vehicles found during tool calls
     let createdClientId: string | null = context?.clientId || null;
     let foundVehicles: unknown[] = [];
+    let individualPhotos: string[] = [];
 
     // Tool calling loop (max 5 iterations for complex flows)
     for (let i = 0; i < 5; i++) {
