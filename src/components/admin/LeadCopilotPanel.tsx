@@ -14,14 +14,17 @@ interface LeadCopilotPanelProps {
 }
 
 const QUICK_COMMANDS = [
+  { label: "📝 Proposta completa", cmd: "Monte uma proposta comercial COMPLETA para este cliente. Escolha o melhor veículo do estoque disponível baseado no perfil, calcule financiamento com múltiplas opções de entrada e parcelas, e gere a mensagem pronta para enviar no WhatsApp." },
+  { label: "📊 Comparativo", cmd: "Monte uma proposta COMPARATIVA com 2-3 opções de veículos do estoque para este cliente, com simulações de financiamento lado a lado, destacando prós e contras de cada opção." },
+  { label: "💰 Simular parcelas", cmd: "Simule diferentes cenários de financiamento para este lead: com e sem entrada, em 24x, 36x, 48x e 60x. Considere a renda do cliente e sugira a melhor opção." },
+  { label: "🔄 Proposta c/ troca", cmd: "Monte uma proposta considerando que o cliente tem um veículo para troca. Estime o valor da troca, calcule o valor restante e simule as parcelas." },
   { label: "📊 Análise completa", cmd: "Faça uma análise completa deste lead com diagnóstico, temperatura, objeções e próxima ação." },
   { label: "💬 Gerar mensagem", cmd: "Gere uma mensagem pronta para enviar no WhatsApp para este lead agora." },
   { label: "🎯 Próxima ação", cmd: "Qual a melhor próxima ação para este lead? O que eu devo fazer agora?" },
   { label: "⚡ Quebrar objeção", cmd: "Quais são as principais objeções deste lead e como posso quebrá-las?" },
-  { label: "📝 Proposta", cmd: "Monte uma proposta personalizada para este cliente considerando seu perfil financeiro." },
-  { label: "🔄 Reativação", cmd: "Crie uma mensagem de reativação para este lead que está inativo." },
   { label: "🌡️ Temperatura", cmd: "Esse lead está quente, morno ou frio? Justifique com dados." },
-  { label: "🏍️ Sugerir veículo", cmd: "Qual o melhor veículo para recomendar a este cliente baseado no perfil dele?" },
+  { label: "🏍️ Sugerir veículo", cmd: "Qual o melhor veículo do estoque disponível para recomendar a este cliente baseado no perfil e orçamento dele?" },
+  { label: "🔄 Reativação", cmd: "Crie uma mensagem de reativação para este lead que está inativo." },
 ];
 
 const LeadCopilotPanel = ({ clientId, clientName }: LeadCopilotPanelProps) => {
