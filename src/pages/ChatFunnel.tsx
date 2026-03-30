@@ -844,15 +844,29 @@ const ChatFunnel = () => {
             <AvatarImage src={consultantAvatar} alt="Consultor Arsenal" />
             <AvatarFallback className="bg-primary/20 text-primary font-bold text-sm">L</AvatarFallback>
           </Avatar>
-          <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-background bg-emerald-500" />
+          {(() => {
+            const status = getRealisticOnlineStatus();
+            return <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-background ${status.online ? "bg-emerald-500" : "bg-muted-foreground"}`} />;
+          })()}
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-display font-semibold text-foreground text-sm">
-            {clientName ? `Lucas está atendendo ${clientName}` : "Lucas — Arsenal Motors"}
+            {isLoading && clientName
+              ? `Lucas digitando...`
+              : clientName
+              ? `Lucas está atendendo ${clientName}`
+              : "Lucas — Arsenal Motors"}
           </p>
           <p className="text-xs text-muted-foreground flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
-            online agora
+            {(() => {
+              const status = getRealisticOnlineStatus();
+              return (
+                <>
+                  <span className={`w-1.5 h-1.5 rounded-full inline-block ${status.online ? "bg-emerald-500 animate-pulse" : "bg-muted-foreground"}`} />
+                  {isLoading ? "digitando..." : status.lastSeen}
+                </>
+              );
+            })()}
           </p>
         </div>
         <div className="flex items-center gap-2">
