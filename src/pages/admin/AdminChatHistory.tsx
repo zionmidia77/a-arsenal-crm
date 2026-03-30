@@ -19,6 +19,19 @@ import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import ChatConversionDashboard from "@/components/admin/ChatConversionDashboard";
 
+const PIPELINE_STAGES = [
+  { key: "new", label: "Novo", emoji: "🆕" },
+  { key: "contacted", label: "Contatado", emoji: "📞" },
+  { key: "interested", label: "Interessado", emoji: "🔥" },
+  { key: "attending", label: "Em atendimento", emoji: "🤝" },
+  { key: "thinking", label: "Pensando", emoji: "🤔" },
+  { key: "waiting_response", label: "Aguardando", emoji: "⏳" },
+  { key: "scheduled", label: "Agendado", emoji: "📅" },
+  { key: "negotiating", label: "Negociação", emoji: "💰" },
+  { key: "closed_won", label: "Fechado ✅", emoji: "🏆" },
+  { key: "closed_lost", label: "Perdido", emoji: "❌" },
+];
+
 interface ConversationMessage {
   role: "user" | "assistant";
   content: string;
