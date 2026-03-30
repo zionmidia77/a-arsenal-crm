@@ -1764,6 +1764,7 @@ serve(async (req) => {
           try {
             const parsed = JSON.parse(toolResult);
             if (parsed.client_id) createdClientId = parsed.client_id;
+            if (parsed.client_name) createdClientName = parsed.client_name;
           } catch {}
         }
 
