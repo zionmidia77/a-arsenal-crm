@@ -10,7 +10,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { MessageSquare, User, Clock, UserCheck, X, Search, CalendarIcon, Filter, Send, Phone, Mail, MapPin, Bike, DollarSign, Flame, Thermometer, FileText, ExternalLink, Sparkles } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { MessageSquare, User, Clock, UserCheck, X, Search, CalendarIcon, Filter, Send, Phone, Mail, MapPin, Bike, DollarSign, Flame, Thermometer, FileText, ExternalLink, Sparkles, Link2 } from "lucide-react";
 import { toast } from "sonner";
 import { format, isAfter, isBefore, startOfDay, endOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -66,8 +67,61 @@ const AdminChatHistory = () => {
   const [isSending, setIsSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+  const [linkConvoId, setLinkConvoId] = useState<string | null>(null);
+  const [linkSearch, setLinkSearch] = useState("");
+  const [isLinking, setIsLinking] = useState(false);
 
   const navigate = useNavigate();
+  // Search leads for linking
+  const { data: searchedLeads = [] } = useQuery({
+    queryKey: ["link-lead-search", linkSearch],
+    queryFn: async () => {
+      if (!linkSearch.trim() || linkSearch.length < 2) return [];
+      const { data, error } = await supabase
+        .from("clients")
+        .select("id, name, phone, city, interest")
+        .or(`name.ilike.%${linkSearch}%,phone.ilike.%${linkSearch}%`)
+        .order("created_at", { ascending: false })
+        .limit(10);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: linkDialogOpen && linkSearch.length >= 2,
+  });
+
+  const handleLinkLead = async (clientId: string, clientName: string) => {
+    if (!linkConvoId || isLinking) return;
+    setIsLinking(true);
+    try {
+      const { error } = await supabase
+        .from("chat_conversations")
+        .update({ client_id: clientId })
+        .eq("id", linkConvoId);
+      if (error) throw error;
+
+      await supabase.from("interactions").insert({
+        client_id: clientId,
+        type: "system" as const,
+        content: "Conversa IA vinculada manualmente pelo admin",
+        created_by: "admin",
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["chat-conversations"] });
+      toast.success(`Conversa vinculada a "${clientName}"!`);
+      setLinkDialogOpen(false);
+      setLinkConvoId(null);
+      setLinkSearch("");
+      if (selectedConvo?.id === linkConvoId) {
+        setSelectedConvo(null);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao vincular conversa");
+    } finally {
+      setIsLinking(false);
+    }
+  };
 
   const { data: conversations = [], isLoading } = useQuery({
     queryKey: ["chat-conversations"],
@@ -332,9 +386,27 @@ const AdminChatHistory = () => {
                             <Clock className="w-2.5 h-2.5" />
                             {format(new Date(convo.updated_at), "dd/MM HH:mm", { locale: ptBR })}
                           </span>
-                          <span className="text-[10px] text-muted-foreground">
-                            {msgCount} msgs
-                          </span>
+                          <div className="flex items-center gap-1.5">
+                            {!convo.client_id && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-5 px-1.5 text-[9px] gap-0.5 text-primary hover:text-primary"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setLinkConvoId(convo.id);
+                                  setLinkSearch("");
+                                  setLinkDialogOpen(true);
+                                }}
+                              >
+                                <Link2 className="w-2.5 h-2.5" />
+                                Vincular
+                              </Button>
+                            )}
+                            <span className="text-[10px] text-muted-foreground">
+                              {msgCount} msgs
+                            </span>
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
@@ -377,6 +449,20 @@ const AdminChatHistory = () => {
                     )}
                   </CardTitle>
                   <div className="flex items-center gap-2">
+                    {!selectedConvo.client_id && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 text-[10px] gap-1"
+                        onClick={() => {
+                          setLinkConvoId(selectedConvo.id);
+                          setLinkSearch("");
+                          setLinkDialogOpen(true);
+                        }}
+                      >
+                        <Link2 className="w-3 h-3" /> Vincular lead
+                      </Button>
+                    )}
                     {(selectedConvo.status === "transferred" || selectedConvo.status === "attended") && (
                       <Badge className={`gap-1 ${statusColor(selectedConvo.status)}`}>
                         <UserCheck className="w-3 h-3" /> {statusLabel(selectedConvo.status)}
@@ -670,6 +756,68 @@ const AdminChatHistory = () => {
           </div>
         )}
       </div>
+
+      {/* Link conversation to lead dialog */}
+      <Dialog open={linkDialogOpen} onOpenChange={(open) => { setLinkDialogOpen(open); if (!open) { setLinkConvoId(null); setLinkSearch(""); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Link2 className="w-4 h-4 text-primary" />
+              Vincular conversa a um lead
+            </DialogTitle>
+            <DialogDescription>
+              Busque por nome ou telefone para vincular esta conversa a um lead existente no CRM.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+              <Input
+                placeholder="Buscar lead por nome ou telefone..."
+                value={linkSearch}
+                onChange={(e) => setLinkSearch(e.target.value)}
+                className="pl-8"
+                autoFocus
+              />
+            </div>
+            <ScrollArea className="max-h-[300px]">
+              <div className="space-y-1.5">
+                {linkSearch.length < 2 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    Digite pelo menos 2 caracteres para buscar
+                  </p>
+                ) : searchedLeads.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    Nenhum lead encontrado
+                  </p>
+                ) : (
+                  searchedLeads.map((lead) => (
+                    <button
+                      key={lead.id}
+                      onClick={() => handleLinkLead(lead.id, lead.name)}
+                      disabled={isLinking}
+                      className="w-full flex items-center gap-3 p-2.5 rounded-lg hover:bg-secondary/80 transition-colors text-left border border-transparent hover:border-border/50"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                        <User className="w-4 h-4 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{lead.name}</p>
+                        <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                          {lead.phone && <span>{lead.phone}</span>}
+                          {lead.city && <span>· {lead.city}</span>}
+                          {lead.interest && <span>· {lead.interest}</span>}
+                        </div>
+                      </div>
+                      <Link2 className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                    </button>
+                  ))
+                )}
+              </div>
+            </ScrollArea>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
