@@ -924,6 +924,15 @@ Se faltam itens, pergunte o próximo dado pendente de forma natural.`,
       }
 
       case "save_conversation_notes": {
+        // Validate client_id is a real UUID before querying
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (!args.client_id || !uuidRegex.test(args.client_id as string)) {
+          return JSON.stringify({
+            success: false,
+            error: "client_id inválido ou ainda não criado. Use create_lead primeiro para obter um client_id válido, depois chame save_conversation_notes.",
+          });
+        }
+
         // Get existing notes to append
         const { data: existingClient } = await supabase
           .from("clients")
