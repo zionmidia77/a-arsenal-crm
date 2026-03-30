@@ -5,6 +5,7 @@ import { useAllClients, useUpdateClient } from "@/hooks/useSupabase";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
+import { KanbanColumnSkeleton } from "@/components/admin/SkeletonLoaders";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { DragDropContext, type DropResult } from "@hello-pangea/dnd";
