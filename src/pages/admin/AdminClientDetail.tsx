@@ -9,12 +9,14 @@ import { useClient, useClientInteractions, useClientVehicles, useCreateInteracti
 import {
   ArrowLeft, MessageCircle, Phone, Mail, MapPin, Calendar, Bike,
   TrendingUp, Clock, Plus, Star, CalendarPlus, Check, AlertTriangle,
-  Copy, Send, Tag, FileCheck, Cake, Edit2, Columns3
+  Copy, Send, Tag, FileCheck, Cake, Edit2, Columns3, PanelRightOpen, PanelRightClose
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import TagManager from "@/components/admin/TagManager";
 import FinancingSection from "@/components/admin/FinancingSection";
 import ReferralSection from "@/components/admin/ReferralSection";
@@ -86,6 +88,8 @@ const AdminClientDetail = () => {
   const [showSchedule, setShowSchedule] = useState(false);
   const [scheduleDate, setScheduleDate] = useState(new Date().toISOString().split("T")[0]);
   const [scheduleReason, setScheduleReason] = useState("");
+  const [copilotOpen, setCopilotOpen] = useState(true);
+  const isMobile = useIsMobile();
 
   if (isLoading) {
     return (
@@ -175,8 +179,8 @@ const AdminClientDetail = () => {
   const daysAgo = Math.floor((Date.now() - new Date(client.created_at).getTime()) / 86400000);
   const lastContactDays = client.last_contact_at ? Math.floor((Date.now() - new Date(client.last_contact_at).getTime()) / 86400000) : null;
 
-  return (
-    <motion.div variants={stagger} initial="initial" animate="animate" className="p-5 md:p-6 space-y-5 max-w-4xl">
+  const leadContent = (
+    <motion.div variants={stagger} initial="initial" animate="animate" className="p-5 md:p-6 space-y-5">
       {/* Header */}
       <motion.div variants={fadeUp} className="flex items-center gap-3">
         <Button variant="ghost" size="icon" className="rounded-full" onClick={() => navigate(-1)}>
@@ -199,16 +203,31 @@ const AdminClientDetail = () => {
             <span className="text-[10px] text-muted-foreground">· {daysAgo === 0 ? "hoje" : `${daysAgo}d atrás`}</span>
           </div>
         </div>
-        <div className="text-right">
-          <p className="text-xs text-muted-foreground">Score</p>
-          <p className="text-lg font-display font-bold text-primary">{client.lead_score}</p>
+        <div className="flex items-center gap-2">
+          {!isMobile && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-full"
+              onClick={() => setCopilotOpen(!copilotOpen)}
+              title={copilotOpen ? "Fechar Copilot" : "Abrir Copilot"}
+            >
+              {copilotOpen ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
+            </Button>
+          )}
+          <div className="text-right">
+            <p className="text-xs text-muted-foreground">Score</p>
+            <p className="text-lg font-display font-bold text-primary">{client.lead_score}</p>
+          </div>
         </div>
       </motion.div>
 
-      {/* 🤖 AI Copilot - TOP POSITION */}
-      <motion.div variants={fadeUp}>
-        <LeadCopilotPanel clientId={client.id} clientName={client.name} />
-      </motion.div>
+      {/* 🤖 AI Copilot - Only on mobile (desktop uses split-view) */}
+      {isMobile && (
+        <motion.div variants={fadeUp}>
+          <LeadCopilotPanel clientId={client.id} clientName={client.name} />
+        </motion.div>
+      )}
 
       {/* Tags */}
       <motion.div variants={fadeUp} className="glass-card p-3">
@@ -465,6 +484,38 @@ const AdminClientDetail = () => {
         <LeadTimeline clientId={client.id} />
       </motion.div>
     </motion.div>
+  );
+
+  // Desktop: split-view with resizable panels; Mobile: stacked
+  if (isMobile) {
+    return leadContent;
+  }
+
+  return (
+    <ResizablePanelGroup direction="horizontal" className="min-h-[calc(100vh-4rem)]">
+      <ResizablePanel defaultSize={copilotOpen ? 60 : 100} minSize={40}>
+        <div className="overflow-y-auto h-full max-w-4xl">
+          {leadContent}
+        </div>
+      </ResizablePanel>
+      {copilotOpen && (
+        <>
+          <ResizableHandle withHandle />
+          <ResizablePanel defaultSize={40} minSize={28} maxSize={55}>
+            <div className="h-full overflow-y-auto border-l border-border/50 bg-card/30">
+              <div className="p-4 sticky top-0 bg-card/80 backdrop-blur-xl z-10 border-b border-border/50">
+                <h2 className="font-display font-semibold text-sm flex items-center gap-2">
+                  🤖 AI Copilot — {client.name.split(" ")[0]}
+                </h2>
+              </div>
+              <div className="p-4">
+                <LeadCopilotPanel clientId={client.id} clientName={client.name} />
+              </div>
+            </div>
+          </ResizablePanel>
+        </>
+      )}
+    </ResizablePanelGroup>
   );
 };
 
