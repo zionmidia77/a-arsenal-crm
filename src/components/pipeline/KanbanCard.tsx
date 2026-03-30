@@ -29,9 +29,12 @@ const KanbanCard = ({ client, index, highlight }: KanbanCardProps) => {
           ref={provided.innerRef}
           {...provided.draggableProps}
           {...provided.dragHandleProps}
-          className={`rounded-xl border border-border/50 bg-card p-3 space-y-2 transition-shadow ${
-            snapshot.isDragging ? "shadow-xl ring-2 ring-primary/30 rotate-2 scale-105" : "shadow-sm hover:shadow-md"
-          }`}
+          id={`kanban-card-${client.id}`}
+          className={`rounded-xl border bg-card p-3 space-y-2 transition-all ${
+            highlight
+              ? "ring-2 ring-primary border-primary shadow-lg shadow-primary/20 animate-pulse"
+              : "border-border/50 shadow-sm hover:shadow-md"
+          } ${snapshot.isDragging ? "shadow-xl ring-2 ring-primary/30 rotate-2 scale-105" : ""}`}
         >
           <div className="flex items-center gap-2">
             <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${tempBadge[client.temperature]}`}>
