@@ -1,89 +1,103 @@
+import { lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { HelmetProvider } from "react-helmet-async";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
-import ChatFunnel from "./pages/ChatFunnel";
-import ClientDashboard from "./pages/ClientDashboard";
-import Simulator from "./pages/Simulator";
-import AdminLayout from "./pages/admin/AdminLayout";
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import AdminLeads from "./pages/admin/AdminLeads";
-import AdminTasks from "./pages/admin/AdminTasks";
-import AdminMessages from "./pages/admin/AdminMessages";
-import AdminPipeline from "./pages/admin/AdminPipeline";
-import AdminMetrics from "./pages/admin/AdminMetrics";
-import AdminClientDetail from "./pages/admin/AdminClientDetail";
-import AdminGoals from "./pages/admin/AdminGoals";
-import AdminCalendar from "./pages/admin/AdminCalendar";
-import AdminChatHistory from "./pages/admin/AdminChatHistory";
-import AdminSimulations from "./pages/admin/AdminSimulations";
-import AdminCatalog from "./pages/admin/AdminCatalog";
-import MemberArea from "./pages/MemberArea";
-import PublicCatalog from "./pages/PublicCatalog";
-import Login from "./pages/auth/Login";
-import Signup from "./pages/auth/Signup";
-import ForgotPassword from "./pages/auth/ForgotPassword";
-import ResetPassword from "./pages/auth/ResetPassword";
-import NotFound from "./pages/NotFound";
+
+// Lazy-loaded pages
+const ChatFunnel = lazy(() => import("./pages/ChatFunnel"));
+const ClientDashboard = lazy(() => import("./pages/ClientDashboard"));
+const Simulator = lazy(() => import("./pages/Simulator"));
+const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
+const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
+const AdminLeads = lazy(() => import("./pages/admin/AdminLeads"));
+const AdminTasks = lazy(() => import("./pages/admin/AdminTasks"));
+const AdminMessages = lazy(() => import("./pages/admin/AdminMessages"));
+const AdminPipeline = lazy(() => import("./pages/admin/AdminPipeline"));
+const AdminMetrics = lazy(() => import("./pages/admin/AdminMetrics"));
+const AdminClientDetail = lazy(() => import("./pages/admin/AdminClientDetail"));
+const AdminGoals = lazy(() => import("./pages/admin/AdminGoals"));
+const AdminCalendar = lazy(() => import("./pages/admin/AdminCalendar"));
+const AdminChatHistory = lazy(() => import("./pages/admin/AdminChatHistory"));
+const AdminSimulations = lazy(() => import("./pages/admin/AdminSimulations"));
+const AdminCatalog = lazy(() => import("./pages/admin/AdminCatalog"));
+const MemberArea = lazy(() => import("./pages/MemberArea"));
+const PublicCatalog = lazy(() => import("./pages/PublicCatalog"));
+const Login = lazy(() => import("./pages/auth/Login"));
+const Signup = lazy(() => import("./pages/auth/Signup"));
+const ForgotPassword = lazy(() => import("./pages/auth/ForgotPassword"));
+const ResetPassword = lazy(() => import("./pages/auth/ResetPassword"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
 
+const PageLoader = () => (
+  <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+  </div>
+);
+
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/chat" element={<ChatFunnel />} />
-            <Route path="/dashboard" element={<ClientDashboard />} />
-            <Route path="/simulator" element={<Simulator />} />
-            <Route path="/catalogo" element={<PublicCatalog />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route
-              path="/admin"
-              element={
-                <ProtectedRoute>
-                  <AdminLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<AdminDashboard />} />
-              <Route path="leads" element={<AdminLeads />} />
-              <Route path="pipeline" element={<AdminPipeline />} />
-              <Route path="tasks" element={<AdminTasks />} />
-              <Route path="messages" element={<AdminMessages />} />
-              <Route path="metrics" element={<AdminMetrics />} />
-              <Route path="calendar" element={<AdminCalendar />} />
-              <Route path="goals" element={<AdminGoals />} />
-              <Route path="chat-history" element={<AdminChatHistory />} />
-              <Route path="simulations" element={<AdminSimulations />} />
-              <Route path="catalog" element={<AdminCatalog />} />
-              <Route path="client/:id" element={<AdminClientDetail />} />
-            </Route>
-            <Route
-              path="/member"
-              element={
-                <ProtectedRoute>
-                  <MemberArea />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+  <HelmetProvider>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/chat" element={<ChatFunnel />} />
+                <Route path="/dashboard" element={<ClientDashboard />} />
+                <Route path="/simulator" element={<Simulator />} />
+                <Route path="/catalogo" element={<PublicCatalog />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<Signup />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
+                <Route
+                  path="/admin"
+                  element={
+                    <ProtectedRoute>
+                      <AdminLayout />
+                    </ProtectedRoute>
+                  }
+                >
+                  <Route index element={<AdminDashboard />} />
+                  <Route path="leads" element={<AdminLeads />} />
+                  <Route path="pipeline" element={<AdminPipeline />} />
+                  <Route path="tasks" element={<AdminTasks />} />
+                  <Route path="messages" element={<AdminMessages />} />
+                  <Route path="metrics" element={<AdminMetrics />} />
+                  <Route path="calendar" element={<AdminCalendar />} />
+                  <Route path="goals" element={<AdminGoals />} />
+                  <Route path="chat-history" element={<AdminChatHistory />} />
+                  <Route path="simulations" element={<AdminSimulations />} />
+                  <Route path="catalog" element={<AdminCatalog />} />
+                  <Route path="client/:id" element={<AdminClientDetail />} />
+                </Route>
+                <Route
+                  path="/member"
+                  element={
+                    <ProtectedRoute>
+                      <MemberArea />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </HelmetProvider>
 );
 
 export default App;
