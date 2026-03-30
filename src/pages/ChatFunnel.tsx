@@ -903,65 +903,62 @@ const ChatFunnel = () => {
     }
   }, [clientId, isLoading, isTransferred, scrollToBottom, saveConversation]);
 
-  // Audio recording
+  // Audio recording using Web Speech API
   const startRecording = useCallback(async () => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast.error("Seu navegador não suporta reconhecimento de voz. Use o Chrome.");
+      return;
+    }
+
     try {
+      // Request mic permission first
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream, { mimeType: MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "audio/mp4" });
-      audioChunksRef.current = [];
-      mediaRecorderRef.current = mediaRecorder;
+      stream.getTracks().forEach(t => t.stop());
 
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) audioChunksRef.current.push(e.data);
-      };
+      const recognition = new SpeechRecognition();
+      recognition.lang = "pt-BR";
+      recognition.continuous = true;
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
 
-      mediaRecorder.onstop = async () => {
-        stream.getTracks().forEach(t => t.stop());
-        if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
-        setRecordingDuration(0);
+      let finalTranscript = "";
 
-        const blob = new Blob(audioChunksRef.current, { type: mediaRecorder.mimeType });
-        if (blob.size < 1000) { toast.error("Áudio muito curto"); return; }
-
-        setIsTranscribing(true);
-        try {
-          const reader = new FileReader();
-          const base64 = await new Promise<string>((resolve, reject) => {
-            reader.onload = () => resolve(reader.result as string);
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-          });
-
-          const resp = await fetch(
-            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/transcribe-audio`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-              },
-              body: JSON.stringify({ audio_base64: base64 }),
-            }
-          );
-
-          if (!resp.ok) throw new Error("Erro na transcrição");
-          const result = await resp.json();
-          const text = result.transcription?.trim();
-
-          if (text && text !== "[áudio inaudível]") {
-            sendMessage(text);
-          } else {
-            toast.error("Não consegui entender o áudio. Tente novamente.");
+      recognition.onresult = (event: any) => {
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript + " ";
           }
-        } catch (err) {
-          console.error("Transcription error:", err);
-          toast.error("Erro ao transcrever áudio");
-        } finally {
-          setIsTranscribing(false);
         }
       };
 
-      mediaRecorder.start(250);
+      recognition.onend = () => {
+        if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+        setRecordingDuration(0);
+        setIsRecording(false);
+
+        const text = finalTranscript.trim();
+        if (text) {
+          sendMessage(text);
+        } else {
+          toast.error("Não consegui entender o áudio. Tente novamente.");
+        }
+      };
+
+      recognition.onerror = (event: any) => {
+        console.error("Speech recognition error:", event.error);
+        if (event.error === "not-allowed") {
+          toast.error("Permita o acesso ao microfone para enviar áudios");
+        } else if (event.error !== "aborted") {
+          toast.error("Erro no reconhecimento de voz. Tente novamente.");
+        }
+        setIsRecording(false);
+        if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+        setRecordingDuration(0);
+      };
+
+      mediaRecorderRef.current = recognition as any;
+      recognition.start();
       setIsRecording(true);
       setRecordingDuration(0);
       recordingTimerRef.current = setInterval(() => setRecordingDuration(d => d + 1), 1000);
@@ -971,18 +968,18 @@ const ChatFunnel = () => {
     }
   }, [sendMessage]);
 
+
+
   const stopRecording = useCallback(() => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-      mediaRecorderRef.current.stop();
+    if (mediaRecorderRef.current) {
+      try { (mediaRecorderRef.current as any).stop(); } catch {}
     }
     setIsRecording(false);
   }, []);
 
   const cancelRecording = useCallback(() => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-      mediaRecorderRef.current.stream.getTracks().forEach(t => t.stop());
-      mediaRecorderRef.current.stop();
-      audioChunksRef.current = [];
+    if (mediaRecorderRef.current) {
+      try { (mediaRecorderRef.current as any).abort(); } catch {}
     }
     if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
     setIsRecording(false);
