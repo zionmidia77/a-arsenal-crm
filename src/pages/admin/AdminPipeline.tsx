@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { LayoutList, LayoutGrid } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAllClients, useUpdateClient } from "@/hooks/useSupabase";
@@ -31,6 +32,7 @@ const AdminPipeline = () => {
   const highlightId = searchParams.get("highlight");
   const updateClient = useUpdateClient();
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const [compactMode, setCompactMode] = useState(false);
 
   // Fetch chat conversations to show badges on cards
   const { data: chatConvos = [] } = useQuery({
@@ -136,11 +138,29 @@ const AdminPipeline = () => {
     >
       {/* Header */}
       <div className="px-5 pt-5 pb-3 space-y-3">
-        <div>
-          <h1 className="text-2xl font-display font-bold">Pipeline</h1>
-          <p className="text-sm text-muted-foreground">
-            {totalLeads} clientes no funil · Arraste para mover
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-display font-bold">Pipeline</h1>
+            <p className="text-sm text-muted-foreground">
+              {totalLeads} clientes no funil · Arraste para mover
+            </p>
+          </div>
+          <div className="flex rounded-full border border-border/50 overflow-hidden">
+            <button
+              onClick={() => setCompactMode(false)}
+              className={`p-2 transition-colors ${!compactMode ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-muted"}`}
+              title="Cards expandidos"
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => setCompactMode(true)}
+              className={`p-2 transition-colors ${compactMode ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-muted"}`}
+              title="Cards compactos"
+            >
+              <LayoutList className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
 
         {/* Filter chips */}
@@ -195,6 +215,7 @@ const AdminPipeline = () => {
                 highlightId={highlightId}
                 chatDataByClient={chatDataByClient}
                 interactionsByClient={interactionsByClient}
+                compact={compactMode}
               />
             ))}
           </div>
