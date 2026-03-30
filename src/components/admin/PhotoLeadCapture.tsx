@@ -232,6 +232,7 @@ const PhotoLeadCapture = () => {
     setEditData(null);
     setCandidates([]);
     setSelectedCandidate(null);
+    setNameConflict(null);
     setResult(null);
   };
 
