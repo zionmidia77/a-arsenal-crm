@@ -480,7 +480,7 @@ const FinancingSection = ({ client }: FinancingSectionProps) => {
                   size="sm"
                   variant="ghost"
                   className="rounded-full text-[10px] h-7 gap-1 text-primary"
-                  onClick={() => openDocImage(docUrls[doc.key])}
+                  onClick={() => openDocPreview(doc.key, docUrls[doc.key])}
                 >
                   <Eye className="w-3 h-3" /> Ver
                 </Button>
