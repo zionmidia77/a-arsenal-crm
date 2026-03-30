@@ -36,7 +36,13 @@ type SimilarityCandidate = {
   match_reasons: string[];
 };
 
-type Step = "upload" | "processing" | "review" | "duplicates" | "done";
+type NameConflict = {
+  candidateId: string;
+  candidateName: string;
+  extractedName: string;
+};
+
+type Step = "upload" | "processing" | "review" | "duplicates" | "name_conflict" | "done";
 
 const MAX_IMAGES = 5;
 const FUNCTION_TIMEOUT_MS = 90_000;
@@ -215,6 +221,7 @@ const PhotoLeadCapture = () => {
   const [candidates, setCandidates] = useState<SimilarityCandidate[]>([]);
   const [selectedCandidate, setSelectedCandidate] = useState<string | null>(null);
   const [result, setResult] = useState<{ action: string; client: any } | null>(null);
+  const [nameConflict, setNameConflict] = useState<NameConflict | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
   const qc = useQueryClient();
@@ -225,6 +232,7 @@ const PhotoLeadCapture = () => {
     setEditData(null);
     setCandidates([]);
     setSelectedCandidate(null);
+    setNameConflict(null);
     setResult(null);
   };
 
@@ -321,8 +329,31 @@ const PhotoLeadCapture = () => {
     [handleFiles],
   );
 
-  const handleMerge = async (candidateId: string) => {
+  const handleMerge = async (candidateId: string, updateName?: boolean) => {
     if (!editData) return;
+    
+    // Check name conflict before merging (only on first call, not after name decision)
+    if (updateName === undefined && editData.name) {
+      const candidate = candidates.find(c => c.id === candidateId);
+      if (candidate) {
+        const extractedName = editData.name.trim();
+        const existingName = candidate.name.trim();
+        // If names differ and extracted is longer (more complete), ask
+        if (
+          extractedName.toLowerCase() !== existingName.toLowerCase() &&
+          extractedName.split(/\s+/).length > existingName.split(/\s+/).length
+        ) {
+          setNameConflict({
+            candidateId,
+            candidateName: existingName,
+            extractedName,
+          });
+          setStep("name_conflict");
+          return;
+        }
+      }
+    }
+
     setStep("processing");
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -332,6 +363,7 @@ const PhotoLeadCapture = () => {
         image_base64_list: previews,
         action: "merge",
         merge_target_id: candidateId,
+        update_name: updateName === true ? editData.name : undefined,
       });
 
       if (data?.error) throw new Error(data.error);
@@ -656,6 +688,58 @@ const PhotoLeadCapture = () => {
               <p className="text-[10px] text-center text-muted-foreground">
                 Selecione um lead existente para mesclar, ou crie um novo lead
               </p>
+            </motion.div>
+          )}
+
+          {/* --- NAME CONFLICT STEP --- */}
+          {step === "name_conflict" && nameConflict && (
+            <motion.div
+              key="name_conflict"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="space-y-4 mt-2"
+            >
+              <div className="flex items-center gap-2 p-3 rounded-xl bg-primary/10 border border-primary/30">
+                <AlertTriangle className="w-5 h-5 text-primary shrink-0" />
+                <div>
+                  <p className="text-sm font-medium">Nome diferente encontrado</p>
+                  <p className="text-xs text-muted-foreground">
+                    O documento tem um nome mais completo que o cadastro atual.
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div className="p-3 rounded-xl border border-border/50 bg-secondary/30">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Nome atual no cadastro</p>
+                  <p className="text-sm font-medium">{nameConflict.candidateName}</p>
+                </div>
+                <div className="p-3 rounded-xl border border-primary/50 bg-primary/5">
+                  <p className="text-[10px] uppercase tracking-wider text-primary mb-1">Nome extraído do documento</p>
+                  <p className="text-sm font-bold">{nameConflict.extractedName}</p>
+                </div>
+              </div>
+
+              <p className="text-xs text-muted-foreground text-center">
+                Deseja atualizar o nome do lead para o nome completo do documento?
+              </p>
+
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1 rounded-xl"
+                  onClick={() => handleMerge(nameConflict.candidateId, false)}
+                >
+                  Manter "{nameConflict.candidateName}"
+                </Button>
+                <Button
+                  className="flex-1 rounded-xl glow-red"
+                  onClick={() => handleMerge(nameConflict.candidateId, true)}
+                >
+                  Atualizar para "{nameConflict.extractedName}"
+                </Button>
+              </div>
             </motion.div>
           )}
 

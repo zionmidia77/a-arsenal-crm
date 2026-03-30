@@ -478,12 +478,20 @@ serve(async (req) => {
       }
 
       const updates: Record<string, any> = {};
+      
+      // Handle explicit name update from client (name confrontation)
+      const explicitNameUpdate = body?.update_name;
+      if (typeof explicitNameUpdate === "string" && explicitNameUpdate.trim()) {
+        updates.name = explicitNameUpdate.trim();
+      }
+      
       if (extracted.phone && !existingClient.phone) updates.phone = extracted.phone;
       if (extracted.city && !existingClient.city) updates.city = extracted.city;
       if (extracted.email && !existingClient.email) updates.email = extracted.email;
       if (extracted.interest && !existingClient.interest) updates.interest = extracted.interest;
       if (extracted.budget_range && !existingClient.budget_range) updates.budget_range = extracted.budget_range;
       if (extracted.birthdate && !existingClient.birthdate) updates.birthdate = extracted.birthdate;
+      if (extracted.cpf && !existingClient.cpf) updates.cpf = extracted.cpf;
       if (extracted.employer && !existingClient.employer) updates.employer = extracted.employer;
       if (extracted.position && !existingClient.position) updates.position = extracted.position;
       if (extracted.salary && !existingClient.salary) updates.salary = extracted.salary;
