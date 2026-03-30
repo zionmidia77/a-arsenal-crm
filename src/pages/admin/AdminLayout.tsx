@@ -180,7 +180,7 @@ const AdminLayout = () => {
           
           <GlobalSearch />
           <PhotoLeadCapture />
-          <AddLeadDialog />
+          <AddLeadDialog externalOpen={addLeadOpen} onExternalOpenChange={setAddLeadOpen} />
           <NotificationCenter />
           <Button
             variant="ghost"
