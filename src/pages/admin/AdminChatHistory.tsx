@@ -391,7 +391,7 @@ const AdminChatHistory = () => {
                             e.currentTarget.form?.requestSubmit();
                           }
                         }}
-                        placeholder="Responder ao cliente..."
+                        placeholder="Responder ao cliente (aparece em tempo real)..."
                         rows={1}
                         disabled={isSending}
                         className="flex-1 resize-none text-sm min-h-[40px] max-h-[100px]"
