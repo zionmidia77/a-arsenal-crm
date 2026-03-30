@@ -5,7 +5,7 @@ import { Progress } from "@/components/ui/progress";
 import { Check, Gift, TrendingUp, Heart, MessageCircle, Calendar, AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react";
 import { useTasks, useUpdateTask, useOverdueTasks, useAllPendingTasks } from "@/hooks/useSupabase";
 import { useNavigate } from "react-router-dom";
-import { Skeleton } from "@/components/ui/skeleton";
+import { TaskCardSkeleton } from "@/components/admin/SkeletonLoaders";
 
 const typeIcon: Record<string, any> = { opportunity: TrendingUp, relationship: Heart, value: Gift, follow_up: TrendingUp };
 const typeColor: Record<string, string> = { opportunity: "text-primary", relationship: "text-pink-400", value: "text-success", follow_up: "text-info" };
@@ -143,7 +143,7 @@ const AdminTasks = () => {
 
       {/* Task list */}
       {isLoading ? (
-        <div className="space-y-2">{[1, 2, 3].map(i => <Skeleton key={i} className="h-16 rounded-2xl" />)}</div>
+        <div className="space-y-2">{[1, 2, 3, 4].map(i => <TaskCardSkeleton key={i} />)}</div>
       ) : (
         <div className="space-y-2">
           <AnimatePresence>

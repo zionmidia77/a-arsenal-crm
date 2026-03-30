@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { SimulationCardSkeleton } from "@/components/admin/SkeletonLoaders";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
@@ -109,7 +110,7 @@ const AdminSimulations = () => {
       {isLoading ? (
         <div className="space-y-3">
           {[1, 2, 3].map(i => (
-            <div key={i} className="h-28 bg-muted/50 rounded-xl animate-pulse" />
+            <SimulationCardSkeleton key={i} />
           ))}
         </div>
       ) : !simulations?.length ? (

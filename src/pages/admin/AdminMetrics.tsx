@@ -12,6 +12,7 @@ import {
 } from "recharts";
 import { useAllClients } from "@/hooks/useSupabase";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StatCardSkeleton, MetricsChartSkeleton } from "@/components/admin/SkeletonLoaders";
 import { useMemo, useState } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -155,9 +156,9 @@ const AdminMetrics = () => {
       <div className="p-5 space-y-4">
         <Skeleton className="h-8 w-48" />
         <div className="grid grid-cols-2 gap-3">
-          {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-28 rounded-2xl" />)}
+          {[1, 2, 3, 4].map(i => <StatCardSkeleton key={i} />)}
         </div>
-        {[1, 2, 3].map(i => <Skeleton key={i} className="h-52 rounded-2xl" />)}
+        {[1, 2, 3].map(i => <MetricsChartSkeleton key={i} />)}
       </div>
     );
   }

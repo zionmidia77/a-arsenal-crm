@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Copy, Check, Search, MessageCircle, Users, Send, Plus, Trash2, Eye, EyeOff } from "lucide-react";
 import { useMessageTemplates, useClients, useCreateMessageTemplate, useDeleteMessageTemplate } from "@/hooks/useSupabase";
-import { Skeleton } from "@/components/ui/skeleton";
+import { MessageCardSkeleton } from "@/components/admin/SkeletonLoaders";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -289,7 +289,7 @@ const AdminMessages = () => {
       </motion.div>
 
       {isLoading ? (
-        <div className="space-y-3">{[1, 2, 3].map(i => <Skeleton key={i} className="h-32 rounded-2xl" />)}</div>
+        <div className="space-y-3">{[1, 2, 3].map(i => <MessageCardSkeleton key={i} />)}</div>
       ) : (
         <div className="space-y-3">
           {filtered.map((t) => {

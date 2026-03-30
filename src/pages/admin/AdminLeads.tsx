@@ -6,7 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { MessageCircle, Copy, Check, Search, Eye, SortAsc, SortDesc, Filter, CalendarIcon, X, GitMerge, CheckSquare, Phone, CalendarPlus, ChevronDown, FileDown } from "lucide-react";
 import { useClients, useTags, useMessageTemplates } from "@/hooks/useSupabase";
 import { useNavigate } from "react-router-dom";
-import { Skeleton } from "@/components/ui/skeleton";
+import { LeadCardSkeleton } from "@/components/admin/SkeletonLoaders";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
@@ -373,7 +373,7 @@ const AdminLeads = () => {
       </motion.div>
 
       {isLoading ? (
-        <div className="space-y-3">{[1, 2, 3].map(i => <Skeleton key={i} className="h-32 rounded-2xl" />)}</div>
+        <div className="space-y-3">{[1, 2, 3, 4].map(i => <LeadCardSkeleton key={i} />)}</div>
       ) : (
         <div className="space-y-3">
           {filtered.map((client) => (

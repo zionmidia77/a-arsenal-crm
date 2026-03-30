@@ -5,6 +5,7 @@ import { useAllClients, useUpdateClient } from "@/hooks/useSupabase";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
+import { KanbanColumnSkeleton } from "@/components/admin/SkeletonLoaders";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { DragDropContext, type DropResult } from "@hello-pangea/dnd";
@@ -116,9 +117,9 @@ const AdminPipeline = () => {
     return (
       <div className="p-5 space-y-4">
         <Skeleton className="h-8 w-48" />
-        <div className="flex gap-3">
+        <div className="flex gap-3 overflow-hidden">
           {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="h-[300px] w-[260px] rounded-2xl" />
+            <KanbanColumnSkeleton key={i} />
           ))}
         </div>
       </div>

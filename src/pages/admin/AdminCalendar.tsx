@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, MessageCircle, Check } from "lucide-react";
 import { useAllPendingTasks, useUpdateTask } from "@/hooks/useSupabase";
 import { useNavigate } from "react-router-dom";
-import { Skeleton } from "@/components/ui/skeleton";
+import { CalendarSkeleton } from "@/components/admin/SkeletonLoaders";
 
 const DAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 const MONTHS = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
@@ -92,7 +92,7 @@ const AdminCalendar = () => {
 
         {/* Calendar grid */}
         {isLoading ? (
-          <Skeleton className="h-48 rounded-xl" />
+          <CalendarSkeleton />
         ) : (
           <div className="grid grid-cols-7 gap-1">
             {calendarCells.map((day, i) => {

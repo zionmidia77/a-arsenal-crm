@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Plus, Camera, Search, Package, DollarSign, Clock, TrendingUp, Trash2, Edit, Eye, QrCode } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
+import { VehicleCardSkeleton } from "@/components/admin/SkeletonLoaders";
 import VehicleFormDialog from "@/components/catalog/VehicleFormDialog";
 import VehiclePhotoUpload from "@/components/catalog/VehiclePhotoUpload";
 import VehicleCostManager from "@/components/catalog/VehicleCostManager";
@@ -168,7 +169,9 @@ const AdminCatalog = () => {
 
       {/* Vehicle Grid */}
       {isLoading ? (
-        <div className="text-center py-12 text-muted-foreground">Carregando...</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1, 2, 3, 4, 5, 6].map(i => <VehicleCardSkeleton key={i} />)}
+        </div>
       ) : filtered.length === 0 ? (
         <Card>
           <CardContent className="p-12 text-center">
