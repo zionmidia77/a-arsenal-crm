@@ -531,6 +531,103 @@ export type Database = {
           },
         ]
       }
+      lead_memory: {
+        Row: {
+          ai_tags: string[] | null
+          behavior_patterns: string[] | null
+          client_id: string
+          created_at: string
+          decisions: string[] | null
+          id: string
+          interests: string[] | null
+          last_analyzed_at: string | null
+          lead_temperature_ai: string | null
+          objections: string[] | null
+          recommended_action: string | null
+          recommended_message: string | null
+          summary: string | null
+          updated_at: string
+        }
+        Insert: {
+          ai_tags?: string[] | null
+          behavior_patterns?: string[] | null
+          client_id: string
+          created_at?: string
+          decisions?: string[] | null
+          id?: string
+          interests?: string[] | null
+          last_analyzed_at?: string | null
+          lead_temperature_ai?: string | null
+          objections?: string[] | null
+          recommended_action?: string | null
+          recommended_message?: string | null
+          summary?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ai_tags?: string[] | null
+          behavior_patterns?: string[] | null
+          client_id?: string
+          created_at?: string
+          decisions?: string[] | null
+          id?: string
+          interests?: string[] | null
+          last_analyzed_at?: string | null
+          lead_temperature_ai?: string | null
+          objections?: string[] | null
+          recommended_action?: string | null
+          recommended_message?: string | null
+          summary?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_memory_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: true
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lead_timeline_events: {
+        Row: {
+          client_id: string
+          content: string
+          created_at: string
+          event_type: Database["public"]["Enums"]["timeline_event_type"]
+          id: string
+          metadata: Json | null
+          source: string
+        }
+        Insert: {
+          client_id: string
+          content: string
+          created_at?: string
+          event_type: Database["public"]["Enums"]["timeline_event_type"]
+          id?: string
+          metadata?: Json | null
+          source?: string
+        }
+        Update: {
+          client_id?: string
+          content?: string
+          created_at?: string
+          event_type?: Database["public"]["Enums"]["timeline_event_type"]
+          id?: string
+          metadata?: Json | null
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_timeline_events_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       message_templates: {
         Row: {
           category: string
@@ -1234,7 +1331,24 @@ export type Database = {
         | "thinking"
         | "waiting_response"
         | "scheduled"
+        | "proposal_sent"
+        | "financing_analysis"
+        | "approved"
+        | "rejected"
+        | "reactivation"
       task_type: "opportunity" | "relationship" | "value" | "follow_up"
+      timeline_event_type:
+        | "message_sent"
+        | "message_received"
+        | "whatsapp_paste"
+        | "status_change"
+        | "proposal_sent"
+        | "document_uploaded"
+        | "ai_analysis"
+        | "inactivity_detected"
+        | "note"
+        | "call"
+        | "visit"
       vehicle_status: "current" | "sold" | "traded"
     }
     CompositeTypes: {
@@ -1386,8 +1500,26 @@ export const Constants = {
         "thinking",
         "waiting_response",
         "scheduled",
+        "proposal_sent",
+        "financing_analysis",
+        "approved",
+        "rejected",
+        "reactivation",
       ],
       task_type: ["opportunity", "relationship", "value", "follow_up"],
+      timeline_event_type: [
+        "message_sent",
+        "message_received",
+        "whatsapp_paste",
+        "status_change",
+        "proposal_sent",
+        "document_uploaded",
+        "ai_analysis",
+        "inactivity_detected",
+        "note",
+        "call",
+        "visit",
+      ],
       vehicle_status: ["current", "sold", "traded"],
     },
   },
