@@ -57,6 +57,18 @@ Tipos de documentos suportados:
 - RG / CPF
 - Outro documento
 
+Para HOLERITE/CONTRACHEQUE, extraia TUDO que encontrar:
+- Nome completo do funcionário
+- CPF do funcionário
+- Salário bruto e líquido
+- Cargo/função
+- Data de admissão (importante!)
+- Nome da empresa/empregador
+- CNPJ da empresa
+- Endereço da empresa (se disponível no cabeçalho)
+- Telefone da empresa (se disponível)
+- Mês/ano de referência
+
 Responda APENAS com JSON válido:
 {
   "document_type": "cnh" | "income_proof" | "address_proof" | "identity" | "other" | "not_document",
@@ -71,9 +83,15 @@ Responda APENAS com JSON válido:
     "cnh_expiry": "validade YYYY-MM-DD ou null",
     "address": "endereço completo ou null",
     "city": "cidade ou null",
-    "employer": "empregador ou null",
-    "position": "cargo ou null",
+    "employer": "nome da empresa/empregador ou null",
+    "employer_cnpj": "CNPJ da empresa ou null",
+    "employer_address": "endereço da empresa ou null",
+    "employer_phone": "telefone da empresa ou null",
+    "employer_cep": "CEP da empresa ou null",
+    "position": "cargo/função ou null",
     "salary": null ou número (salário bruto em reais),
+    "salary_net": null ou número (salário líquido em reais),
+    "admission_date": "data de admissão YYYY-MM-DD ou null",
     "income_period": "mês/ano referência ou null"
   },
   "summary": "Resumo breve do documento em 1-2 frases",
@@ -138,7 +156,33 @@ Se a imagem NÃO for um documento, retorne document_type: "not_document" com sum
         docUpdates.pay_stub = true;
         if (ext.employer) updates.employer = ext.employer;
         if (ext.position) updates.position = ext.position;
-        if (ext.salary) updates.salary = ext.salary;
+        if (ext.salary) {
+          updates.salary = ext.salary;
+          updates.gross_income = ext.salary;
+        }
+        if (ext.employer_cnpj) updates.employer_cnpj = ext.employer_cnpj;
+        if (ext.employer_address) updates.employer_address = ext.employer_address;
+        if (ext.employer_phone) updates.employer_phone = ext.employer_phone;
+        if (ext.employer_cep) updates.employer_cep = ext.employer_cep;
+        if (ext.cpf) updates.cpf = ext.cpf;
+        if (ext.full_name) updates.name = ext.full_name;
+        
+        // Calculate employment_time from admission_date
+        if (ext.admission_date) {
+          try {
+            const admission = new Date(ext.admission_date);
+            const now = new Date();
+            const diffMs = now.getTime() - admission.getTime();
+            const totalMonths = Math.floor(diffMs / (1000 * 60 * 60 * 24 * 30.44));
+            const years = Math.floor(totalMonths / 12);
+            const months = totalMonths % 12;
+            if (years > 0) {
+              updates.employment_time = `${years} ano${years > 1 ? 's' : ''}${months > 0 ? ` e ${months} mes${months > 1 ? 'es' : ''}` : ''}`;
+            } else {
+              updates.employment_time = `${months} mes${months !== 1 ? 'es' : ''}`;
+            }
+          } catch {}
+        }
       }
 
       if (result.document_type === "address_proof") {
