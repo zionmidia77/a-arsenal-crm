@@ -596,6 +596,10 @@ const ChatFunnel = () => {
         scrollToBottom();
       };
 
+      // Delay variável para simular digitação humana (1-4 segundos)
+      const humanDelay = 1000 + Math.random() * 3000;
+      await new Promise(resolve => setTimeout(resolve, humanDelay));
+
       try {
         const resp = await fetch(CHAT_URL, {
           method: "POST",
