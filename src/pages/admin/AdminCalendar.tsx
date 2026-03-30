@@ -92,7 +92,7 @@ const AdminCalendar = () => {
 
         {/* Calendar grid */}
         {isLoading ? (
-          <Skeleton className="h-48 rounded-xl" />
+          <CalendarSkeleton />
         ) : (
           <div className="grid grid-cols-7 gap-1">
             {calendarCells.map((day, i) => {

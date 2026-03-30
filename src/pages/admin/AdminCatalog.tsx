@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Plus, Camera, Search, Package, DollarSign, Clock, TrendingUp, Trash2, Edit, Eye, QrCode } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
+import { VehicleCardSkeleton } from "@/components/admin/SkeletonLoaders";
 import VehicleFormDialog from "@/components/catalog/VehicleFormDialog";
 import VehiclePhotoUpload from "@/components/catalog/VehiclePhotoUpload";
 import VehicleCostManager from "@/components/catalog/VehicleCostManager";
