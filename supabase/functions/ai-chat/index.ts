@@ -118,6 +118,7 @@ const tools = [
             type: "string",
             description: "The UUID of the lead to update",
           },
+          name: { type: "string", description: "Updated full name of the client (use when client introduces themselves or corrects their name)" },
           interest: { type: "string", description: "comprar, trocar, vender, refinanciar" },
           budget_range: { type: "string", description: "e.g. 'R$ 15 a 30 mil'" },
           has_trade_in: { type: "boolean" },
