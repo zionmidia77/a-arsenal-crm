@@ -273,7 +273,22 @@ const AdminChatHistory = () => {
                 {filteredConversations.map((convo) => {
                   const msgCount = Array.isArray(convo.messages) ? convo.messages.length : 0;
                   const lastMsg = Array.isArray(convo.messages) ? convo.messages[convo.messages.length - 1] : null;
-                  const clientName = convo.clients?.name || "Visitante";
+                  
+                  // Try to extract name from messages if no client linked
+                  let clientName = convo.clients?.name || "";
+                  if (!clientName && Array.isArray(convo.messages)) {
+                    // Look for assistant messages that greet by name (e.g. "Fala João", "E aí Maria")
+                    for (const msg of convo.messages) {
+                      if (msg.role === "assistant") {
+                        const greetMatch = msg.content.match(/(?:fala|e aí|oi|olá|eai)\s+([A-ZÀ-Ú][a-zà-ú]+)/i);
+                        if (greetMatch) {
+                          clientName = greetMatch[1];
+                          break;
+                        }
+                      }
+                    }
+                  }
+                  if (!clientName) clientName = "Visitante";
 
                   return (
                     <Card
