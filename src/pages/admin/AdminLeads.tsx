@@ -195,7 +195,7 @@ const AdminLeads = () => {
     });
 
   return (
-    <motion.div variants={stagger} initial="initial" animate="animate" className="p-5 md:p-6 space-y-5 max-w-4xl">
+    <motion.div variants={stagger} initial="initial" animate="animate" className="p-4 md:p-6 space-y-4 md:space-y-5 max-w-5xl xl:max-w-6xl">
       <motion.div variants={fadeUp} className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-display font-bold">Leads</h1>
