@@ -567,6 +567,7 @@ async function executeTool(
           return JSON.stringify({
             success: true,
             client_id: existingClient.id,
+            client_name: existingClient.name,
             existing_client: true,
             message: `CLIENTE JÁ CADASTRADO! "${existingClient.name}" (ID: ${existingClient.id}) já existe no sistema. NÃO crie outro lead. Use update_lead para atualizar dados.\n\nDADOS EXISTENTES:\n${history.join("\n")}\n\nÚLTIMAS INTERAÇÕES:\n${interactionSummary || "Nenhuma interação recente."}\n\nIMPORTANTE: Cumprimente o cliente pelo nome, demonstre que já o conhece e pergunte como pode ajudar desta vez. Retome o contexto anterior naturalmente.`,
           });
