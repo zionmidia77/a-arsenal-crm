@@ -176,6 +176,15 @@ const AdminLayout = () => {
           <PhotoLeadCapture />
           <AddLeadDialog />
           <NotificationCenter />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-full md:hidden text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+            onClick={signOut}
+            title="Sair"
+          >
+            <LogOut className="h-4 w-4" />
+          </Button>
         </header>
         <main className={`flex-1 overflow-y-auto ${!isClientDetail ? "pb-20 md:pb-0" : ""}`}>
           <AdminBreadcrumb />
