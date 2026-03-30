@@ -15,7 +15,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 // Gather full lead context
 async function getLeadContext(clientId: string) {
-  const [clientRes, interactionsRes, vehiclesRes, memoryRes, timelineRes, simulationsRes, tagsRes, conversationsRes] = await Promise.all([
+  const [clientRes, interactionsRes, vehiclesRes, memoryRes, timelineRes, simulationsRes, tagsRes, conversationsRes, stockRes] = await Promise.all([
     supabase.from("clients").select("*").eq("id", clientId).single(),
     supabase.from("interactions").select("*").eq("client_id", clientId).order("created_at", { ascending: false }).limit(30),
     supabase.from("vehicles").select("*").eq("client_id", clientId),
@@ -24,6 +24,7 @@ async function getLeadContext(clientId: string) {
     supabase.from("financing_simulations").select("*").eq("client_id", clientId).order("created_at", { ascending: false }).limit(5),
     supabase.from("client_tag_assignments").select("*, client_tags(*)").eq("client_id", clientId),
     supabase.from("chat_conversations").select("*").eq("client_id", clientId).order("created_at", { ascending: false }).limit(3),
+    supabase.from("stock_vehicles").select("*").eq("status", "available").order("created_at", { ascending: false }).limit(20),
   ]);
 
   return {
@@ -35,6 +36,7 @@ async function getLeadContext(clientId: string) {
     simulations: simulationsRes.data || [],
     tags: (tagsRes.data || []).map((t: any) => t.client_tags?.name).filter(Boolean),
     recentConversations: conversationsRes.data || [],
+    stockVehicles: stockRes.data || [],
   };
 }
 
