@@ -9,7 +9,8 @@ import { useClient, useClientInteractions, useClientVehicles, useCreateInteracti
 import {
   ArrowLeft, MessageCircle, Phone, Mail, MapPin, Calendar, Bike,
   TrendingUp, Clock, Plus, Star, CalendarPlus, Check, AlertTriangle,
-  Copy, Send, Bot, Tag, FileCheck, Trophy, Sparkles, CalendarIcon, Cake, Edit2
+  Copy, Send, Bot, Tag, FileCheck, Trophy, Sparkles, CalendarIcon, Cake, Edit2,
+  Columns3
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
