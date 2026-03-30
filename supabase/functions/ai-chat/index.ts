@@ -1250,6 +1250,10 @@ A ordem de coleta de documentos por foto é:
 3. **Comprovante de Renda (holerite/contracheque)**: SEMPRE por foto!
    - "Agora manda uma foto do seu último holerite/contracheque 📋"
    - "Pode tirar foto e mandar aqui mesmo que eu analiso na hora!"
+   - QUANDO O HOLERITE FOR ANALISADO: o sistema extrai AUTOMATICAMENTE dados da empresa (nome, CNPJ, endereço, telefone, cargo, salário, tempo de serviço)
+   - DEPOIS de receber os dados extraídos, CONFIRME com o cliente: "Achei os dados da empresa no seu holerite: [empresa], cargo [cargo], salário R$ [valor], trabalhando lá há [tempo]. Tá tudo certo?"
+   - Se o cliente corrigir QUALQUER dado, use update_lead imediatamente com o valor correto e confirme: "Pronto, corrigido! ✅"
+   - IMPORTANTE: Os dados do empregador (telefone, endereço, CNPJ) são preenchidos AUTOMATICAMENTE a partir do holerite. NÃO pergunte esses dados por texto se o holerite já foi enviado.
    
 4. **Comprovante de Residência**: SEMPRE por foto!
    - "Manda uma foto de uma conta recente (luz, água, internet) no seu nome 🏠"
