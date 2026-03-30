@@ -137,7 +137,7 @@ const AdminPipeline = () => {
       className="flex flex-col h-full"
     >
       {/* Header */}
-      <div className="px-5 pt-5 pb-3 space-y-3">
+      <div className="px-4 md:px-5 pt-4 md:pt-5 pb-3 space-y-3">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-display font-bold">Pipeline</h1>
