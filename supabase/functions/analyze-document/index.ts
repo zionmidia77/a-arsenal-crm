@@ -156,7 +156,33 @@ Se a imagem NÃO for um documento, retorne document_type: "not_document" com sum
         docUpdates.pay_stub = true;
         if (ext.employer) updates.employer = ext.employer;
         if (ext.position) updates.position = ext.position;
-        if (ext.salary) updates.salary = ext.salary;
+        if (ext.salary) {
+          updates.salary = ext.salary;
+          updates.gross_income = ext.salary;
+        }
+        if (ext.employer_cnpj) updates.employer_cnpj = ext.employer_cnpj;
+        if (ext.employer_address) updates.employer_address = ext.employer_address;
+        if (ext.employer_phone) updates.employer_phone = ext.employer_phone;
+        if (ext.employer_cep) updates.employer_cep = ext.employer_cep;
+        if (ext.cpf) updates.cpf = ext.cpf;
+        if (ext.full_name) updates.name = ext.full_name;
+        
+        // Calculate employment_time from admission_date
+        if (ext.admission_date) {
+          try {
+            const admission = new Date(ext.admission_date);
+            const now = new Date();
+            const diffMs = now.getTime() - admission.getTime();
+            const totalMonths = Math.floor(diffMs / (1000 * 60 * 60 * 24 * 30.44));
+            const years = Math.floor(totalMonths / 12);
+            const months = totalMonths % 12;
+            if (years > 0) {
+              updates.employment_time = `${years} ano${years > 1 ? 's' : ''}${months > 0 ? ` e ${months} mes${months > 1 ? 'es' : ''}` : ''}`;
+            } else {
+              updates.employment_time = `${months} mes${months !== 1 ? 'es' : ''}`;
+            }
+          } catch {}
+        }
       }
 
       if (result.document_type === "address_proof") {
