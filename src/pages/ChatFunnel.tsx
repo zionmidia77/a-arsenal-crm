@@ -679,20 +679,37 @@ const ChatFunnel = () => {
 
         // Attach pending vehicles to the last assistant message
         const vehiclesToAttach = pendingVehiclesRef.current;
+        const photosToAttach = pendingPhotosRef.current;
         setMessages(prev => {
+          let updated = [...prev];
+
+          // Attach vehicles to last assistant message
           if (vehiclesToAttach && vehiclesToAttach.length > 0) {
-            const updated = prev.map((m, i) =>
-              i === prev.length - 1 && m.role === "assistant"
+            updated = updated.map((m, i) =>
+              i === updated.length - 1 && m.role === "assistant"
                 ? { ...m, vehicles: vehiclesToAttach }
                 : m
             );
             setPendingVehicles(null);
             pendingVehiclesRef.current = null;
-            saveConversation(updated, latestClientId);
-            return updated;
           }
-          saveConversation(prev, latestClientId);
-          return prev;
+
+          // Add individual photos as separate messages after the assistant text
+          if (photosToAttach && photosToAttach.length > 0) {
+            const photoMessages: ChatMessage[] = photosToAttach.map((url, i) => ({
+              id: `photo-${Date.now()}-${i}`,
+              role: "assistant" as const,
+              content: "",
+              timestamp: new Date(),
+              photos: [url],
+            }));
+            updated = [...updated, ...photoMessages];
+            setPendingPhotos(null);
+            pendingPhotosRef.current = null;
+          }
+
+          saveConversation(updated, latestClientId);
+          return updated;
         });
       }
     },
