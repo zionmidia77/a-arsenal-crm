@@ -946,7 +946,27 @@ const ChatFunnel = () => {
       let responseContent = "";
 
       if (result.document_type === "not_document") {
-        responseContent = "Hmm, isso não parece ser um documento. 🤔 Manda a foto da sua **CNH**, **holerite** ou **comprovante de residência** que eu analiso rapidinho!";
+        // Check what docs are pending to guide the client
+        let pendingHint = "";
+        if (clientId) {
+          const { data: cl } = await supabase.from("clients").select("financing_docs").eq("id", clientId).maybeSingle();
+          const docs = cl?.financing_docs as Record<string, boolean> | null;
+          if (docs) {
+            const pending: string[] = [];
+            if (!docs.cnh) pending.push("📸 **CNH** (frente e verso) — ou RG + CPF se não tiver CNH");
+            if (!docs.pay_stub) pending.push("💰 **Holerite/Contracheque** — foto do seu comprovante de renda");
+            if (!docs.proof_of_residence) pending.push("🏠 **Comprovante de residência** — conta de luz, água ou telefone recente");
+            if (pending.length > 0) {
+              pendingHint = "\n\nO que eu preciso agora:\n" + pending.join("\n");
+            }
+          }
+        }
+        if (!pendingHint) {
+          pendingHint = "\n\nO que eu preciso:\n📸 **CNH** (frente e verso)\n💰 **Holerite** (comprovante de renda)\n🏠 **Comprovante de residência** (conta de luz, água...)";
+        }
+        responseContent = `Eii, essa foto não é um documento que eu consigo analisar 😅\n\nTira uma foto bem nítida de um desses documentos e manda pra mim:${pendingHint}\n\n💡 **Dica:** tira a foto num lugar com boa luz, sem reflexo, e com o documento inteiro aparecendo!`;
+      } else if (result.document_type === "other") {
+        responseContent = `Recebi a foto, mas esse documento não é o que eu preciso pro financiamento 🤔\n\nPreciso de um desses:\n📸 **CNH** — sua carteira de motorista (frente e verso)\n💰 **Holerite** — seu contracheque ou comprovante de renda\n🏠 **Comprovante de residência** — conta de luz, água ou telefone\n\nManda a foto de um desses que eu analiso na hora! 📷`;
       } else {
         const label = docLabels[result.document_type] || "Documento";
         responseContent = `✅ **${label}** recebido e analisado!\n\n`;
