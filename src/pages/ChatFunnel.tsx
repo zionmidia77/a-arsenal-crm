@@ -359,10 +359,18 @@ const ChatFunnel = () => {
                   const newClientId = parsed.metadata.client_id;
                   latestClientId = newClientId;
                   setClientId(newClientId);
-                  supabase.from("clients").select("name").eq("id", newClientId).maybeSingle().then(({ data: c }) => {
-                    if (c?.name) setClientName(c.name.split(" ")[0]);
-                  });
+                  // Use client_name from metadata if available, otherwise fetch
+                  if (parsed.metadata.client_name) {
+                    setClientName(parsed.metadata.client_name.split(" ")[0]);
+                  } else {
+                    supabase.from("clients").select("name").eq("id", newClientId).maybeSingle().then(({ data: c }) => {
+                      if (c?.name) setClientName(c.name.split(" ")[0]);
+                    });
+                  }
                   saveConversation(newMessages, newClientId);
+                } else if (parsed.metadata.client_name) {
+                  // Name updated without new client_id (e.g. update_lead with name)
+                  setClientName(parsed.metadata.client_name.split(" ")[0]);
                 }
                 if (parsed.metadata.vehicles?.length) {
                   setPendingVehicles(parsed.metadata.vehicles);
