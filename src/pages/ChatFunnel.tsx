@@ -772,6 +772,10 @@ const ChatFunnel = () => {
                   const newClientId = parsed.metadata.client_id;
                   latestClientId = newClientId;
                   setClientId(newClientId);
+                  // Fetch client name
+                  supabase.from("clients").select("name").eq("id", newClientId).maybeSingle().then(({ data: c }) => {
+                    if (c?.name) setClientName(c.name.split(" ")[0]);
+                  });
                   saveConversation(newMessages, newClientId);
                 }
                 if (parsed.metadata.vehicles?.length) {
