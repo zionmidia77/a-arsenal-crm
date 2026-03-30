@@ -105,11 +105,13 @@ const Index = () => {
               Ver catálogo
             </Button>
             <Button
-              onClick={() => navigate("/simulator")}
+              disabled
               variant="outline"
-              className="flex-1 h-12 rounded-xl border-border/50 hover:border-primary/30 transition-colors"
+              className="flex-1 h-12 rounded-xl border-border/50 opacity-60 cursor-not-allowed relative overflow-hidden"
             >
+              <Lock className="w-4 h-4 mr-2 animate-pulse" />
               Simular
+              <span className="absolute inset-0 rounded-xl border-2 border-primary/20 animate-pulse pointer-events-none" />
             </Button>
           </div>
         </motion.div>
