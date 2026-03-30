@@ -116,9 +116,9 @@ const AdminPipeline = () => {
     return (
       <div className="p-5 space-y-4">
         <Skeleton className="h-8 w-48" />
-        <div className="flex gap-3">
+        <div className="flex gap-3 overflow-hidden">
           {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="h-[300px] w-[260px] rounded-2xl" />
+            <KanbanColumnSkeleton key={i} />
           ))}
         </div>
       </div>
