@@ -56,6 +56,7 @@ const Index = () => {
           <Button variant="ghost" size="sm" onClick={() => navigate("/member")} className="text-xs text-muted-foreground">
             Minha área
           </Button>
+          <ThemeToggle />
         </div>
       </motion.nav>
 
