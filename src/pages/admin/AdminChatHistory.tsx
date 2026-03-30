@@ -337,7 +337,18 @@ const AdminChatHistory = () => {
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg flex items-center gap-2">
                     <MessageSquare className="w-4 h-4 text-primary" />
-                    {selectedConvo.clients?.name || "Visitante"}
+                    {(() => {
+                      let name = selectedConvo.clients?.name || "";
+                      if (!name && Array.isArray(selectedConvo.messages)) {
+                        for (const msg of selectedConvo.messages) {
+                          if (msg.role === "assistant") {
+                            const m = msg.content.match(/(?:fala|e aí|oi|olá|eai)\s+([A-ZÀ-Ú][a-zà-ú]+)/i);
+                            if (m) { name = m[1]; break; }
+                          }
+                        }
+                      }
+                      return name || "Visitante";
+                    })()}
                     {selectedConvo.clients?.phone && (
                       <span className="text-sm font-normal text-muted-foreground">
                         · {selectedConvo.clients.phone}
