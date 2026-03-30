@@ -510,14 +510,29 @@ const FinancingSection = ({ client }: FinancingSectionProps) => {
                 {doc.emoji} {doc.label}
               </span>
               {docUrls[doc.key] && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="rounded-full text-[10px] h-7 gap-1 text-primary"
-                  onClick={() => openDocPreview(doc.key, docUrls[doc.key])}
-                >
-                  <Eye className="w-3 h-3" /> Ver
-                </Button>
+                <>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="rounded-full text-[10px] h-7 gap-1 text-primary"
+                    onClick={() => openDocPreview(doc.key, docUrls[doc.key])}
+                  >
+                    <Eye className="w-3 h-3" /> Ver
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="rounded-full text-[10px] h-7 gap-1 text-destructive"
+                    disabled={deleting === doc.key}
+                    onClick={() => handleDeleteDoc(doc.key)}
+                  >
+                    {deleting === doc.key ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <Trash2 className="w-3 h-3" />
+                    )}
+                  </Button>
+                </>
               )}
               <Button
                 size="sm"
