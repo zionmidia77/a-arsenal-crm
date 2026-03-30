@@ -131,6 +131,24 @@ const AdminLeads = () => {
 
   const hasActiveFilters = filter !== "all" || stageFilter !== "all" || sourceFilter !== "all" || tagFilter !== "all" || dateFrom || dateTo;
 
+  const exportCSV = () => {
+    if (!filtered.length) { toast.error("Nenhum lead para exportar"); return; }
+    const headers = ["Nome", "Telefone", "Email", "Interesse", "Orçamento", "Temperatura", "Etapa", "Fonte", "Score", "Data"];
+    const rows = filtered.map(c => [
+      c.name, c.phone || "", c.email || "", c.interest || "", c.budget_range || "",
+      tempLabel[c.temperature] || c.temperature, STAGE_LABELS[c.pipeline_stage] || c.pipeline_stage,
+      sourceLabel[c.source || ""] || c.source || "", String(c.lead_score),
+      new Date(c.created_at).toLocaleDateString("pt-BR"),
+    ]);
+    const csv = [headers, ...rows].map(r => r.map(v => `"${v.replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `leads-arsenal-${format(new Date(), "yyyy-MM-dd")}.csv`;
+    a.click(); URL.revokeObjectURL(url);
+    toast.success(`${filtered.length} leads exportados!`);
+  };
+
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
