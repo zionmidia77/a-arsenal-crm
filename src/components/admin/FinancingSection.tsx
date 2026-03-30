@@ -923,6 +923,50 @@ const FinancingSection = ({ client }: FinancingSectionProps) => {
           </Button>
         </div>
       </motion.div>
+
+      {/* Document Preview Modal */}
+      {previewDoc && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+          onClick={() => setPreviewDoc(null)}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="relative max-w-lg w-full max-h-[85vh] bg-card rounded-2xl overflow-hidden shadow-2xl border border-border"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-3 border-b border-border">
+              <p className="text-sm font-medium">{previewDoc.label}</p>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 text-[10px] gap-1"
+                  onClick={() => window.open(previewDoc.url, "_blank")}
+                >
+                  <ExternalLink className="w-3 h-3" /> Abrir
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 text-[10px]"
+                  onClick={() => setPreviewDoc(null)}
+                >
+                  ✕
+                </Button>
+              </div>
+            </div>
+            <div className="overflow-auto max-h-[75vh] p-2 flex items-center justify-center">
+              <img
+                src={previewDoc.url}
+                alt={previewDoc.label}
+                className="max-w-full max-h-[70vh] object-contain rounded-lg"
+              />
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };
