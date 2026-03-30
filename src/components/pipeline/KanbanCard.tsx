@@ -21,9 +21,10 @@ interface KanbanCardProps {
   chatCount?: number;
   hasActiveChat?: boolean;
   interactionCount?: number;
+  compact?: boolean;
 }
 
-const KanbanCard = ({ client, index, highlight, chatCount = 0, hasActiveChat = false, interactionCount = 0 }: KanbanCardProps) => {
+const KanbanCard = ({ client, index, highlight, chatCount = 0, hasActiveChat = false, interactionCount = 0, compact = false }: KanbanCardProps) => {
   const navigate = useNavigate();
 
   const noContact = interactionCount === 0 && client.pipeline_stage === "new";
