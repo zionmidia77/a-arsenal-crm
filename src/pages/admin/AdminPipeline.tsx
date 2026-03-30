@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { LayoutList, LayoutGrid } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAllClients, useUpdateClient } from "@/hooks/useSupabase";
