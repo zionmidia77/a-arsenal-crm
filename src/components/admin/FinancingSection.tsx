@@ -249,6 +249,39 @@ const FinancingSection = ({ client }: FinancingSectionProps) => {
     }
   };
 
+  const handleDeleteDoc = async (docKey: string) => {
+    setDeleting(docKey);
+    try {
+      // List files for this doc type
+      const { data: files } = await supabase.storage
+        .from("financing-docs")
+        .list(client.id);
+      const toDelete = (files || []).filter(f => f.name.startsWith(docKey));
+      if (toDelete.length > 0) {
+        await supabase.storage
+          .from("financing-docs")
+          .remove(toDelete.map(f => `${client.id}/${f.name}`));
+      }
+      // Unmark doc
+      const newDocs = { ...docs, [docKey]: false };
+      updateClient.mutate({
+        id: client.id,
+        financing_docs: newDocs,
+        financing_status: "incomplete",
+      } as any);
+      setDocUrls(prev => {
+        const next = { ...prev };
+        delete next[docKey];
+        return next;
+      });
+      toast.success("Documento removido!");
+    } catch (err: any) {
+      toast.error("Erro ao remover: " + (err.message || "tente novamente"));
+    } finally {
+      setDeleting(null);
+    }
+  };
+
   const handleUploadDoc = async (docKey: string, file: File) => {
     if (!file.type.startsWith("image/")) {
       toast.error("Envie uma imagem");
