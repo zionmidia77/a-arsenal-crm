@@ -216,21 +216,29 @@ const tools = [
     function: {
       name: "search_vehicles",
       description:
-        "Search available vehicles in the inventory. Use to recommend options matching the client's profile and budget.",
+        "Search available vehicles in the inventory. Use to recommend options matching the client's profile and budget. When the client mentions a vehicle name like 'Onix', 'CG 160', 'Factor', search by model. When they mention a manufacturer like 'Honda', 'Chevrolet', 'Yamaha', search by brand. You can also pass a general search_term that searches both brand and model.",
       parameters: {
         type: "object",
         properties: {
           brand: {
             type: "string",
-            description: "Brand filter (e.g. Honda, Yamaha)",
+            description: "Brand/manufacturer filter (e.g. Honda, Yamaha, Chevrolet)",
+          },
+          model: {
+            type: "string",
+            description: "Model name filter (e.g. Onix, CG 160, Factor, Fazer)",
+          },
+          search_term: {
+            type: "string",
+            description: "General search term that matches against both brand and model. Use when unsure if the client mentioned a brand or model.",
           },
           max_value: {
             type: "number",
-            description: "Maximum estimated value in BRL",
+            description: "Maximum price in BRL",
           },
           min_value: {
             type: "number",
-            description: "Minimum estimated value in BRL",
+            description: "Minimum price in BRL",
           },
         },
         additionalProperties: false,
