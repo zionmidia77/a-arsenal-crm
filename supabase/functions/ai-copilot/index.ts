@@ -122,13 +122,13 @@ Você é um ESPECIALISTA em:
 - Interesse: ${c.interest || "não informado"}
 - Orçamento: ${c.budget_range || "não informado"}
 - Tipo de pagamento: ${c.payment_type || "não informado"}
-- Salário: ${c.salary ? \`R$ \${c.salary}\` : "não informado"}
-- Renda bruta: ${c.gross_income ? \`R$ \${c.gross_income}\` : "não informada"}
+- Salário: ${c.salary ? "R$ " + c.salary : "não informado"}
+- Renda bruta: ${c.gross_income ? "R$ " + c.gross_income : "não informada"}
 - Empresa: ${c.employer || "não informada"}
 - CNPJ empresa: ${c.employer_cnpj || "não informado"}
 - Profissão: ${c.profession || "não informada"}
 - Tem troca: ${c.has_trade_in ? "Sim" : "Não"}
-- Tem entrada: ${c.has_down_payment ? "Sim" : "Não"} ${c.down_payment_amount ? \`(R$ \${c.down_payment_amount})\` : ""}
+- Tem entrada: ${c.has_down_payment ? "Sim" : "Não"} ${c.down_payment_amount ? "(R$ " + c.down_payment_amount + ")" : ""}
 - Crédito limpo: ${c.has_clean_credit ? "Sim" : "Não/desconhecido"}
 - Score: ${c.lead_score} | Arsenal Score: ${c.arsenal_score}
 - Temperatura: ${c.temperature}
