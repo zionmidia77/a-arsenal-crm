@@ -756,6 +756,15 @@ async function executeTool(
         if (args.min_value) {
           query = query.gte("price", args.min_value as number);
         }
+        if (args.color) {
+          query = query.ilike("color", `%${args.color}%`);
+        }
+        if (args.year) {
+          query = query.eq("year", args.year as number);
+        }
+        if (args.min_year) {
+          query = query.gte("year", args.min_year as number);
+        }
 
         const { data, error } = await query.order("price", { ascending: true }).limit(10);
         if (error) throw error;
