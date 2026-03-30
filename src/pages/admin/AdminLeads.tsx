@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { MessageCircle, Copy, Check, Search, Eye, SortAsc, SortDesc, Filter, CalendarIcon, X, GitMerge, CheckSquare, Phone, CalendarPlus, ChevronDown } from "lucide-react";
+import { MessageCircle, Copy, Check, Search, Eye, SortAsc, SortDesc, Filter, CalendarIcon, X, GitMerge, CheckSquare, Phone, CalendarPlus, ChevronDown, FileDown } from "lucide-react";
 import { useClients, useTags, useMessageTemplates } from "@/hooks/useSupabase";
 import { useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -131,6 +131,24 @@ const AdminLeads = () => {
 
   const hasActiveFilters = filter !== "all" || stageFilter !== "all" || sourceFilter !== "all" || tagFilter !== "all" || dateFrom || dateTo;
 
+  const exportCSV = () => {
+    if (!filtered.length) { toast.error("Nenhum lead para exportar"); return; }
+    const headers = ["Nome", "Telefone", "Email", "Interesse", "Orçamento", "Temperatura", "Etapa", "Fonte", "Score", "Data"];
+    const rows = filtered.map(c => [
+      c.name, c.phone || "", c.email || "", c.interest || "", c.budget_range || "",
+      tempLabel[c.temperature] || c.temperature, STAGE_LABELS[c.pipeline_stage] || c.pipeline_stage,
+      sourceLabel[c.source || ""] || c.source || "", String(c.lead_score),
+      new Date(c.created_at).toLocaleDateString("pt-BR"),
+    ]);
+    const csv = [headers, ...rows].map(r => r.map(v => `"${v.replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `leads-arsenal-${format(new Date(), "yyyy-MM-dd")}.csv`;
+    a.click(); URL.revokeObjectURL(url);
+    toast.success(`${filtered.length} leads exportados!`);
+  };
+
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
@@ -182,15 +200,26 @@ const AdminLeads = () => {
           <h1 className="text-2xl font-display font-bold">Leads</h1>
           <p className="text-sm text-muted-foreground">{clients?.length || 0} leads capturados</p>
         </div>
-        <Button
-          variant={selectMode ? "default" : "outline"}
-          size="sm"
-          className="rounded-full text-xs gap-1.5 h-9"
-          onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)}
-        >
-          <CheckSquare className="w-3.5 h-3.5" />
-          {selectMode ? "Cancelar" : "Selecionar"}
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="rounded-full text-xs gap-1.5 h-9"
+            onClick={exportCSV}
+          >
+            <FileDown className="w-3.5 h-3.5" />
+            Exportar CSV
+          </Button>
+          <Button
+            variant={selectMode ? "default" : "outline"}
+            size="sm"
+            className="rounded-full text-xs gap-1.5 h-9"
+            onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)}
+          >
+            <CheckSquare className="w-3.5 h-3.5" />
+            {selectMode ? "Cancelar" : "Selecionar"}
+          </Button>
+        </div>
       </motion.div>
 
       {/* Merge action bar */}

@@ -200,6 +200,13 @@ const ChatFunnel = () => {
               return [...prev, adminMsg];
             });
             playNotificationSound();
+            // Tab notification when not focused
+            if (document.hidden) {
+              const originalTitle = document.title;
+              document.title = "💬 Nova mensagem — Arsenal Motors";
+              const restore = () => { document.title = originalTitle; document.removeEventListener("visibilitychange", restore); };
+              document.addEventListener("visibilitychange", restore);
+            }
             scrollToBottom();
           }
 
