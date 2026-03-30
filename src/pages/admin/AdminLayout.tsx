@@ -209,6 +209,7 @@ const AdminLayout = () => {
       </div>
 
       {!isClientDetail && <BottomTabBar />}
+      <KeyboardShortcuts onNewLead={handleNewLead} />
     </div>
   );
 };
