@@ -477,6 +477,18 @@ async function executeTool(
         const phone = args.phone as string;
         const name = args.name as string;
 
+        // ── Validate name and phone before creating ──
+        const invalidNames = ['none', 'null', 'undefined', 'test', 'teste', 'n/a', 'não informado', 'não fornecido', 'nome não fornecido', 'cliente não informou'];
+        const isNameInvalid = !name || name.length < 2 || invalidNames.some(inv => name.toLowerCase().includes(inv)) || /^\(.*\)$/.test(name);
+        const isPhoneInvalid = !phone || phone === 'None' || phone === 'null' || phone === name || phone.replace(/\D/g, '').length < 8 || /^\(.*não.*\)$/i.test(phone);
+
+        if (isNameInvalid || isPhoneInvalid) {
+          return JSON.stringify({
+            success: false,
+            error: "DADOS INSUFICIENTES para criar lead. Você PRECISA ter o NOME REAL da pessoa (não um placeholder) e o TELEFONE REAL (mínimo 8 dígitos). Continue a conversa e peça esses dados ao cliente antes de chamar create_lead novamente.",
+          });
+        }
+
         // ── Check for existing client by phone ──
         let existingClient = null;
         if (phone) {
