@@ -200,15 +200,26 @@ const AdminLeads = () => {
           <h1 className="text-2xl font-display font-bold">Leads</h1>
           <p className="text-sm text-muted-foreground">{clients?.length || 0} leads capturados</p>
         </div>
-        <Button
-          variant={selectMode ? "default" : "outline"}
-          size="sm"
-          className="rounded-full text-xs gap-1.5 h-9"
-          onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)}
-        >
-          <CheckSquare className="w-3.5 h-3.5" />
-          {selectMode ? "Cancelar" : "Selecionar"}
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="rounded-full text-xs gap-1.5 h-9"
+            onClick={exportCSV}
+          >
+            <FileDown className="w-3.5 h-3.5" />
+            Exportar CSV
+          </Button>
+          <Button
+            variant={selectMode ? "default" : "outline"}
+            size="sm"
+            className="rounded-full text-xs gap-1.5 h-9"
+            onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)}
+          >
+            <CheckSquare className="w-3.5 h-3.5" />
+            {selectMode ? "Cancelar" : "Selecionar"}
+          </Button>
+        </div>
       </motion.div>
 
       {/* Merge action bar */}
