@@ -25,6 +25,10 @@ const ProtectedRoute = ({ children, requireAdmin = false }: ProtectedRouteProps)
     return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   }
 
+  if (!requireAdmin && isAdmin && location.pathname === "/member") {
+    return <Navigate to="/admin" replace />;
+  }
+
   if (requireAdmin && !isAdmin) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4">
