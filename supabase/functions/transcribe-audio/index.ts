@@ -25,7 +25,19 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY not configured");
     }
 
-    // Use Gemini Flash for audio transcription - it supports inline audio
+    // Strip the data URI prefix if present, keep raw base64
+    const rawBase64 = audio_base64.replace(/^data:audio\/[^;]+;base64,/, "");
+    
+    // Detect mime type from the data URI or default to wav
+    let mimeType = "audio/wav";
+    const mimeMatch = audio_base64.match(/^data:(audio\/[^;]+);base64,/);
+    if (mimeMatch) {
+      mimeType = mimeMatch[1];
+    }
+
+    // Use image_url content type with data URI - Gemini supports audio this way
+    const dataUri = `data:${mimeType};base64,${rawBase64}`;
+
     const response = await fetch("https://api.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -36,22 +48,17 @@ serve(async (req) => {
         model: "google/gemini-2.5-flash",
         messages: [
           {
-            role: "system",
-            content: "You are a transcription assistant. Transcribe the audio exactly as spoken in the original language (likely Brazilian Portuguese). Return ONLY the transcribed text, nothing else. No quotes, no prefixes, no explanations. If you cannot understand the audio, return '[áudio inaudível]'."
-          },
-          {
             role: "user",
             content: [
               {
-                type: "input_audio",
-                input_audio: {
-                  data: audio_base64.replace(/^data:audio\/[^;]+;base64,/, ""),
-                  format: "wav",
+                type: "image_url",
+                image_url: {
+                  url: dataUri,
                 },
               },
               {
                 type: "text",
-                text: "Transcreva este áudio em português brasileiro.",
+                text: "Transcreva este áudio em português brasileiro. Retorne APENAS o texto transcrito, sem aspas, sem prefixos, sem explicações. Se não conseguir entender, retorne '[áudio inaudível]'.",
               },
             ],
           },
