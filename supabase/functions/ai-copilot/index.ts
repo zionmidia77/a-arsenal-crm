@@ -223,7 +223,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { client_id, messages, command, whatsapp_paste } = await req.json();
+    const { client_id, messages, command, whatsapp_paste, images } = await req.json();
 
     if (!client_id) {
       return new Response(JSON.stringify({ error: "client_id required" }), {
@@ -271,7 +271,48 @@ serve(async (req) => {
         content: `Analise esta conversa de WhatsApp colada e atualize a memória do lead. Identifique: resumo, objeções, interesses, temperatura, próxima ação recomendada e gere uma mensagem de resposta pronta.\n\nCONVERSA:\n${whatsapp_paste}`,
       });
     } else if (messages && messages.length > 0) {
-      allMessages.push(...messages);
+      // Check if we have images to attach to the last user message
+      if (images && Array.isArray(images) && images.length > 0) {
+        // Find last user message and make it multimodal
+        const processedMessages = messages.map((msg: any, idx: number) => {
+          if (idx === messages.length - 1 && msg.role === "user") {
+            // Build multimodal content array
+            const contentParts: any[] = [];
+            
+            // Add text first
+            if (msg.content) {
+              contentParts.push({ type: "text", text: msg.content + "\n\nAnalise as imagens acima. São prints de conversas do WhatsApp/Facebook deste lead. Extraia: resumo da conversa, objeções, interesses, temperatura do lead, e sugira a próxima ação. Atualize a memória do lead." });
+            } else {
+              contentParts.push({ type: "text", text: "Analise as imagens acima. São prints de conversas do WhatsApp/Facebook deste lead. Extraia: resumo da conversa, objeções, interesses, temperatura do lead, e sugira a próxima ação. Atualize a memória do lead." });
+            }
+
+            // Add images
+            for (const img of images.slice(0, 10)) {
+              contentParts.push({
+                type: "image_url",
+                image_url: {
+                  url: `data:${img.media_type};base64,${img.data}`,
+                },
+              });
+            }
+
+            return { role: "user", content: contentParts };
+          }
+          return msg;
+        });
+        allMessages.push(...processedMessages);
+
+        // Log image upload to timeline
+        await supabase.from("lead_timeline_events").insert({
+          client_id,
+          event_type: "document_uploaded",
+          content: `${images.length} imagem(ns) de conversa enviada(s) para análise IA`,
+          source: "manual",
+          metadata: { image_count: images.length },
+        });
+      } else {
+        allMessages.push(...messages);
+      }
     } else if (command) {
       allMessages.push({ role: "user", content: command });
     } else {

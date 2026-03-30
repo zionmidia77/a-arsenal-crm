@@ -7,6 +7,16 @@ const COPILOT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-copilo
 interface CopilotMessage {
   role: "user" | "assistant";
   content: string;
+  images?: string[]; // base64 data URLs for display
+}
+
+async function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }
 
 export const useLeadCopilot = (clientId: string) => {
@@ -14,11 +24,31 @@ export const useLeadCopilot = (clientId: string) => {
   const [isLoading, setIsLoading] = useState(false);
   const qc = useQueryClient();
 
-  const sendMessage = useCallback(async (input: string) => {
-    const userMsg: CopilotMessage = { role: "user", content: input };
+  const sendMessage = useCallback(async (input: string, imageFiles?: File[]) => {
+    setIsLoading(true);
+
+    // Convert images to base64
+    let imageDataUrls: string[] = [];
+    let imageBase64List: { data: string; media_type: string }[] = [];
+    if (imageFiles && imageFiles.length > 0) {
+      for (const file of imageFiles.slice(0, 10)) {
+        const dataUrl = await fileToBase64(file);
+        imageDataUrls.push(dataUrl);
+        // Extract base64 and mime
+        const match = dataUrl.match(/^data:(.*?);base64,(.*)$/);
+        if (match) {
+          imageBase64List.push({ data: match[2], media_type: match[1] });
+        }
+      }
+    }
+
+    const userMsg: CopilotMessage = {
+      role: "user",
+      content: input || (imageDataUrls.length > 0 ? `📷 ${imageDataUrls.length} imagem(ns) enviada(s)` : ""),
+      images: imageDataUrls.length > 0 ? imageDataUrls : undefined,
+    };
     const allMessages = [...messages, userMsg];
     setMessages(prev => [...prev, userMsg]);
-    setIsLoading(true);
 
     let assistantSoFar = "";
     const upsertAssistant = (chunk: string) => {
@@ -33,13 +63,21 @@ export const useLeadCopilot = (clientId: string) => {
     };
 
     try {
+      // Build messages for API (without images in history, only current)
+      const apiMessages = allMessages.map(m => ({ role: m.role, content: m.content }));
+
+      const body: any = { client_id: clientId, messages: apiMessages };
+      if (imageBase64List.length > 0) {
+        body.images = imageBase64List;
+      }
+
       const resp = await fetch(COPILOT_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ client_id: clientId, messages: allMessages }),
+        body: JSON.stringify(body),
       });
 
       if (!resp.ok || !resp.body) {
@@ -75,7 +113,6 @@ export const useLeadCopilot = (clientId: string) => {
         }
       }
 
-      // Refresh memory after response
       qc.invalidateQueries({ queryKey: ["lead-memory", clientId] });
       qc.invalidateQueries({ queryKey: ["lead-timeline", clientId] });
     } catch (e) {
