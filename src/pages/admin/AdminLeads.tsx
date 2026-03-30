@@ -202,6 +202,22 @@ const AdminLeads = () => {
           <p className="text-sm text-muted-foreground">{clients?.length || 0} leads capturados</p>
         </div>
         <div className="flex gap-2">
+          <div className="flex rounded-full border border-border/50 overflow-hidden">
+            <button
+              onClick={() => setViewMode("expanded")}
+              className={`p-2 transition-colors ${viewMode === "expanded" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-muted"}`}
+              title="Visualização expandida"
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => setViewMode("compact")}
+              className={`p-2 transition-colors ${viewMode === "compact" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-muted"}`}
+              title="Visualização compacta"
+            >
+              <LayoutList className="w-3.5 h-3.5" />
+            </button>
+          </div>
           <Button
             variant="outline"
             size="sm"
@@ -209,7 +225,7 @@ const AdminLeads = () => {
             onClick={exportCSV}
           >
             <FileDown className="w-3.5 h-3.5" />
-            Exportar CSV
+            <span className="hidden sm:inline">Exportar</span>
           </Button>
           <Button
             variant={selectMode ? "default" : "outline"}
@@ -218,7 +234,7 @@ const AdminLeads = () => {
             onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)}
           >
             <CheckSquare className="w-3.5 h-3.5" />
-            {selectMode ? "Cancelar" : "Selecionar"}
+            <span className="hidden sm:inline">{selectMode ? "Cancelar" : "Selecionar"}</span>
           </Button>
         </div>
       </motion.div>
