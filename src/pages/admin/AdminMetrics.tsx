@@ -12,6 +12,7 @@ import {
 } from "recharts";
 import { useAllClients } from "@/hooks/useSupabase";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StatCardSkeleton, MetricsChartSkeleton } from "@/components/admin/SkeletonLoaders";
 import { useMemo, useState } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
