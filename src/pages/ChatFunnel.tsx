@@ -849,11 +849,15 @@ const ChatFunnel = () => {
 
     setIsAnalyzingDoc(true);
 
+    // Generate thumbnail for preview
+    const thumbnailUrl = URL.createObjectURL(file);
+
     const userMsg: ChatMessage = {
       id: `user-doc-${Date.now()}`,
       role: "user",
       content: "📷 Enviei um documento para análise",
       timestamp: new Date(),
+      thumbnail: thumbnailUrl,
     };
     setMessages(prev => [...prev, userMsg]);
     setMessageCount(prev => prev + 1);
