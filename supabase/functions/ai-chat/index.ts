@@ -651,6 +651,7 @@ async function executeTool(
         return JSON.stringify({
           success: true,
           client_id: data.id,
+          client_name: data.name,
           existing_client: false,
           message: `Lead "${data.name}" criado com sucesso. IMPORTANTE: Use este client_id (${data.id}) em TODAS as chamadas futuras de update_lead, register_trade_in, simulate_financing, schedule_visit e log_interaction.`,
         });
