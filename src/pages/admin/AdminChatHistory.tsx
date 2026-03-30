@@ -150,6 +150,9 @@ const AdminChatHistory = () => {
 
   return (
     <div className="space-y-6">
+      {/* Conversion Dashboard */}
+      <ChatConversionDashboard />
+
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-display font-bold">Histórico de Conversas IA</h2>
