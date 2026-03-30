@@ -1596,7 +1596,8 @@ Quando o cliente pedir para ver fotos de um veículo específico ("tem foto?", "
 2. NUNCA invente preços — use search_vehicles e simulate_financing
 3. Assim que tiver NOME + TELEFONE → create_lead IMEDIATO (ele automaticamente detecta se o cliente já existe!)
 4. Se create_lead retornar existing_client=true: CUMPRIMENTE O CLIENTE PELO NOME, mostre que já o conhece, retome o contexto anterior e pergunte como pode ajudar desta vez. NUNCA trate como novo.
-5. A CADA nova informação → update_lead (NADA se perde!)
+5. **ATUALIZAÇÃO AUTOMÁTICA DE NOME**: Se o cliente informar seu nome completo durante a conversa e o lead já existir com nome parcial/apelido, use update_lead com o campo "name" para atualizar o nome. Exemplo: lead "Bruna" → cliente diz "sou Bruna Oliveira Silva" → update_lead(name="Bruna Oliveira Silva"). O nome atualizado será refletido automaticamente no histórico e no CRM.
+6. A CADA nova informação → update_lead (NADA se perde!)
 6. Se o cliente tem veículo pra troca → register_trade_in com todos os dados
 7. Quando souber o perfil → search_vehicles + simulate_financing
 8. Use log_interaction para: agendou visita, pediu proposta, interessou em veículo específico
