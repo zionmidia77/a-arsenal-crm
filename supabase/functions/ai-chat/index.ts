@@ -1375,6 +1375,14 @@ serve(async (req) => {
           } catch {}
         }
 
+        // Track individual photos from send_vehicle_photos
+        if (tc.function.name === "send_vehicle_photos") {
+          try {
+            const parsed = JSON.parse(toolResult);
+            if (parsed.photos?.length) individualPhotos = parsed.photos;
+          } catch {}
+        }
+
         aiMessages.push({
           role: "tool",
           tool_call_id: tc.id,
