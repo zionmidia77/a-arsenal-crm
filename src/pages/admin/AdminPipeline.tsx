@@ -32,6 +32,7 @@ const AdminPipeline = () => {
   const highlightId = searchParams.get("highlight");
   const updateClient = useUpdateClient();
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const [compactMode, setCompactMode] = useState(false);
 
   // Fetch chat conversations to show badges on cards
   const { data: chatConvos = [] } = useQuery({
