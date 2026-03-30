@@ -566,6 +566,56 @@ const ChatFunnel = () => {
     restoreChat();
   }, [sessionId, scrollToBottom]);
 
+  // Realtime subscription — listen for admin replies
+  useEffect(() => {
+    const channel = supabase
+      .channel(`chat-${sessionId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'chat_conversations',
+          filter: `session_id=eq.${sessionId}`,
+        },
+        (payload: any) => {
+          const newData = payload.new;
+          if (!newData || !Array.isArray(newData.messages)) return;
+
+          // Check if the last message is from admin (prefixed with [Vendedor])
+          const dbMessages = newData.messages as any[];
+          const lastDbMsg = dbMessages[dbMessages.length - 1];
+          if (lastDbMsg?.role === 'assistant' && lastDbMsg?.content?.startsWith('[Vendedor]')) {
+            // Add admin message to local state
+            const adminMsg: ChatMessage = {
+              id: `admin-${Date.now()}`,
+              role: 'assistant',
+              content: lastDbMsg.content.replace('[Vendedor] ', ''),
+              timestamp: new Date(lastDbMsg.timestamp || new Date()),
+            };
+
+            setMessages(prev => {
+              // Avoid duplicates
+              if (prev.some(m => m.content === adminMsg.content && m.role === 'assistant')) return prev;
+              return [...prev, adminMsg];
+            });
+            playNotificationSound();
+            scrollToBottom();
+          }
+
+          // Update transferred status
+          if (newData.status === 'attended') {
+            setIsTransferred(false);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [sessionId, scrollToBottom]);
+
 
   // Handle transfer to human
   const handleTransfer = useCallback(async () => {
