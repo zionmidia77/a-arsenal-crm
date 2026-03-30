@@ -1139,7 +1139,7 @@ const ChatFunnel = () => {
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-display font-semibold text-foreground text-sm">
-            Lucas — Arsenal Motors
+            {clientName ? `Lucas está atendendo ${clientName}` : "Lucas — Arsenal Motors"}
           </p>
           <p className="text-xs text-muted-foreground flex items-center gap-1">
             {isOnline ? (
