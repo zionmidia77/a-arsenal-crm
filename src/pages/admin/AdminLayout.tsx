@@ -13,6 +13,7 @@ import AddLeadDialog from "@/components/admin/AddLeadDialog";
 import PhotoLeadCapture from "@/components/admin/PhotoLeadCapture";
 import AdminBreadcrumb from "@/components/admin/AdminBreadcrumb";
 import KeyboardShortcuts from "@/components/admin/KeyboardShortcuts";
+import OnboardingTour from "@/components/admin/OnboardingTour";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
