@@ -1284,6 +1284,14 @@ serve(async (req) => {
 
       for (const tc of toolCalls) {
         const args = JSON.parse(tc.function.arguments);
+        
+        // Auto-inject created client_id for tools that need it but have placeholder
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (createdClientId && args.client_id && !uuidRegex.test(args.client_id)) {
+          console.log(`Auto-replacing invalid client_id "${args.client_id}" with "${createdClientId}"`);
+          args.client_id = createdClientId;
+        }
+        
         console.log(`Executing tool: ${tc.function.name}`, args);
         const toolResult = await executeTool(tc.function.name, args);
         console.log(`Tool result: ${toolResult}`);
