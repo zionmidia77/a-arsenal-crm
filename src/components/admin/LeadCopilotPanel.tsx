@@ -1,12 +1,13 @@
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bot, Send, Copy, Clipboard, ChevronDown, ChevronUp, Sparkles, Target, AlertTriangle, MessageCircle, Zap, ThermometerSun, Tag, Clock, ImagePlus, X } from "lucide-react";
+import { Bot, Send, Copy, Clipboard, ChevronDown, ChevronUp, Sparkles, Target, AlertTriangle, MessageCircle, Zap, ThermometerSun, Tag, Clock, ImagePlus, X, FileDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useLeadCopilot, useLeadMemory } from "@/hooks/useLeadCopilot";
 import ReactMarkdown from "react-markdown";
+import { generateProposalPdf } from "@/lib/generateProposalPdf";
 
 interface LeadCopilotPanelProps {
   clientId: string;
