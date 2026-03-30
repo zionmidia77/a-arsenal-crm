@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useNavigate, Link, useLocation, Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +12,7 @@ import { motion } from "framer-motion";
 
 const Login = () => {
   const { signIn, user, loading: authLoading } = useAuth();
+  const { isAdmin, loading: roleLoading } = useUserRole();
   const navigate = useNavigate();
   const location = useLocation();
   const from = (location.state as any)?.from || "/admin";
@@ -24,11 +27,12 @@ const Login = () => {
       toast.error("Preencha todos os campos");
       return;
     }
+
     setLoading(true);
     const { error } = await signIn(email, password);
-    setLoading(false);
 
     if (error) {
+      setLoading(false);
       if (error.message?.includes("Invalid login")) {
         toast.error("Email ou senha incorretos");
       } else if (error.message?.includes("Email not confirmed")) {
@@ -36,15 +40,41 @@ const Login = () => {
       } else {
         toast.error(error.message || "Erro ao fazer login");
       }
-    } else {
-      toast.success("Bem-vindo de volta!");
-      navigate(from, { replace: true });
+      return;
     }
+
+    const {
+      data: { user: signedInUser },
+    } = await supabase.auth.getUser();
+
+    let destination = from;
+
+    if (signedInUser) {
+      const { data: hasAdminRole } = await supabase.rpc("has_role", {
+        _user_id: signedInUser.id,
+        _role: "admin",
+      });
+
+      if (hasAdminRole) {
+        destination = "/admin";
+      }
+    }
+
+    setLoading(false);
+    toast.success("Bem-vindo de volta!");
+    navigate(destination, { replace: true });
   };
 
-  // Redirect if already logged in
-  if (!authLoading && user) {
-    return <Navigate to="/admin" replace />;
+  if (authLoading || (user && roleLoading)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (user) {
+    return <Navigate to={isAdmin ? "/admin" : "/member"} replace />;
   }
 
   return (
@@ -54,7 +84,6 @@ const Login = () => {
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-sm space-y-8"
       >
-        {/* Logo */}
         <div className="text-center space-y-2">
           <div className="w-14 h-14 rounded-2xl bg-primary/15 flex items-center justify-center mx-auto">
             <Bike className="w-7 h-7 text-primary" />
@@ -65,7 +94,6 @@ const Login = () => {
           <p className="text-sm text-muted-foreground">Acesse sua conta para continuar</p>
         </div>
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
@@ -83,10 +111,7 @@ const Login = () => {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label htmlFor="password">Senha</Label>
-              <Link
-                to="/forgot-password"
-                className="text-xs text-primary hover:underline"
-              >
+              <Link to="/forgot-password" className="text-xs text-primary hover:underline">
                 Esqueceu a senha?
               </Link>
             </div>
