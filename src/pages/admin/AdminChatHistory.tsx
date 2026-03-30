@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useCallback } from "react";
+import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +16,7 @@ import { format, isAfter, isBefore, startOfDay, endOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
+import ChatConversionDashboard from "@/components/admin/ChatConversionDashboard";
 
 interface ConversationMessage {
   role: "user" | "assistant";
@@ -79,8 +80,58 @@ const AdminChatHistory = () => {
       if (error) throw error;
       return (data || []) as unknown as Conversation[];
     },
-    refetchInterval: 10000,
+    refetchInterval: 5000,
   });
+
+  // Notification sound for admin
+  const playAdminNotification = useCallback(() => {
+    try {
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      // Two-tone notification
+      osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+      osc.frequency.setValueAtTime(900, audioCtx.currentTime + 0.1);
+      osc.frequency.setValueAtTime(600, audioCtx.currentTime + 0.2);
+      gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
+      osc.start(audioCtx.currentTime);
+      osc.stop(audioCtx.currentTime + 0.35);
+    } catch {}
+  }, []);
+
+  // Realtime subscription for live updates + notifications
+  const prevConvoCountRef = useRef(conversations.length);
+  useEffect(() => {
+    // Check if new conversations appeared
+    if (conversations.length > prevConvoCountRef.current && prevConvoCountRef.current > 0) {
+      playAdminNotification();
+      const newConvo = conversations[0]; // Most recent
+      if (newConvo?.status === "transferred") {
+        toast("🔔 Nova conversa transferida!", {
+          description: `${(newConvo as any).clients?.name || "Visitante"} aguardando atendimento`,
+        });
+      }
+    }
+    prevConvoCountRef.current = conversations.length;
+  }, [conversations, playAdminNotification]);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('admin-chat-updates')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'chat_conversations' },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["chat-conversations"] });
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [queryClient]);
 
   const filteredConversations = useMemo(() => {
     return conversations.filter((convo) => {
@@ -133,6 +184,9 @@ const AdminChatHistory = () => {
 
   return (
     <div className="space-y-6">
+      {/* Conversion Dashboard */}
+      <ChatConversionDashboard />
+
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-display font-bold">Histórico de Conversas IA</h2>
@@ -315,8 +369,8 @@ const AdminChatHistory = () => {
                   </div>
                 </ScrollArea>
 
-                {/* Manual reply input for transferred conversations */}
-                {(selectedConvo.status === "transferred" || selectedConvo.status === "attended") && (
+                {/* Manual reply input — available for all conversations */}
+                {selectedConvo.status !== "closed" && (
                   <div className="mt-3 pt-3 border-t border-border/50">
                     <form
                       onSubmit={async (e) => {
@@ -375,7 +429,7 @@ const AdminChatHistory = () => {
                             e.currentTarget.form?.requestSubmit();
                           }
                         }}
-                        placeholder="Responder ao cliente..."
+                        placeholder="Responder ao cliente (aparece em tempo real)..."
                         rows={1}
                         disabled={isSending}
                         className="flex-1 resize-none text-sm min-h-[40px] max-h-[100px]"
