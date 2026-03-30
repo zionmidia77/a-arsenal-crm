@@ -1278,7 +1278,7 @@ const ChatFunnel = () => {
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*,application/pdf"
+              accept="image/*,.pdf,application/pdf"
               multiple
               className="hidden"
               onChange={handleDocumentUpload}
