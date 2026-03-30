@@ -24,8 +24,25 @@ const STAGES = [
 
 const AdminPipeline = () => {
   const { data: clients, isLoading } = useAllClients();
+  const [searchParams] = useSearchParams();
+  const highlightId = searchParams.get("highlight");
   const updateClient = useUpdateClient();
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
+
+  // Auto-filter to the highlighted client's stage
+  useEffect(() => {
+    if (highlightId && clients) {
+      const c = clients.find(cl => cl.id === highlightId);
+      if (c) {
+        setActiveFilter(c.pipeline_stage);
+        // Scroll to card after render
+        setTimeout(() => {
+          const el = document.getElementById(`kanban-card-${highlightId}`);
+          el?.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 300);
+      }
+    }
+  }, [highlightId, clients]);
 
   const getClientsForStage = (stage: string) =>
     (clients || []).filter((c) => c.pipeline_stage === stage);
