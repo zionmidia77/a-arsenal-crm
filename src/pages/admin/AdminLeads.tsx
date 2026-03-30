@@ -391,7 +391,57 @@ const AdminLeads = () => {
 
       {isLoading ? (
         <div className="space-y-3">{[1, 2, 3, 4].map(i => <LeadCardSkeleton key={i} />)}</div>
+      ) : viewMode === "compact" ? (
+        /* ── COMPACT VIEW ── */
+        <div className="glass-card overflow-hidden divide-y divide-border/30">
+          {filtered.map((client) => (
+            <motion.div
+              key={client.id}
+              variants={fadeUp}
+              className={`flex items-center gap-3 px-4 py-2.5 hover:bg-muted/30 transition-colors cursor-pointer ${selectedIds.has(client.id) ? "bg-primary/5" : ""}`}
+              onClick={() => selectMode ? toggleSelect(client.id) : navigate(`/admin/client/${client.id}`)}
+            >
+              {selectMode && (
+                <Checkbox
+                  checked={selectedIds.has(client.id)}
+                  onCheckedChange={() => toggleSelect(client.id)}
+                  onClick={e => e.stopPropagation()}
+                />
+              )}
+              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${tempBadge[client.temperature]}`}>
+                {client.name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">{client.name}</p>
+              </div>
+              <span className={`text-[9px] px-1.5 py-0.5 rounded-full shrink-0 hidden sm:inline ${sourceBadge[client.source || "funnel"]}`}>
+                {sourceLabel[client.source || ""] || client.source || "Funil"}
+              </span>
+              <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-secondary text-muted-foreground shrink-0 hidden md:inline">
+                {STAGE_LABELS[client.pipeline_stage] || client.pipeline_stage}
+              </span>
+              <span className="text-[10px] text-muted-foreground font-mono shrink-0 w-8 text-right">{client.lead_score}</span>
+              <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full shrink-0 ${tempBadge[client.temperature]}`}>
+                {tempLabel[client.temperature]}
+              </span>
+              <div className="flex gap-1 shrink-0">
+                {client.phone && (
+                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0 rounded-full" onClick={(e) => { e.stopPropagation(); window.open(`https://wa.me/55${client.phone?.replace(/\D/g, "")}`); }}>
+                    <MessageCircle className="w-3.5 h-3.5" />
+                  </Button>
+                )}
+                <Button size="sm" variant="ghost" className="h-7 w-7 p-0 rounded-full" onClick={(e) => { e.stopPropagation(); navigate(`/admin/client/${client.id}`); }}>
+                  <Eye className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+            </motion.div>
+          ))}
+          {filtered.length === 0 && (
+            <div className="text-center py-12 text-muted-foreground text-sm">Nenhum lead encontrado</div>
+          )}
+        </div>
       ) : (
+        /* ── EXPANDED VIEW ── */
         <div className="space-y-3">
           {filtered.map((client) => (
             <motion.div key={client.id} variants={fadeUp} className={`glass-card-hover p-4 border-l-4 ${tempStyles[client.temperature]} ${selectedIds.has(client.id) ? "ring-1 ring-primary/50 bg-primary/5" : ""}`}>
