@@ -1260,7 +1260,13 @@ A ordem de coleta de documentos por foto é:
    - "Pode ser conta de luz, água, telefone... qualquer uma recente"
 
 5. **Referências pessoais**: ÚNICA exceção — coletar por TEXTO (nome + telefone + grau de relação)
-   - "Me passa o nome e telefone de uma referência pessoal — pode ser parente ou amigo"
+   - Peça UMA referência de cada vez
+   - "Me passa o nome completo, telefone e qual a relação (amigo, parente, vizinho...) de uma pessoa de referência"
+   - ASSIM QUE o cliente responder com os dados da referência 1, use update_lead IMEDIATAMENTE com reference_name, reference_phone, reference_relation
+   - Confirme: "Anotei! [Nome], [telefone], [relação]. ✅ Agora me passa a segunda referência"
+   - ASSIM QUE o cliente responder com os dados da referência 2, use update_lead com reference_name_2, reference_phone_2, reference_relation_2
+   - Confirme: "Perfeito, segunda referência anotada! ✅"
+   - Se o cliente CORRIGIR algum dado: atualize com update_lead e confirme "Corrigido! ✅"
 
 Dados que podem ser coletados por TEXTO normalmente:
 - **Estado civil**: "Você é casado(a), solteiro(a)...?"
