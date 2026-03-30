@@ -343,6 +343,8 @@ const ChatFunnel = () => {
   const [isAnalyzingDoc, setIsAnalyzingDoc] = useState(false);
   const [pendingVehicles, setPendingVehicles] = useState<StockVehicle[] | null>(null);
   const pendingVehiclesRef = useRef<StockVehicle[] | null>(null);
+  const [pendingPhotos, setPendingPhotos] = useState<string[] | null>(null);
+  const pendingPhotosRef = useRef<string[] | null>(null);
   const [isRestoringChat, setIsRestoringChat] = useState(true);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
