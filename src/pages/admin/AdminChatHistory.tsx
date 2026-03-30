@@ -274,21 +274,22 @@ const AdminChatHistory = () => {
                   const msgCount = Array.isArray(convo.messages) ? convo.messages.length : 0;
                   const lastMsg = Array.isArray(convo.messages) ? convo.messages[convo.messages.length - 1] : null;
                   
-                  // Try to extract name from messages if no client linked
+                  // Determine name source
                   let clientName = convo.clients?.name || "";
+                  let nameSource: "linked" | "extracted" | "unknown" = convo.clients?.name ? "linked" : "unknown";
                   if (!clientName && Array.isArray(convo.messages)) {
                     for (const msg of convo.messages) {
                       if (msg.role === "assistant") {
-                        // Match "Nome: FULL NAME" or "nome de Full Name"
                         const nameFieldMatch = msg.content.match(/\*?\*?Nome:?\*?\*?\s+([A-ZÀ-Ú][A-ZÀ-Úa-zà-ú\s]+?)(?:\n|$)/);
                         if (nameFieldMatch) {
                           clientName = nameFieldMatch[1].trim().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+                          nameSource = "extracted";
                           break;
                         }
-                        // Match greetings like "Fala João", "E aí Maria"
                         const greetMatch = msg.content.match(/(?:fala|e aí|oi|olá|eai)\s+([A-ZÀ-Ú][a-zà-ú]+)/i);
                         if (greetMatch) {
                           clientName = greetMatch[1];
+                          nameSource = "extracted";
                           break;
                         }
                       }
