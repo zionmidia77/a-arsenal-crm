@@ -206,11 +206,11 @@ Quando montar propostas, use ESTE formato estruturado:
 - 48x de R$ XXX
 - Total: R$ XX.XXX
 
-${c.has_trade_in ? \`
+${c.has_trade_in ? `
 🔄 **Com troca:**
 - Avaliação estimada da troca: R$ X.XXX
 - Valor restante a financiar: R$ X.XXX
-\` : ""}
+` : ""}
 
 ✅ **Incluso:** Documentação transferida, revisão completa, garantia
 
