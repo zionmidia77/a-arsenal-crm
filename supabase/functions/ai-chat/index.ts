@@ -1118,6 +1118,62 @@ Se faltam itens, pergunte o próximo dado pendente de forma natural.`,
         });
       }
 
+      case "auto_tag_lead": {
+        const tags = args.tags as string[];
+        const clientId = args.client_id as string;
+        const tagColors: Record<string, string> = {
+          urgente: "hsl(0 72% 51%)",
+          financiamento: "hsl(210 72% 51%)",
+          troca: "hsl(150 72% 40%)",
+          "à vista": "hsl(45 72% 51%)",
+          autônomo: "hsl(270 72% 51%)",
+          entregador: "hsl(30 72% 51%)",
+          "primeiro-veiculo": "hsl(180 72% 40%)",
+          família: "hsl(330 72% 51%)",
+        };
+
+        for (const tagName of tags) {
+          // Get or create tag
+          let { data: existingTag } = await supabase
+            .from("client_tags")
+            .select("id")
+            .eq("name", tagName)
+            .maybeSingle();
+
+          if (!existingTag) {
+            const { data: newTag } = await supabase
+              .from("client_tags")
+              .insert({ name: tagName, color: tagColors[tagName] || "hsl(200 72% 51%)" })
+              .select("id")
+              .single();
+            existingTag = newTag;
+          }
+
+          if (existingTag) {
+            // Assign tag to client (ignore if already exists)
+            await supabase
+              .from("client_tag_assignments")
+              .upsert(
+                { client_id: clientId, tag_id: existingTag.id },
+                { onConflict: "client_id,tag_id", ignoreDuplicates: true }
+              );
+          }
+        }
+
+        await supabase.from("interactions").insert({
+          client_id: clientId,
+          type: "system",
+          content: `🏷️ Tags automáticas aplicadas: ${tags.join(", ")}`,
+          created_by: "ai-consultant",
+        });
+
+        return JSON.stringify({
+          success: true,
+          tags_applied: tags,
+          message: `Tags aplicadas: ${tags.join(", ")}. NÃO mencione tags para o cliente.`,
+        });
+      }
+
       default:
         return JSON.stringify({ error: `Unknown tool: ${name}` });
     }
