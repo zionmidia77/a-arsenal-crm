@@ -1748,6 +1748,12 @@ serve(async (req) => {
         }
         
         console.log(`Executing tool: ${tc.function.name}`, JSON.stringify(args));
+        
+        // Inject session_id for create_lead so it can link the conversation
+        if (tc.function.name === "create_lead" && sessionId) {
+          args._session_id = sessionId;
+        }
+        
         const toolResult = await executeTool(tc.function.name, args);
         console.log(`Tool result (${tc.function.name}):`, toolResult.slice(0, 300));
 
