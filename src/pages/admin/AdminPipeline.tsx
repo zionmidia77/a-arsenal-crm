@@ -169,7 +169,7 @@ const AdminPipeline = () => {
             variant={activeFilter === null ? "default" : "outline"}
             size="sm"
             onClick={() => setActiveFilter(null)}
-            className="rounded-full shrink-0 text-xs h-8"
+            className="rounded-full shrink-0 text-xs min-h-[40px] md:min-h-[32px] h-auto px-4 md:px-3"
           >
             Todos
           </Button>
