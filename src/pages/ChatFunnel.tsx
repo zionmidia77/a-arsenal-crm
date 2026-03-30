@@ -1267,7 +1267,7 @@ const ChatFunnel = () => {
       <div className="px-4 py-3 border-t border-border/50 bg-background/80 backdrop-blur-xl">
         {isTransferred ? (
           <div className="text-center text-sm text-muted-foreground py-2">
-            Conversa transferida. Um especialista entrará em contato em breve.
+            O gerente já recebeu sua conversa e vai te responder em breve! 👊
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="flex gap-2 items-end">
