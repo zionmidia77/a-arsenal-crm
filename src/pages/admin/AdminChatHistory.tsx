@@ -16,6 +16,7 @@ import { format, isAfter, isBefore, startOfDay, endOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
+import ChatConversionDashboard from "@/components/admin/ChatConversionDashboard";
 
 interface ConversationMessage {
   role: "user" | "assistant";
