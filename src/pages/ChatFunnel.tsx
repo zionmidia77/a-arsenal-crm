@@ -1345,11 +1345,14 @@ const ChatFunnel = () => {
               size="icon"
               disabled={isLoading || isAnalyzingDoc || isRecording || isTranscribing}
               onClick={() => fileInputRef.current?.click()}
-              className="rounded-full shrink-0 h-11 w-11 text-muted-foreground hover:text-primary transition-colors"
+              className="rounded-full shrink-0 h-11 w-11 text-muted-foreground hover:text-primary transition-colors relative"
               title="Enviar documento (CNH, holerite, comprovante)"
             >
               {isAnalyzingDoc ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <div className="flex flex-col items-center">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span className="text-[8px] absolute -bottom-1 text-primary font-medium">Analisando</span>
+                </div>
               ) : (
                 <Camera className="h-4 w-4" />
               )}
