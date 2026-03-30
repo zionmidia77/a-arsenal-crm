@@ -62,10 +62,37 @@ const TypingIndicator = () => (
 // ── Chat Bubble ──
 const ChatBubble = ({ msg }: { msg: ChatMessage }) => {
   const isUser = msg.role === "user";
+  const isPhotoOnly = !isUser && msg.photos && msg.photos.length > 0 && !msg.content;
   const time = msg.timestamp.toLocaleTimeString("pt-BR", {
     hour: "2-digit",
     minute: "2-digit",
   });
+
+  // Photo-only message (individual photo sent by AI)
+  if (isPhotoOnly) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 12, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+        className="flex mb-3 items-end gap-2.5"
+      >
+        <Avatar className="h-8 w-8 border border-primary/30 shrink-0">
+          <AvatarImage src={consultantAvatar} alt="Consultor" />
+          <AvatarFallback className="bg-primary/20 text-primary text-xs font-bold">A</AvatarFallback>
+        </Avatar>
+        <div className="max-w-[82%] rounded-2xl rounded-bl-sm overflow-hidden border border-border/40">
+          <img
+            src={msg.photos![0]}
+            alt="Foto do veículo"
+            className="w-full max-w-[300px] h-auto rounded-2xl rounded-bl-sm object-cover"
+            loading="lazy"
+          />
+          <p className="text-[10px] text-muted-foreground px-3 py-1 bg-card/80">{time}</p>
+        </div>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div
