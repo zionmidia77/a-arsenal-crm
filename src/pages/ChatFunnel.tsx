@@ -533,6 +533,11 @@ const ChatFunnel = () => {
           }));
           setMessages(restored);
           setClientId(data.client_id || null);
+          if (data.client_id) {
+            supabase.from("clients").select("name").eq("id", data.client_id).maybeSingle().then(({ data: c }) => {
+              if (c?.name) setClientName(c.name.split(" ")[0]);
+            });
+          }
           setIsTransferred(data.status === "transferred");
           setConversationSaved(true);
           setShowSuggestions(false);
