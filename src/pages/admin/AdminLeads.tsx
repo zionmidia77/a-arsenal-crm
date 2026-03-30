@@ -373,7 +373,7 @@ const AdminLeads = () => {
       </motion.div>
 
       {isLoading ? (
-        <div className="space-y-3">{[1, 2, 3].map(i => <Skeleton key={i} className="h-32 rounded-2xl" />)}</div>
+        <div className="space-y-3">{[1, 2, 3, 4].map(i => <LeadCardSkeleton key={i} />)}</div>
       ) : (
         <div className="space-y-3">
           {filtered.map((client) => (
