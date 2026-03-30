@@ -83,6 +83,7 @@ const App = () => (
                   <Route path="chat-history" element={<AdminChatHistory />} />
                   <Route path="simulations" element={<AdminSimulations />} />
                   <Route path="catalog" element={<AdminCatalog />} />
+                  <Route path="sms" element={<AdminSMS />} />
                   <Route path="client/:id" element={<AdminClientDetail />} />
                 </Route>
                 <Route
