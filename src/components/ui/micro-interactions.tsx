@@ -120,26 +120,23 @@ interface FeedbackWrapperProps extends HTMLMotionProps<"div"> {
   className?: string;
 }
 
-export const FeedbackWrapper = React.forwardRef<HTMLDivElement, FeedbackWrapperProps>(
-  ({ children, className, ...props }, _ref) => {
-    const { controls: successControls, flash } = useSuccessFlash();
-    const { controls: shakeControls, shake } = useErrorShake();
+export const useFeedback = () => {
+  const { controls: successControls, flash } = useSuccessFlash();
+  const { controls: shakeControls, shake } = useErrorShake();
 
-    // Expose via data attributes for external triggering
-    return (
-      <motion.div
-        animate={[successControls, shakeControls]}
-        className={className}
-        data-flash={flash}
-        data-shake={shake}
-        {...props}
-      >
-        {children}
+  const FeedbackContainer = useCallback(
+    ({ children, className, ...props }: { children: React.ReactNode; className?: string }) => (
+      <motion.div animate={successControls} className={className} {...props}>
+        <motion.div animate={shakeControls}>
+          {children}
+        </motion.div>
       </motion.div>
-    );
-  }
-);
-FeedbackWrapper.displayName = "FeedbackWrapper";
+    ),
+    [successControls, shakeControls]
+  );
+
+  return { FeedbackContainer, flash, shake };
+};
 
 // ── Press Animation Button ─────────────────────────────────────
 
