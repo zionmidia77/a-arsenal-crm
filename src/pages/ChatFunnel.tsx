@@ -15,6 +15,7 @@ import SuggestionChips from "@/components/chat/SuggestionChips";
 import VehicleCarousel from "@/components/chat/VehicleCarousel";
 import { WELCOME_MESSAGE, CHAT_URL, CHAT_STORAGE_KEY, MIN_MESSAGE_INTERVAL_MS } from "@/components/chat/ChatConstants";
 import { getOrCreateSessionId, playNotificationSound, formatDuration } from "@/components/chat/chatUtils";
+import { splitIntoBubbles, calculateTypingDelay, calculateBubbleDelay, getRealisticOnlineStatus, getThinkingPhrase, shouldShowThinking } from "@/components/chat/humanBehavior";
 import type { ChatMessage, StockVehicle } from "@/components/chat/types";
 
 const ChatFunnel = () => {
