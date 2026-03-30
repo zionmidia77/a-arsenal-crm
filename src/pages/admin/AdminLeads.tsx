@@ -196,7 +196,7 @@ const AdminLeads = () => {
 
   return (
     <motion.div variants={stagger} initial="initial" animate="animate" className="p-4 md:p-6 space-y-4 md:space-y-5 max-w-5xl xl:max-w-6xl">
-      <motion.div variants={fadeUp} className="flex items-start justify-between">
+      <motion.div variants={fadeUp} className="flex items-start justify-between gap-2 flex-wrap">
         <div>
           <h1 className="text-2xl font-display font-bold">Leads</h1>
           <p className="text-sm text-muted-foreground">{clients?.length || 0} leads capturados</p>
