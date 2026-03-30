@@ -64,13 +64,13 @@ interface InteractiveCardProps extends HTMLMotionProps<"div"> {
 export const InteractiveCard = ({
   children,
   className,
-  hoverScale = 1.02,
+  hoverScale = 1.015,
   tapScale = 0.98,
   ...props
 }: InteractiveCardProps) => (
   <motion.div
-    whileHover={{ scale: hoverScale, transition: { duration: 0.2, ease: [0.22, 1, 0.36, 1] } }}
-    whileTap={{ scale: tapScale, transition: { duration: 0.1 } }}
+    whileHover={{ scale: hoverScale, y: -2, transition: { duration: 0.25, ease: [0.22, 1, 0.36, 1] } }}
+    whileTap={{ scale: tapScale, y: 0, transition: { duration: 0.1 } }}
     className={className}
     {...props}
   >
@@ -115,11 +115,6 @@ export const useErrorShake = () => {
 
 // ── Feedback Wrapper (combines flash + shake) ──────────────────
 
-interface FeedbackWrapperProps extends HTMLMotionProps<"div"> {
-  children: React.ReactNode;
-  className?: string;
-}
-
 export const useFeedback = () => {
   const { controls: successControls, flash } = useSuccessFlash();
   const { controls: shakeControls, shake } = useErrorShake();
@@ -136,6 +131,24 @@ export const useFeedback = () => {
   );
 
   return { FeedbackContainer, flash, shake };
+};
+
+// ── CSS class helpers for non-Framer contexts ──────────────────
+
+export const triggerSuccessFlash = (element: HTMLElement | null) => {
+  if (!element) return;
+  element.classList.remove("flash-success");
+  void element.offsetWidth; // force reflow
+  element.classList.add("flash-success");
+  setTimeout(() => element.classList.remove("flash-success"), 800);
+};
+
+export const triggerErrorShake = (element: HTMLElement | null) => {
+  if (!element) return;
+  element.classList.remove("flash-error");
+  void element.offsetWidth;
+  element.classList.add("flash-error");
+  setTimeout(() => element.classList.remove("flash-error"), 500);
 };
 
 // ── Press Animation Button ─────────────────────────────────────

@@ -145,11 +145,24 @@
       0 8px 32px -4px hsl(0 0% 0% / 0.6),
       0 0 0 1px hsl(0 0% 100% / 0.06) inset,
       0 1px 0 0 hsl(0 0% 100% / 0.08) inset;
-    transform: translateY(-2px) scale(1.01);
+    transform: translateY(-2px) scale(1.015);
   }
   .glass-card-hover:active {
     transform: translateY(0) scale(0.98);
     transition-duration: 100ms;
+  }
+
+  .flash-success {
+    animation: flash-success 0.8s ease-out;
+  }
+  .flash-error {
+    animation: shake 0.5s ease-out;
+  }
+
+  @keyframes flash-success {
+    0% { box-shadow: 0 0 0 0 hsl(var(--success) / 0); }
+    30% { box-shadow: 0 0 0 4px hsl(var(--success) / 0.4), 0 0 20px 4px hsl(var(--success) / 0.15); }
+    100% { box-shadow: 0 0 0 0 hsl(var(--success) / 0); }
   }
 
   .glow-red {
