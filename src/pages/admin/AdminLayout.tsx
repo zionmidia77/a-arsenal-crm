@@ -162,7 +162,7 @@ const AdminLayout = () => {
 
       <div className="flex-1 flex flex-col min-w-0">
         <header className="flex items-center gap-2 px-4 py-3 border-b border-border/50 backdrop-blur-xl bg-background/80 sticky top-0 z-20">
-          <Button variant="ghost" size="icon" onClick={() => setOpen(!open)} className="rounded-full md:hidden">
+          <Button variant="ghost" size="icon" onClick={() => setOpen(!open)} className="rounded-full md:hidden min-h-[44px] min-w-[44px]">
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
           <div className="flex items-center gap-2 md:hidden">

@@ -205,8 +205,11 @@ const AdminPipeline = () => {
 
       {/* Kanban Board */}
       <DragDropContext onDragEnd={onDragEnd}>
-        <div className="flex-1 overflow-x-auto px-5 pb-24">
-          <div className="flex gap-3 min-h-[400px]">
+        <div className="flex-1 overflow-x-auto px-4 md:px-5 pb-24">
+          {/* Mobile: vertical stack when single stage filtered, horizontal scroll otherwise */}
+          <div className={`flex gap-3 min-h-[400px] ${
+            activeFilter ? "flex-col md:flex-row" : ""
+          }`}>
             {visibleStages.map((stage) => (
               <KanbanColumn
                 key={stage.key}
