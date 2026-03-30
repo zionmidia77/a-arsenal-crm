@@ -894,37 +894,15 @@ const ChatFunnel = () => {
   };
 
   // Document photo handler
-  const handleDocumentUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files?.length || isLoading || isTransferred) return;
-    if (fileInputRef.current) fileInputRef.current.value = "";
-
-    const validFiles = Array.from(files).filter(file => {
-      if (!file.type.startsWith("image/") && file.type !== "application/pdf") {
-        toast.error(`"${file.name}" não é uma imagem ou PDF`);
-        return false;
-      }
-      if (file.size > 10 * 1024 * 1024) {
-        toast.error(`"${file.name}" é muito grande (máx 10MB)`);
-        return false;
-      }
-      return true;
-    });
-    if (!validFiles.length) return;
-
-    for (const file of validFiles) {
-      await processDocumentFile(file);
-    }
-
+  const processDocumentFile = useCallback(async (file: File) => {
     setIsAnalyzingDoc(true);
 
-    // Generate thumbnail for preview
-    const thumbnailUrl = URL.createObjectURL(file);
+    const thumbnailUrl = file.type.startsWith("image/") ? URL.createObjectURL(file) : undefined;
 
     const userMsg: ChatMessage = {
-      id: `user-doc-${Date.now()}`,
+      id: `user-doc-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       role: "user",
-      content: "📷 Enviei um documento para análise",
+      content: `📷 Enviei: ${file.name}`,
       timestamp: new Date(),
       thumbnail: thumbnailUrl,
     };
@@ -1015,7 +993,7 @@ const ChatFunnel = () => {
       }
 
       const assistantMsg: ChatMessage = {
-        id: `assistant-doc-${Date.now()}`,
+        id: `assistant-doc-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
         role: "assistant",
         content: responseContent,
         timestamp: new Date(),
@@ -1037,7 +1015,30 @@ const ChatFunnel = () => {
       setIsAnalyzingDoc(false);
       scrollToBottom();
     }
-  }, [clientId, isLoading, isTransferred, scrollToBottom, saveConversation]);
+  }, [clientId, scrollToBottom, saveConversation]);
+
+  const handleDocumentUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files?.length || isLoading || isTransferred) return;
+    if (fileInputRef.current) fileInputRef.current.value = "";
+
+    const validFiles = Array.from(files).filter(file => {
+      if (!file.type.startsWith("image/") && file.type !== "application/pdf") {
+        toast.error(`"${file.name}" não é uma imagem ou PDF`);
+        return false;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error(`"${file.name}" é muito grande (máx 10MB)`);
+        return false;
+      }
+      return true;
+    });
+    if (!validFiles.length) return;
+
+    for (const file of validFiles) {
+      await processDocumentFile(file);
+    }
+  }, [isLoading, isTransferred, processDocumentFile]);
 
   // Audio recording using Web Speech API
   const startRecording = useCallback(async () => {
