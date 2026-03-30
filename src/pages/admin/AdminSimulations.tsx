@@ -109,7 +109,7 @@ const AdminSimulations = () => {
       {isLoading ? (
         <div className="space-y-3">
           {[1, 2, 3].map(i => (
-            <div key={i} className="h-28 bg-muted/50 rounded-xl animate-pulse" />
+            <SimulationCardSkeleton key={i} />
           ))}
         </div>
       ) : !simulations?.length ? (
