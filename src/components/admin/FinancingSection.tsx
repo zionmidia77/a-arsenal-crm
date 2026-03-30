@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import {
-  FileCheck, Upload, CheckCircle2, Circle, AlertTriangle, Send, Eye,
+  FileCheck, Upload, CheckCircle2, Circle, AlertTriangle, Send, Eye, Trash2,
   MessageCircle, Crown, Shield, Briefcase, DollarSign, Loader2, Edit2, Save,
   Building2, Search, ShieldCheck, ShieldAlert, ChevronDown, ChevronUp, History, Clock, ExternalLink,
 } from "lucide-react";
