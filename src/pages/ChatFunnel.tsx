@@ -1194,7 +1194,7 @@ const ChatFunnel = () => {
                 className="text-xs gap-1.5 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
               >
                 <UserCheck className="w-3.5 h-3.5" />
-                Falar com humano
+                Falar com gerente
               </Button>
             </motion.div>
           )}
