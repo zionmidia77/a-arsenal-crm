@@ -73,6 +73,55 @@ const AdminChatHistory = () => {
   const [isLinking, setIsLinking] = useState(false);
 
   const navigate = useNavigate();
+  // Search leads for linking
+  const { data: searchedLeads = [] } = useQuery({
+    queryKey: ["link-lead-search", linkSearch],
+    queryFn: async () => {
+      if (!linkSearch.trim() || linkSearch.length < 2) return [];
+      const { data, error } = await supabase
+        .from("clients")
+        .select("id, name, phone, city, interest")
+        .or(`name.ilike.%${linkSearch}%,phone.ilike.%${linkSearch}%`)
+        .order("created_at", { ascending: false })
+        .limit(10);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: linkDialogOpen && linkSearch.length >= 2,
+  });
+
+  const handleLinkLead = async (clientId: string, clientName: string) => {
+    if (!linkConvoId || isLinking) return;
+    setIsLinking(true);
+    try {
+      const { error } = await supabase
+        .from("chat_conversations")
+        .update({ client_id: clientId })
+        .eq("id", linkConvoId);
+      if (error) throw error;
+
+      await supabase.from("interactions").insert({
+        client_id: clientId,
+        type: "system" as const,
+        content: "Conversa IA vinculada manualmente pelo admin",
+        created_by: "admin",
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["chat-conversations"] });
+      toast.success(`Conversa vinculada a "${clientName}"!`);
+      setLinkDialogOpen(false);
+      setLinkConvoId(null);
+      setLinkSearch("");
+      if (selectedConvo?.id === linkConvoId) {
+        setSelectedConvo(null);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao vincular conversa");
+    } finally {
+      setIsLinking(false);
+    }
+  };
 
   const { data: conversations = [], isLoading } = useQuery({
     queryKey: ["chat-conversations"],
