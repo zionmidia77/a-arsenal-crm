@@ -374,8 +374,9 @@ const FinancingSection = ({ client }: FinancingSectionProps) => {
     toast.success("Ficha copiada com links dos documentos!");
   };
 
-  const openDocImage = (url: string) => {
-    window.open(url, "_blank");
+  const openDocPreview = (key: string, url: string) => {
+    const label = DOC_LABELS.find(d => d.key === key);
+    setPreviewDoc({ key, url, label: label?.label || key });
   };
 
   return (
