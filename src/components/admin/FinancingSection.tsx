@@ -72,6 +72,8 @@ const FinancingSection = ({ client }: FinancingSectionProps) => {
   const [showVerification, setShowVerification] = useState(true);
   const [verificationHistory, setVerificationHistory] = useState<any[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [docUrls, setDocUrls] = useState<Record<string, string>>({});
+  const [loadingUrls, setLoadingUrls] = useState(false);
   const [editFields, setEditFields] = useState({
     phone: client.phone || "",
     employer: client.employer || "",
@@ -83,6 +85,33 @@ const FinancingSection = ({ client }: FinancingSectionProps) => {
     reference_phone: client.reference_phone || "",
     down_payment_amount: client.down_payment_amount || "",
   });
+
+  // Load uploaded document URLs
+  useEffect(() => {
+    const loadDocUrls = async () => {
+      try {
+        const { data: files } = await supabase.storage
+          .from("financing-docs")
+          .list(client.id, { sortBy: { column: "created_at", order: "desc" } });
+        if (!files || files.length === 0) return;
+
+        const urls: Record<string, string> = {};
+        for (const docType of DOC_LABELS) {
+          const docFile = files.find(f => f.name.startsWith(docType.key));
+          if (docFile) {
+            const { data } = await supabase.storage
+              .from("financing-docs")
+              .createSignedUrl(`${client.id}/${docFile.name}`, 3600);
+            if (data?.signedUrl) urls[docType.key] = data.signedUrl;
+          }
+        }
+        setDocUrls(urls);
+      } catch (err) {
+        console.error("Error loading doc URLs:", err);
+      }
+    };
+    loadDocUrls();
+  }, [client.id, uploading]);
 
   // Load verification history
   useEffect(() => {
