@@ -691,6 +691,58 @@ const PhotoLeadCapture = () => {
             </motion.div>
           )}
 
+          {/* --- NAME CONFLICT STEP --- */}
+          {step === "name_conflict" && nameConflict && (
+            <motion.div
+              key="name_conflict"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="space-y-4 mt-2"
+            >
+              <div className="flex items-center gap-2 p-3 rounded-xl bg-primary/10 border border-primary/30">
+                <AlertTriangle className="w-5 h-5 text-primary shrink-0" />
+                <div>
+                  <p className="text-sm font-medium">Nome diferente encontrado</p>
+                  <p className="text-xs text-muted-foreground">
+                    O documento tem um nome mais completo que o cadastro atual.
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div className="p-3 rounded-xl border border-border/50 bg-secondary/30">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Nome atual no cadastro</p>
+                  <p className="text-sm font-medium">{nameConflict.candidateName}</p>
+                </div>
+                <div className="p-3 rounded-xl border border-primary/50 bg-primary/5">
+                  <p className="text-[10px] uppercase tracking-wider text-primary mb-1">Nome extraído do documento</p>
+                  <p className="text-sm font-bold">{nameConflict.extractedName}</p>
+                </div>
+              </div>
+
+              <p className="text-xs text-muted-foreground text-center">
+                Deseja atualizar o nome do lead para o nome completo do documento?
+              </p>
+
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1 rounded-xl"
+                  onClick={() => handleMerge(nameConflict.candidateId, false)}
+                >
+                  Manter "{nameConflict.candidateName}"
+                </Button>
+                <Button
+                  className="flex-1 rounded-xl glow-red"
+                  onClick={() => handleMerge(nameConflict.candidateId, true)}
+                >
+                  Atualizar para "{nameConflict.extractedName}"
+                </Button>
+              </div>
+            </motion.div>
+          )}
+
           {/* --- REVIEW STEP --- */}
           {step === "review" && editData && (
             <motion.div
