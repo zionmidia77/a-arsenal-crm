@@ -419,6 +419,7 @@ const ChatFunnel = () => {
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [clientId, setClientId] = useState<string | null>(null);
+  const [clientName, setClientName] = useState<string | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(true);
   const [sessionId, setSessionId] = useState(getOrCreateSessionId);
   const [conversationSaved, setConversationSaved] = useState(false);
@@ -499,6 +500,7 @@ const ChatFunnel = () => {
     try { localStorage.setItem(STORAGE_KEY, newId); } catch {}
     setSessionId(newId);
     setClientId(null);
+    setClientName(null);
     setIsTransferred(false);
     setMessageCount(0);
     setShowSuggestions(true);
@@ -532,6 +534,11 @@ const ChatFunnel = () => {
           }));
           setMessages(restored);
           setClientId(data.client_id || null);
+          if (data.client_id) {
+            supabase.from("clients").select("name").eq("id", data.client_id).maybeSingle().then(({ data: c }) => {
+              if (c?.name) setClientName(c.name.split(" ")[0]);
+            });
+          }
           setIsTransferred(data.status === "transferred");
           setConversationSaved(true);
           setShowSuggestions(false);
@@ -766,6 +773,10 @@ const ChatFunnel = () => {
                   const newClientId = parsed.metadata.client_id;
                   latestClientId = newClientId;
                   setClientId(newClientId);
+                  // Fetch client name
+                  supabase.from("clients").select("name").eq("id", newClientId).maybeSingle().then(({ data: c }) => {
+                    if (c?.name) setClientName(c.name.split(" ")[0]);
+                  });
                   saveConversation(newMessages, newClientId);
                 }
                 if (parsed.metadata.vehicles?.length) {
@@ -1129,7 +1140,7 @@ const ChatFunnel = () => {
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-display font-semibold text-foreground text-sm">
-            Lucas — Arsenal Motors
+            {clientName ? `Lucas está atendendo ${clientName}` : "Lucas — Arsenal Motors"}
           </p>
           <p className="text-xs text-muted-foreground flex items-center gap-1">
             {isOnline ? (
