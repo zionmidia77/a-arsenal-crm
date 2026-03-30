@@ -74,6 +74,7 @@ const FinancingSection = ({ client }: FinancingSectionProps) => {
   const [showHistory, setShowHistory] = useState(false);
   const [docUrls, setDocUrls] = useState<Record<string, string>>({});
   const [loadingUrls, setLoadingUrls] = useState(false);
+  const [previewDoc, setPreviewDoc] = useState<{ key: string; url: string; label: string } | null>(null);
   const [editFields, setEditFields] = useState({
     phone: client.phone || "",
     employer: client.employer || "",
@@ -373,8 +374,9 @@ const FinancingSection = ({ client }: FinancingSectionProps) => {
     toast.success("Ficha copiada com links dos documentos!");
   };
 
-  const openDocImage = (url: string) => {
-    window.open(url, "_blank");
+  const openDocPreview = (key: string, url: string) => {
+    const label = DOC_LABELS.find(d => d.key === key);
+    setPreviewDoc({ key, url, label: label?.label || key });
   };
 
   return (
@@ -478,7 +480,7 @@ const FinancingSection = ({ client }: FinancingSectionProps) => {
                   size="sm"
                   variant="ghost"
                   className="rounded-full text-[10px] h-7 gap-1 text-primary"
-                  onClick={() => openDocImage(docUrls[doc.key])}
+                  onClick={() => openDocPreview(doc.key, docUrls[doc.key])}
                 >
                   <Eye className="w-3 h-3" /> Ver
                 </Button>
@@ -921,6 +923,50 @@ const FinancingSection = ({ client }: FinancingSectionProps) => {
           </Button>
         </div>
       </motion.div>
+
+      {/* Document Preview Modal */}
+      {previewDoc && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+          onClick={() => setPreviewDoc(null)}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="relative max-w-lg w-full max-h-[85vh] bg-card rounded-2xl overflow-hidden shadow-2xl border border-border"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-3 border-b border-border">
+              <p className="text-sm font-medium">{previewDoc.label}</p>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 text-[10px] gap-1"
+                  onClick={() => window.open(previewDoc.url, "_blank")}
+                >
+                  <ExternalLink className="w-3 h-3" /> Abrir
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 text-[10px]"
+                  onClick={() => setPreviewDoc(null)}
+                >
+                  ✕
+                </Button>
+              </div>
+            </div>
+            <div className="overflow-auto max-h-[75vh] p-2 flex items-center justify-center">
+              <img
+                src={previewDoc.url}
+                alt={previewDoc.label}
+                className="max-w-full max-h-[70vh] object-contain rounded-lg"
+              />
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };
