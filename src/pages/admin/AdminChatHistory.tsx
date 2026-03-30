@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { MessageSquare, User, Clock, UserCheck, X, Search, CalendarIcon, Filter, Send, Phone, Mail, MapPin, Bike, DollarSign, Flame, Thermometer, FileText, ExternalLink } from "lucide-react";
+import { MessageSquare, User, Clock, UserCheck, X, Search, CalendarIcon, Filter, Send, Phone, Mail, MapPin, Bike, DollarSign, Flame, Thermometer, FileText, ExternalLink, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { format, isAfter, isBefore, startOfDay, endOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -274,21 +274,22 @@ const AdminChatHistory = () => {
                   const msgCount = Array.isArray(convo.messages) ? convo.messages.length : 0;
                   const lastMsg = Array.isArray(convo.messages) ? convo.messages[convo.messages.length - 1] : null;
                   
-                  // Try to extract name from messages if no client linked
+                  // Determine name source
                   let clientName = convo.clients?.name || "";
+                  let nameSource: "linked" | "extracted" | "unknown" = convo.clients?.name ? "linked" : "unknown";
                   if (!clientName && Array.isArray(convo.messages)) {
                     for (const msg of convo.messages) {
                       if (msg.role === "assistant") {
-                        // Match "Nome: FULL NAME" or "nome de Full Name"
                         const nameFieldMatch = msg.content.match(/\*?\*?Nome:?\*?\*?\s+([A-ZÀ-Ú][A-ZÀ-Úa-zà-ú\s]+?)(?:\n|$)/);
                         if (nameFieldMatch) {
                           clientName = nameFieldMatch[1].trim().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+                          nameSource = "extracted";
                           break;
                         }
-                        // Match greetings like "Fala João", "E aí Maria"
                         const greetMatch = msg.content.match(/(?:fala|e aí|oi|olá|eai)\s+([A-ZÀ-Ú][a-zà-ú]+)/i);
                         if (greetMatch) {
                           clientName = greetMatch[1];
+                          nameSource = "extracted";
                           break;
                         }
                       }
@@ -304,9 +305,18 @@ const AdminChatHistory = () => {
                     >
                       <CardContent className="p-3">
                         <div className="flex items-start justify-between mb-1">
-                          <div className="flex items-center gap-2">
-                            <User className="w-3.5 h-3.5 text-muted-foreground" />
-                            <span className="text-sm font-medium truncate max-w-[140px]">{clientName}</span>
+                          <div className="flex items-center gap-1.5">
+                            {nameSource === "linked" ? (
+                              <UserCheck className="w-3.5 h-3.5 text-emerald-400" />
+                            ) : nameSource === "extracted" ? (
+                              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                            ) : (
+                              <User className="w-3.5 h-3.5 text-muted-foreground" />
+                            )}
+                            <span className="text-sm font-medium truncate max-w-[120px]">{clientName}</span>
+                            {nameSource === "extracted" && (
+                              <span className="text-[8px] px-1 py-0.5 rounded bg-amber-500/15 text-amber-400 shrink-0">IA</span>
+                            )}
                           </div>
                           <Badge className={`text-[10px] ${statusColor(convo.status)}`}>
                             {statusLabel(convo.status)}
