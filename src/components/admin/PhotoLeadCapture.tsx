@@ -36,7 +36,13 @@ type SimilarityCandidate = {
   match_reasons: string[];
 };
 
-type Step = "upload" | "processing" | "review" | "duplicates" | "done";
+type NameConflict = {
+  candidateId: string;
+  candidateName: string;
+  extractedName: string;
+};
+
+type Step = "upload" | "processing" | "review" | "duplicates" | "name_conflict" | "done";
 
 const MAX_IMAGES = 5;
 const FUNCTION_TIMEOUT_MS = 90_000;
