@@ -1198,10 +1198,6 @@ const ChatFunnel = () => {
               </Button>
             </motion.div>
           )}
-          <div className="flex items-center gap-1 text-[10px] text-muted-foreground bg-secondary/50 px-2.5 py-1 rounded-full">
-            <Sparkles className="w-3 h-3 text-primary" />
-            IA
-          </div>
         </div>
       </div>
 
