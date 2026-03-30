@@ -405,6 +405,24 @@ const tools = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "send_vehicle_photos",
+      description:
+        "Send individual photos of a specific vehicle to the client. Use when the client asks to see photos/pictures of a vehicle, asks 'tem foto?', 'mostra foto', 'quero ver', etc. Returns photo URLs that will be displayed as images in the chat.",
+      parameters: {
+        type: "object",
+        properties: {
+          brand: { type: "string", description: "Vehicle brand to search" },
+          model: { type: "string", description: "Vehicle model to search" },
+          year: { type: "number", description: "Vehicle year (optional)" },
+        },
+        required: ["brand", "model"],
+        additionalProperties: false,
+      },
+    },
+  },
 ];
 
 // ── Execute tool calls ──
