@@ -329,8 +329,31 @@ const PhotoLeadCapture = () => {
     [handleFiles],
   );
 
-  const handleMerge = async (candidateId: string) => {
+  const handleMerge = async (candidateId: string, updateName?: boolean) => {
     if (!editData) return;
+    
+    // Check name conflict before merging (only on first call, not after name decision)
+    if (updateName === undefined && editData.name) {
+      const candidate = candidates.find(c => c.id === candidateId);
+      if (candidate) {
+        const extractedName = editData.name.trim();
+        const existingName = candidate.name.trim();
+        // If names differ and extracted is longer (more complete), ask
+        if (
+          extractedName.toLowerCase() !== existingName.toLowerCase() &&
+          extractedName.split(/\s+/).length > existingName.split(/\s+/).length
+        ) {
+          setNameConflict({
+            candidateId,
+            candidateName: existingName,
+            extractedName,
+          });
+          setStep("name_conflict");
+          return;
+        }
+      }
+    }
+
     setStep("processing");
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -340,6 +363,7 @@ const PhotoLeadCapture = () => {
         image_base64_list: previews,
         action: "merge",
         merge_target_id: candidateId,
+        update_name: updateName === true ? editData.name : undefined,
       });
 
       if (data?.error) throw new Error(data.error);
