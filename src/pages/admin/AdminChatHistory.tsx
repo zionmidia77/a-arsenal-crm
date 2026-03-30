@@ -516,6 +516,28 @@ const AdminChatHistory = () => {
                         >
                           <Columns3 className="w-3 h-3" /> Pipeline
                         </Button>
+                        {/* Desvincular lead */}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-[10px] gap-1 text-destructive hover:text-destructive"
+                          onClick={async () => {
+                            if (!confirm("Desvincular este lead da conversa?")) return;
+                            try {
+                              await supabase
+                                .from("chat_conversations")
+                                .update({ client_id: null })
+                                .eq("id", selectedConvo.id);
+                              queryClient.invalidateQueries({ queryKey: ["chat-conversations"] });
+                              toast.success("Lead desvinculado da conversa");
+                              setSelectedConvo(null);
+                            } catch {
+                              toast.error("Erro ao desvincular");
+                            }
+                          }}
+                        >
+                          <Link2 className="w-3 h-3" /> Desvincular
+                        </Button>
                       </>
                     )}
                     {(selectedConvo.status === "transferred" || selectedConvo.status === "attended") && (
