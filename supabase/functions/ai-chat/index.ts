@@ -631,6 +631,14 @@ async function executeTool(
           created_by: "ai-consultant",
         });
 
+        // Link conversation to client using session_id (passed via context)
+        if (args._session_id) {
+          await supabase
+            .from("chat_conversations")
+            .update({ client_id: data.id })
+            .eq("session_id", args._session_id);
+        }
+
         return JSON.stringify({
           success: true,
           client_id: data.id,
