@@ -971,17 +971,15 @@ const ChatFunnel = () => {
 
 
   const stopRecording = useCallback(() => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-      mediaRecorderRef.current.stop();
+    if (mediaRecorderRef.current) {
+      try { (mediaRecorderRef.current as any).stop(); } catch {}
     }
     setIsRecording(false);
   }, []);
 
   const cancelRecording = useCallback(() => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-      mediaRecorderRef.current.stream.getTracks().forEach(t => t.stop());
-      mediaRecorderRef.current.stop();
-      audioChunksRef.current = [];
+    if (mediaRecorderRef.current) {
+      try { (mediaRecorderRef.current as any).abort(); } catch {}
     }
     if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
     setIsRecording(false);
