@@ -82,7 +82,13 @@ export const useLeadCopilot = (clientId: string) => {
 
       if (!resp.ok || !resp.body) {
         const err = await resp.json().catch(() => ({}));
-        throw new Error(err.error || "Failed");
+        if (resp.status === 402) {
+          throw new Error("Créditos de IA esgotados. Vá em Settings → Workspace → Usage para adicionar créditos.");
+        }
+        if (resp.status === 429) {
+          throw new Error("Muitas requisições. Aguarde alguns segundos e tente novamente.");
+        }
+        throw new Error(err.error || "Falha ao conectar com a IA");
       }
 
       const reader = resp.body.getReader();
