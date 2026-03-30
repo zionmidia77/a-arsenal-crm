@@ -406,7 +406,7 @@ const AdminChatHistory = () => {
                                   </TooltipContent>
                                 </Tooltip>
                               </TooltipProvider>
-                            )
+                            )}
                           </div>
                           <Badge className={`text-[10px] ${statusColor(convo.status)}`}>
                             {statusLabel(convo.status)}
