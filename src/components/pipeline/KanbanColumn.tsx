@@ -5,6 +5,7 @@ import type { Tables } from "@/integrations/supabase/types";
 interface KanbanColumnProps {
   stage: { key: string; label: string; emoji: string; color: string };
   clients: Tables<"clients">[];
+  highlightId?: string | null;
 }
 
 const KanbanColumn = ({ stage, clients }: KanbanColumnProps) => {
