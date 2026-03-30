@@ -1415,11 +1415,12 @@ serve(async (req) => {
     }
 
     // If we have metadata (client_id or vehicles), prepend SSE events
-    const hasMetadata = createdClientId || foundVehicles.length > 0;
+    const hasMetadata = createdClientId || foundVehicles.length > 0 || individualPhotos.length > 0;
     if (hasMetadata) {
       const metaPayload: Record<string, unknown> = {};
       if (createdClientId) metaPayload.client_id = createdClientId;
       if (foundVehicles.length > 0) metaPayload.vehicles = foundVehicles;
+      if (individualPhotos.length > 0) metaPayload.individual_photos = individualPhotos;
 
       const metaEvent = `data: ${JSON.stringify({ metadata: metaPayload })}\n\n`;
       const encoder = new TextEncoder();
