@@ -19,15 +19,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'INITIAL_SESSION') {
+        setSession(session);
+        setUser(session?.user ?? null);
+      }
+      // Handle expired/invalid session
+      if (event === 'SIGNED_OUT' || !session) {
+        setSession(null);
+        setUser(null);
+      }
       setLoading(false);
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error || !session) {
+        // Clear invalid session from storage
+        if (error) {
+          supabase.auth.signOut();
+        }
+        setSession(null);
+        setUser(null);
+      } else {
+        setSession(session);
+        setUser(session.user ?? null);
+      }
       setLoading(false);
     });
 
