@@ -16,6 +16,7 @@ interface ChatMessage {
   content: string;
   timestamp: Date;
   vehicles?: StockVehicle[];
+  photos?: string[];
 }
 
 interface StockVehicle {
