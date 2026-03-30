@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Send, ArrowLeft, Sparkles, UserCheck, Camera, FileCheck, Loader2, Car, ChevronLeft, ChevronRight, RotateCcw, Mic, Square } from "lucide-react";
+import { Send, ArrowLeft, UserCheck, Camera, FileCheck, Loader2, Car, ChevronLeft, ChevronRight, RotateCcw, Mic, Square, ImageUp } from "lucide-react";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
@@ -630,7 +630,7 @@ const ChatFunnel = () => {
     const transferMsg: ChatMessage = {
       id: `system-${Date.now()}`,
       role: "assistant",
-      content: "Entendi seu perfil! 🤝 Vou te transferir pro nosso especialista que vai finalizar tudo pra você. Ele já tem todas as informações da nossa conversa. Aguarde um momento...",
+      content: "Entendi seu perfil! 🤝 Vou passar pro meu gerente finalizar tudo pra você. Ele já tá por dentro da nossa conversa. Aguarda um minutinho...",
       timestamp: new Date(),
     };
     setMessages(prev => [...prev, transferMsg]);
@@ -641,12 +641,12 @@ const ChatFunnel = () => {
       await supabase.from("interactions").insert({
         client_id: clientId,
         type: "system" as const,
-        content: "Lead transferido do chat IA para atendente humano",
+        content: "Lead transferido do chat para o gerente",
         created_by: "ai-consultant",
       });
     }
     
-    toast.success("Conversa transferida para um especialista!");
+    toast.success("Conversa transferida para o gerente!");
     scrollToBottom();
   }, [messages, clientId, saveConversation, scrollToBottom]);
 
@@ -1050,62 +1050,122 @@ const ChatFunnel = () => {
     }
   }, [isLoading, isTransferred, processDocumentFile]);
 
-  // Audio recording using Web Speech API
+  // Audio recording — uses Web Speech API (Chrome) with MediaRecorder fallback (Safari/Firefox)
   const startRecording = useCallback(async () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      toast.error("Seu navegador não suporta reconhecimento de voz. Use o Chrome.");
-      return;
-    }
 
     try {
-      // Request mic permission first
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      stream.getTracks().forEach(t => t.stop());
 
-      const recognition = new SpeechRecognition();
-      recognition.lang = "pt-BR";
-      recognition.continuous = true;
-      recognition.interimResults = false;
-      recognition.maxAlternatives = 1;
+      if (SpeechRecognition) {
+        // Chrome path: Web Speech API for real-time transcription
+        stream.getTracks().forEach(t => t.stop());
 
-      let finalTranscript = "";
+        const recognition = new SpeechRecognition();
+        recognition.lang = "pt-BR";
+        recognition.continuous = true;
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
 
-      recognition.onresult = (event: any) => {
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          if (event.results[i].isFinal) {
-            finalTranscript += event.results[i][0].transcript + " ";
+        let finalTranscript = "";
+
+        recognition.onresult = (event: any) => {
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            if (event.results[i].isFinal) {
+              finalTranscript += event.results[i][0].transcript + " ";
+            }
           }
-        }
-      };
+        };
 
-      recognition.onend = () => {
-        if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
-        setRecordingDuration(0);
-        setIsRecording(false);
+        recognition.onend = () => {
+          if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+          setRecordingDuration(0);
+          setIsRecording(false);
 
-        const text = finalTranscript.trim();
-        if (text) {
-          sendMessage(text);
-        } else {
-          toast.error("Não consegui entender o áudio. Tente novamente.");
-        }
-      };
+          const text = finalTranscript.trim();
+          if (text) {
+            sendMessage(text);
+          } else {
+            toast.error("Não consegui entender o áudio. Tente novamente.");
+          }
+        };
 
-      recognition.onerror = (event: any) => {
-        console.error("Speech recognition error:", event.error);
-        if (event.error === "not-allowed") {
-          toast.error("Permita o acesso ao microfone para enviar áudios");
-        } else if (event.error !== "aborted") {
-          toast.error("Erro no reconhecimento de voz. Tente novamente.");
-        }
-        setIsRecording(false);
-        if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
-        setRecordingDuration(0);
-      };
+        recognition.onerror = (event: any) => {
+          console.error("Speech recognition error:", event.error);
+          if (event.error === "not-allowed") {
+            toast.error("Permita o acesso ao microfone para enviar áudios");
+          } else if (event.error !== "aborted") {
+            toast.error("Erro no reconhecimento de voz. Tente novamente.");
+          }
+          setIsRecording(false);
+          if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+          setRecordingDuration(0);
+        };
 
-      mediaRecorderRef.current = recognition as any;
-      recognition.start();
+        mediaRecorderRef.current = recognition as any;
+        recognition.start();
+      } else {
+        // Safari/Firefox fallback: MediaRecorder → send audio to transcription edge function
+        audioChunksRef.current = [];
+        const recorder = new MediaRecorder(stream, { mimeType: MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "audio/mp4" });
+        
+        recorder.ondataavailable = (e) => {
+          if (e.data.size > 0) audioChunksRef.current.push(e.data);
+        };
+
+        recorder.onstop = async () => {
+          stream.getTracks().forEach(t => t.stop());
+          if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+          setRecordingDuration(0);
+          setIsRecording(false);
+
+          const blob = new Blob(audioChunksRef.current, { type: recorder.mimeType });
+          if (blob.size < 1000) {
+            toast.error("Áudio muito curto. Tente novamente.");
+            return;
+          }
+
+          setIsTranscribing(true);
+          try {
+            const reader = new FileReader();
+            const base64 = await new Promise<string>((resolve, reject) => {
+              reader.onload = () => resolve(reader.result as string);
+              reader.onerror = reject;
+              reader.readAsDataURL(blob);
+            });
+
+            const resp = await fetch(
+              `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/transcribe-audio`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+                },
+                body: JSON.stringify({ audio_base64: base64 }),
+              }
+            );
+
+            if (!resp.ok) throw new Error("Transcription failed");
+            const result = await resp.json();
+            const text = result.text?.trim();
+            if (text) {
+              sendMessage(text);
+            } else {
+              toast.error("Não consegui entender o áudio. Tente novamente.");
+            }
+          } catch (err) {
+            console.error("Transcription error:", err);
+            toast.error("Erro ao transcrever áudio. Tente novamente.");
+          } finally {
+            setIsTranscribing(false);
+          }
+        };
+
+        mediaRecorderRef.current = recorder as any;
+        recorder.start();
+      }
+
       setIsRecording(true);
       setRecordingDuration(0);
       recordingTimerRef.current = setInterval(() => setRecordingDuration(d => d + 1), 1000);
@@ -1194,14 +1254,10 @@ const ChatFunnel = () => {
                 className="text-xs gap-1.5 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
               >
                 <UserCheck className="w-3.5 h-3.5" />
-                Falar com humano
+                Falar com gerente
               </Button>
             </motion.div>
           )}
-          <div className="flex items-center gap-1 text-[10px] text-muted-foreground bg-secondary/50 px-2.5 py-1 rounded-full">
-            <Sparkles className="w-3 h-3 text-primary" />
-            IA
-          </div>
         </div>
       </div>
 
@@ -1261,7 +1317,7 @@ const ChatFunnel = () => {
           >
             <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs px-4 py-2 rounded-full flex items-center gap-2">
               <UserCheck className="w-3.5 h-3.5" />
-              Transferido para especialista
+              Gerente vai te atender em breve
             </div>
           </motion.div>
         )}
@@ -1271,7 +1327,7 @@ const ChatFunnel = () => {
       <div className="px-4 py-3 border-t border-border/50 bg-background/80 backdrop-blur-xl">
         {isTransferred ? (
           <div className="text-center text-sm text-muted-foreground py-2">
-            Conversa transferida. Um especialista entrará em contato em breve.
+            O gerente já recebeu sua conversa e vai te responder em breve! 👊
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="flex gap-2 items-end">
@@ -1289,11 +1345,14 @@ const ChatFunnel = () => {
               size="icon"
               disabled={isLoading || isAnalyzingDoc || isRecording || isTranscribing}
               onClick={() => fileInputRef.current?.click()}
-              className="rounded-full shrink-0 h-11 w-11 text-muted-foreground hover:text-primary transition-colors"
+              className="rounded-full shrink-0 h-11 w-11 text-muted-foreground hover:text-primary transition-colors relative"
               title="Enviar documento (CNH, holerite, comprovante)"
             >
               {isAnalyzingDoc ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <div className="flex flex-col items-center">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span className="text-[8px] absolute -bottom-1 text-primary font-medium">Analisando</span>
+                </div>
               ) : (
                 <Camera className="h-4 w-4" />
               )}
@@ -1367,7 +1426,7 @@ const ChatFunnel = () => {
           </form>
         )}
         <p className="text-[9px] text-muted-foreground text-center mt-2 opacity-50">
-          Arsenal Motors · Atendimento inteligente
+          Arsenal Motors
         </p>
       </div>
 
