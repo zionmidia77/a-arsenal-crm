@@ -462,7 +462,7 @@ const FinancingSection = ({ client }: FinancingSectionProps) => {
 
         <div className="space-y-2">
           {DOC_LABELS.map((doc) => (
-            <div key={doc.key} className="flex items-center gap-3 py-2 border-b border-border/30 last:border-0">
+            <div key={doc.key} className="flex items-center gap-2 py-2 border-b border-border/30 last:border-0">
               <button onClick={() => toggleDoc(doc.key)} className="shrink-0">
                 {docs[doc.key] ? (
                   <CheckCircle2 className="w-5 h-5 text-green-400" />
@@ -470,9 +470,19 @@ const FinancingSection = ({ client }: FinancingSectionProps) => {
                   <Circle className="w-5 h-5 text-muted-foreground" />
                 )}
               </button>
-              <span className="text-sm flex-1">
+              <span className="text-xs flex-1">
                 {doc.emoji} {doc.label}
               </span>
+              {docUrls[doc.key] && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="rounded-full text-[10px] h-7 gap-1 text-primary"
+                  onClick={() => openDocImage(docUrls[doc.key])}
+                >
+                  <Eye className="w-3 h-3" /> Ver
+                </Button>
+              )}
               <Button
                 size="sm"
                 variant="ghost"
