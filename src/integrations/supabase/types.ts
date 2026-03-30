@@ -805,6 +805,104 @@ export type Database = {
           },
         ]
       }
+      sms_automations: {
+        Row: {
+          created_at: string | null
+          days_inactive: number
+          id: string
+          is_active: boolean
+          last_reset_at: string | null
+          max_sends_per_day: number
+          message_template: string
+          name: string
+          sends_today: number
+          target_segment: string
+          trigger_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          days_inactive?: number
+          id?: string
+          is_active?: boolean
+          last_reset_at?: string | null
+          max_sends_per_day?: number
+          message_template: string
+          name: string
+          sends_today?: number
+          target_segment?: string
+          trigger_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          days_inactive?: number
+          id?: string
+          is_active?: boolean
+          last_reset_at?: string | null
+          max_sends_per_day?: number
+          message_template?: string
+          name?: string
+          sends_today?: number
+          target_segment?: string
+          trigger_type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      sms_logs: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          delivered_at: string | null
+          error_message: string | null
+          id: string
+          message: string
+          phone: string
+          sent_at: string | null
+          smsdev_id: string | null
+          status: string
+          template_key: string | null
+          trigger_type: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          delivered_at?: string | null
+          error_message?: string | null
+          id?: string
+          message: string
+          phone: string
+          sent_at?: string | null
+          smsdev_id?: string | null
+          status?: string
+          template_key?: string | null
+          trigger_type?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          delivered_at?: string | null
+          error_message?: string | null
+          id?: string
+          message?: string
+          phone?: string
+          sent_at?: string | null
+          smsdev_id?: string | null
+          status?: string
+          template_key?: string | null
+          trigger_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sms_logs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stock_vehicles: {
         Row: {
           brand: string
