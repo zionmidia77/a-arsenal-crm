@@ -268,7 +268,7 @@ const AdminLeads = () => {
       {/* Temperature filter */}
       <motion.div variants={fadeUp} className="flex gap-2 overflow-x-auto">
         {(["all", "hot", "warm", "cold"] as const).map((f) => (
-          <Button key={f} variant={filter === f ? "default" : "outline"} size="sm" onClick={() => setFilter(f)} className="rounded-full shrink-0 text-xs">
+          <Button key={f} variant={filter === f ? "default" : "outline"} size="sm" onClick={() => setFilter(f)} className="rounded-full shrink-0 text-xs min-h-[40px] md:min-h-[32px] px-4 md:px-3">
             {f === "all" ? "Todos" : f === "hot" ? "🔥 Quentes" : f === "warm" ? "🟡 Mornos" : "🔵 Frios"}
           </Button>
         ))}
