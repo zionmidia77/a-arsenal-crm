@@ -1305,8 +1305,8 @@ serve(async (req) => {
     let foundVehicles: unknown[] = [];
     let individualPhotos: string[] = [];
 
-    // Tool calling loop (max 5 iterations for complex flows)
-    for (let i = 0; i < 5; i++) {
+    // Tool calling loop (max 3 iterations to avoid timeout)
+    for (let i = 0; i < 3; i++) {
       const toolResponse = await fetch(
         "https://ai.gateway.lovable.dev/v1/chat/completions",
         {
@@ -1316,7 +1316,7 @@ serve(async (req) => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model: "google/gemini-3-flash-preview",
+            model: "google/gemini-2.5-flash",
             messages: aiMessages,
             tools,
             stream: false,
@@ -1427,7 +1427,7 @@ serve(async (req) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
+          model: "google/gemini-2.5-flash",
           messages: aiMessages,
           stream: true,
         }),
