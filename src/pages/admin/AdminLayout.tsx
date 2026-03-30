@@ -194,7 +194,7 @@ const AdminLayout = () => {
           </Button>
         </header>
         <main className={`flex-1 overflow-y-auto ${!isClientDetail ? "pb-20 md:pb-0" : ""}`}>
-          <AdminBreadcrumb />
+          <div data-tour="breadcrumb"><AdminBreadcrumb /></div>
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}
