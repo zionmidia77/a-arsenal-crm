@@ -3,414 +3,19 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Send, ArrowLeft, UserCheck, Camera, FileCheck, Loader2, Car, ChevronLeft, ChevronRight, RotateCcw, Mic, Square, ImageUp } from "lucide-react";
+import { Send, ArrowLeft, UserCheck, Camera, Loader2, Mic, Square, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
-import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
 import consultantAvatar from "@/assets/consultant-avatar.png";
 
-// ── Types ──
-interface ChatMessage {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  timestamp: Date;
-  vehicles?: StockVehicle[];
-  photos?: string[];
-  thumbnail?: string;
-}
-
-interface StockVehicle {
-  brand: string;
-  model: string;
-  year?: number;
-  km?: number;
-  color?: string;
-  price: number;
-  condition: string;
-  description?: string;
-  features?: string[];
-  photos?: string[];
-}
-
-// ── Typing indicator ──
-const TypingIndicator = () => (
-  <motion.div
-    initial={{ opacity: 0, y: 8 }}
-    animate={{ opacity: 1, y: 0 }}
-    exit={{ opacity: 0, y: -4 }}
-    className="flex items-end gap-2.5 mb-4"
-  >
-    <Avatar className="h-8 w-8 border border-primary/30 shrink-0">
-      <AvatarImage src={consultantAvatar} alt="Consultor" />
-      <AvatarFallback className="bg-primary/20 text-primary text-xs font-bold">L</AvatarFallback>
-    </Avatar>
-    <div className="glass-card px-4 py-3.5 flex gap-1.5 rounded-2xl rounded-bl-sm">
-      {[0, 1, 2].map((i) => (
-        <span
-          key={i}
-          className="w-2 h-2 rounded-full bg-muted-foreground"
-          style={{
-            animation: "typing-bounce 1.4s ease-in-out infinite",
-            animationDelay: `${i * 0.2}s`,
-          }}
-        />
-      ))}
-    </div>
-  </motion.div>
-);
-
-// ── Notification sound ──
-const playNotificationSound = () => {
-  try {
-    const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-    const oscillator = audioCtx.createOscillator();
-    const gainNode = audioCtx.createGain();
-    oscillator.connect(gainNode);
-    gainNode.connect(audioCtx.destination);
-    oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
-    oscillator.frequency.setValueAtTime(1100, audioCtx.currentTime + 0.08);
-    gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
-    oscillator.start(audioCtx.currentTime);
-    oscillator.stop(audioCtx.currentTime + 0.25);
-  } catch {}
-};
-
-// ── Read receipts ──
-const ReadReceipt = ({ read }: { read: boolean }) => (
-  <span className={`inline-flex ml-1 ${read ? "text-blue-400" : "text-primary-foreground/40"}`}>
-    <svg viewBox="0 0 16 10" className="w-4 h-2.5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M1 5.5L4 8.5L10 1.5" />
-      <path d="M5 5.5L8 8.5L14 1.5" />
-    </svg>
-  </span>
-);
-
-// ── Chat Bubble ──
-const ChatBubble = ({ msg, isRead }: { msg: ChatMessage; isRead?: boolean }) => {
-  const isUser = msg.role === "user";
-  const isPhotoOnly = !isUser && msg.photos && msg.photos.length > 0 && !msg.content;
-  const isDocUpload = isUser && msg.content.startsWith("📷");
-  const time = msg.timestamp.toLocaleTimeString("pt-BR", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-
-  // Photo-only message (individual photo sent by AI)
-  if (isPhotoOnly) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 12, scale: 0.97 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-        className="flex mb-3 items-end gap-2.5"
-      >
-        <Avatar className="h-8 w-8 border border-primary/30 shrink-0">
-          <AvatarImage src={consultantAvatar} alt="Consultor" />
-          <AvatarFallback className="bg-primary/20 text-primary text-xs font-bold">L</AvatarFallback>
-        </Avatar>
-        <div className="max-w-[82%] rounded-2xl rounded-bl-sm overflow-hidden border border-border/40">
-          <img
-            src={msg.photos![0]}
-            alt="Foto do veículo"
-            className="w-full max-w-[300px] h-auto rounded-2xl rounded-bl-sm object-cover"
-            loading="lazy"
-          />
-          <p className="text-[10px] text-muted-foreground px-3 py-1 bg-card/80">{time}</p>
-        </div>
-      </motion.div>
-    );
-  }
-
-  // Document upload with thumbnail preview
-  if (isDocUpload && msg.thumbnail) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 12, scale: 0.97 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-        className="flex mb-3 justify-end"
-      >
-        <div className="max-w-[82%] bg-primary text-primary-foreground rounded-2xl rounded-br-sm overflow-hidden">
-          <img
-            src={msg.thumbnail}
-            alt="Documento enviado"
-            className="w-full max-w-[250px] h-auto max-h-[200px] object-cover"
-          />
-          <div className="px-4 py-2">
-            <p className="text-sm leading-relaxed">{msg.content}</p>
-            <p className="text-[10px] text-primary-foreground/50 text-right mt-1 flex items-center justify-end gap-0.5">
-              {time}
-              {isRead !== undefined && <ReadReceipt read={!!isRead} />}
-            </p>
-          </div>
-        </div>
-      </motion.div>
-    );
-  }
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 12, scale: 0.97 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-      className={`flex mb-3 ${isUser ? "justify-end" : "items-end gap-2.5"}`}
-    >
-      {!isUser && (
-        <Avatar className="h-8 w-8 border border-primary/30 shrink-0">
-          <AvatarImage src={consultantAvatar} alt="Consultor" />
-          <AvatarFallback className="bg-primary/20 text-primary text-xs font-bold">L</AvatarFallback>
-        </Avatar>
-      )}
-      <div
-        className={`max-w-[82%] ${
-          isUser
-            ? "bg-primary text-primary-foreground rounded-2xl rounded-br-sm px-4 py-2.5"
-            : "glass-card px-4 py-3 rounded-2xl rounded-bl-sm"
-        }`}
-      >
-        {isUser ? (
-          <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
-        ) : (
-          <div className="text-sm leading-relaxed prose prose-sm prose-invert max-w-none [&_p]:mb-1 [&_p:last-child]:mb-0">
-            <ReactMarkdown
-              components={{
-                a: ({ href, children }) => {
-                  const isWhatsApp = href?.includes("wa.me");
-                  if (isWhatsApp) {
-                    return (
-                      <a
-                        href={href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="no-underline inline-flex items-center gap-2 mt-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-sm transition-all shadow-lg shadow-emerald-600/20"
-                      >
-                        <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.118.56 4.1 1.53 5.82L0 24l6.34-1.66A11.95 11.95 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.82c-1.92 0-3.75-.52-5.35-1.46l-.38-.23-3.97 1.04 1.06-3.87-.25-.4A9.8 9.8 0 012.18 12c0-5.42 4.4-9.82 9.82-9.82S21.82 6.58 21.82 12 17.42 21.82 12 21.82z"/></svg>
-                        {children}
-                      </a>
-                    );
-                  }
-                  return (
-                    <a href={href} target="_blank" rel="noopener noreferrer" className="text-primary underline">
-                      {children}
-                    </a>
-                  );
-                },
-              }}
-            >{msg.content}</ReactMarkdown>
-          </div>
-        )}
-        <p
-          className={`text-[10px] mt-1 flex items-center ${
-            isUser ? "text-primary-foreground/50 justify-end gap-0.5" : "text-muted-foreground"
-          }`}
-        >
-          {time}
-          {isUser && isRead !== undefined && <ReadReceipt read={!!isRead} />}
-        </p>
-      </div>
-    </motion.div>
-  );
-};
-
-// ── Quick suggestion chips ──
-const SuggestionChips = ({ onSelect }: { onSelect: (text: string) => void }) => {
-  const suggestions = [
-    "Quero comprar um veículo",
-    "Quero trocar meu veículo",
-    "Quero vender meu veículo",
-    "Preciso de dinheiro",
-  ];
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.5 }}
-      className="flex flex-wrap gap-2 px-4 pb-3 pl-12"
-    >
-      {suggestions.map((s, i) => (
-        <motion.button
-          key={s}
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.6 + i * 0.08 }}
-          onClick={() => onSelect(s)}
-          className="text-xs px-3.5 py-2 rounded-full border border-primary/30 text-foreground hover:bg-primary hover:text-primary-foreground transition-all duration-200"
-        >
-          {s}
-        </motion.button>
-      ))}
-    </motion.div>
-  );
-};
-
-// ── Vehicle Card ──
-const VehicleCard = ({ vehicle }: { vehicle: StockVehicle }) => {
-  const [photoIdx, setPhotoIdx] = useState(0);
-  const photos = vehicle.photos || [];
-  const hasPhotos = photos.length > 0;
-
-  return (
-    <div className="min-w-[220px] max-w-[240px] rounded-xl border border-border/60 bg-card/80 backdrop-blur-sm overflow-hidden shrink-0 snap-center">
-      <div className="relative h-32 bg-gradient-to-br from-primary/10 to-primary/5 overflow-hidden">
-        {hasPhotos ? (
-          <>
-            <img src={photos[photoIdx]} alt={`${vehicle.brand} ${vehicle.model}`} className="w-full h-full object-cover" />
-            {photos.length > 1 && (
-              <>
-                <button
-                  onClick={(e) => { e.stopPropagation(); setPhotoIdx(i => (i > 0 ? i - 1 : photos.length - 1)); }}
-                  className="absolute left-1 top-1/2 -translate-y-1/2 p-0.5 rounded-full bg-black/40 text-white hover:bg-black/60 transition"
-                >
-                  <ChevronLeft className="h-3.5 w-3.5" />
-                </button>
-                <button
-                  onClick={(e) => { e.stopPropagation(); setPhotoIdx(i => (i < photos.length - 1 ? i + 1 : 0)); }}
-                  className="absolute right-1 top-1/2 -translate-y-1/2 p-0.5 rounded-full bg-black/40 text-white hover:bg-black/60 transition"
-                >
-                  <ChevronRight className="h-3.5 w-3.5" />
-                </button>
-                <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex gap-0.5">
-                  {photos.map((_, i) => (
-                    <span key={i} className={`w-1 h-1 rounded-full ${i === photoIdx ? "bg-white" : "bg-white/50"}`} />
-                  ))}
-                </div>
-                <div className="absolute top-1 right-1 px-1.5 py-0.5 rounded-full bg-black/50 text-white text-[9px] flex items-center gap-0.5">
-                  <Camera className="h-2.5 w-2.5" /> {photos.length}
-                </div>
-              </>
-            )}
-          </>
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <Car className="w-12 h-12 text-primary/60" />
-          </div>
-        )}
-      </div>
-      <div className="p-3 space-y-1.5">
-        <h4 className="font-semibold text-sm text-foreground leading-tight">
-          {vehicle.brand} {vehicle.model}
-        </h4>
-        <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-          {vehicle.year && <span>{vehicle.year}</span>}
-          {vehicle.km != null && <span>• {vehicle.km.toLocaleString("pt-BR")} km</span>}
-          {vehicle.color && <span>• {vehicle.color}</span>}
-        </div>
-        <span className="inline-block text-[10px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">
-          {vehicle.condition}
-        </span>
-        <p className="text-base font-bold text-primary">
-          R$ {Number(vehicle.price).toLocaleString("pt-BR")}
-        </p>
-        {vehicle.features && vehicle.features.length > 0 && (
-          <div className="flex flex-wrap gap-1 pt-0.5">
-            {vehicle.features.slice(0, 3).map((f, i) => (
-              <span key={i} className="text-[9px] px-1.5 py-0.5 rounded bg-accent/50 text-accent-foreground">
-                {f}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-// ── Vehicle Carousel ──
-const VehicleCarousel = ({ vehicles }: { vehicles: StockVehicle[] }) => {
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-
-  const scroll = (direction: "left" | "right") => {
-    scrollContainerRef.current?.scrollBy({
-      left: direction === "left" ? -240 : 240,
-      behavior: "smooth",
-    });
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="mb-4 pl-10"
-    >
-      <div className="flex items-center gap-1 mb-2 text-xs text-muted-foreground">
-        <Car className="w-3.5 h-3.5 text-primary" />
-        <span className="font-medium">Veículos do estoque</span>
-        <span>• {vehicles.length} opções</span>
-      </div>
-      <div className="relative">
-        {vehicles.length > 2 && (
-          <>
-            <button
-              onClick={() => scroll("left")}
-              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full bg-background/90 border border-border/50 flex items-center justify-center shadow-sm hover:bg-accent transition-colors"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => scroll("right")}
-              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full bg-background/90 border border-border/50 flex items-center justify-center shadow-sm hover:bg-accent transition-colors"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </>
-        )}
-        <div
-          ref={scrollContainerRef}
-          className="flex gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-2 px-1"
-          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-        >
-          {vehicles.map((v, i) => (
-            <VehicleCard key={`${v.brand}-${v.model}-${i}`} vehicle={v} />
-          ))}
-        </div>
-      </div>
-    </motion.div>
-  );
-};
-
-// ── "Last seen" helper ──
-const useLastSeen = () => {
-  const [lastSeen, setLastSeen] = useState<string>("online agora");
-  const [isOnline, setIsOnline] = useState(true);
-
-  useEffect(() => {
-    // Simulate realistic "last seen" behavior
-    const interval = setInterval(() => {
-      const rand = Math.random();
-      if (rand > 0.92) {
-        setIsOnline(false);
-        setLastSeen("visto por último às " + new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }));
-        setTimeout(() => {
-          setIsOnline(true);
-          setLastSeen("online agora");
-        }, 3000 + Math.random() * 5000);
-      }
-    }, 15000);
-    return () => clearInterval(interval);
-  }, []);
-
-  return { lastSeen, isOnline };
-};
-
-// ── Main Component ──
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
-
-const STORAGE_KEY = "arsenal-chat-session-id";
-
-const getOrCreateSessionId = (): string => {
-  try {
-    const existing = localStorage.getItem(STORAGE_KEY);
-    if (existing) return existing;
-    const newId = crypto.randomUUID();
-    localStorage.setItem(STORAGE_KEY, newId);
-    return newId;
-  } catch {
-    return crypto.randomUUID();
-  }
-};
+// Extracted components
+import TypingIndicator from "@/components/chat/TypingIndicator";
+import ChatBubble from "@/components/chat/ChatBubble";
+import SuggestionChips from "@/components/chat/SuggestionChips";
+import VehicleCarousel from "@/components/chat/VehicleCarousel";
+import { WELCOME_MESSAGE, CHAT_URL, CHAT_STORAGE_KEY, MIN_MESSAGE_INTERVAL_MS } from "@/components/chat/ChatConstants";
+import { getOrCreateSessionId, playNotificationSound, formatDuration } from "@/components/chat/chatUtils";
+import type { ChatMessage, StockVehicle } from "@/components/chat/types";
 
 const ChatFunnel = () => {
   const navigate = useNavigate();
@@ -434,21 +39,18 @@ const ChatFunnel = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<string | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { lastSeen, isOnline } = useLastSeen();
+  const lastMessageTimeRef = useRef<number>(0);
 
   const scrollToBottom = useCallback(() => {
     setTimeout(
-      () =>
-        scrollRef.current?.scrollTo({
-          top: scrollRef.current.scrollHeight,
-          behavior: "smooth",
-        }),
+      () => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" }),
       100
     );
   }, []);
@@ -497,7 +99,7 @@ const ChatFunnel = () => {
   // Start new conversation
   const startNewConversation = useCallback(() => {
     const newId = crypto.randomUUID();
-    try { localStorage.setItem(STORAGE_KEY, newId); } catch {}
+    try { localStorage.setItem(CHAT_STORAGE_KEY, newId); } catch {}
     setSessionId(newId);
     setClientId(null);
     setClientName(null);
@@ -508,8 +110,7 @@ const ChatFunnel = () => {
     const welcome: ChatMessage = {
       id: "welcome",
       role: "assistant",
-      content:
-            "E aí! Tudo bem? 👊\n\nAqui é o Lucas da Arsenal Motors. Tô aqui pra te ajudar, seja pra comprar, trocar ou o que precisar!\n\nMe conta, o que tá procurando?",
+      content: WELCOME_MESSAGE,
       timestamp: new Date(),
     };
     setMessages([welcome]);
@@ -545,26 +146,21 @@ const ChatFunnel = () => {
           setMessageCount(restored.filter(m => m.role === "user").length);
           scrollToBottom();
         } else {
-          // No existing conversation — show welcome
-          const welcome: ChatMessage = {
+          setMessages([{
             id: "welcome",
             role: "assistant",
-            content:
-              "E aí! Tudo bem? 👊\n\nAqui é o Lucas da Arsenal Motors. Tô aqui pra te ajudar, seja pra comprar, trocar ou o que precisar!\n\nMe conta, o que tá procurando?",
+            content: WELCOME_MESSAGE,
             timestamp: new Date(),
-          };
-          setMessages([welcome]);
+          }]);
         }
       } catch (err) {
         console.error("Error restoring chat:", err);
-        const welcome: ChatMessage = {
+        setMessages([{
           id: "welcome",
           role: "assistant",
-          content:
-            "E aí! Tudo bem? 👊\n\nAqui é o Lucas da Arsenal Motors. Tô aqui pra te ajudar, seja pra comprar, trocar ou o que precisar!\n\nMe conta, o que tá procurando?",
+          content: WELCOME_MESSAGE,
           timestamp: new Date(),
-        };
-        setMessages([welcome]);
+        }]);
       } finally {
         setIsRestoringChat(false);
       }
@@ -589,11 +185,9 @@ const ChatFunnel = () => {
           const newData = payload.new;
           if (!newData || !Array.isArray(newData.messages)) return;
 
-          // Check if the last message is from admin (prefixed with [Vendedor])
           const dbMessages = newData.messages as any[];
           const lastDbMsg = dbMessages[dbMessages.length - 1];
           if (lastDbMsg?.role === 'assistant' && lastDbMsg?.content?.startsWith('[Vendedor]')) {
-            // Add admin message to local state
             const adminMsg: ChatMessage = {
               id: `admin-${Date.now()}`,
               role: 'assistant',
@@ -602,7 +196,6 @@ const ChatFunnel = () => {
             };
 
             setMessages(prev => {
-              // Avoid duplicates
               if (prev.some(m => m.content === adminMsg.content && m.role === 'assistant')) return prev;
               return [...prev, adminMsg];
             });
@@ -610,7 +203,6 @@ const ChatFunnel = () => {
             scrollToBottom();
           }
 
-          // Update transferred status
           if (newData.status === 'attended') {
             setIsTransferred(false);
           }
@@ -618,11 +210,8 @@ const ChatFunnel = () => {
       )
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [sessionId, scrollToBottom]);
-
 
   // Handle transfer to human
   const handleTransfer = useCallback(async () => {
@@ -635,8 +224,7 @@ const ChatFunnel = () => {
     };
     setMessages(prev => [...prev, transferMsg]);
     await saveConversation([...messages, transferMsg], clientId, "transferred");
-    
-    // Log interaction if we have a client
+
     if (clientId) {
       await supabase.from("interactions").insert({
         client_id: clientId,
@@ -645,7 +233,7 @@ const ChatFunnel = () => {
         created_by: "ai-consultant",
       });
     }
-    
+
     toast.success("Conversa transferida para o gerente!");
     scrollToBottom();
   }, [messages, clientId, saveConversation, scrollToBottom]);
@@ -653,6 +241,15 @@ const ChatFunnel = () => {
   const sendMessage = useCallback(
     async (text: string) => {
       if (!text.trim() || isLoading || isTransferred) return;
+
+      // Rate limiting
+      const now = Date.now();
+      if (now - lastMessageTimeRef.current < MIN_MESSAGE_INTERVAL_MS) {
+        toast.error("Calma! Aguarde um momento antes de enviar outra mensagem.");
+        return;
+      }
+      lastMessageTimeRef.current = now;
+
       let latestClientId = clientId;
 
       setShowSuggestions(false);
@@ -670,19 +267,12 @@ const ChatFunnel = () => {
       setMessageCount(prev => prev + 1);
       scrollToBottom();
 
-      // Build history for API
       const apiMessages = newMessages
         .filter((m) => m.id !== "welcome" || m.role === "user")
-        .map((m) => ({
-          role: m.role as "user" | "assistant",
-          content: m.content,
-        }));
+        .map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
 
       if (messages[0]?.id === "welcome") {
-        apiMessages.unshift({
-          role: "assistant",
-          content: messages[0].content,
-        });
+        apiMessages.unshift({ role: "assistant", content: messages[0].content });
       }
 
       let assistantSoFar = "";
@@ -693,24 +283,14 @@ const ChatFunnel = () => {
         setMessages((prev) => {
           const last = prev[prev.length - 1];
           if (last?.id === assistantId) {
-            return prev.map((m) =>
-              m.id === assistantId ? { ...m, content: assistantSoFar } : m
-            );
+            return prev.map((m) => m.id === assistantId ? { ...m, content: assistantSoFar } : m);
           }
-          return [
-            ...prev,
-            {
-              id: assistantId,
-              role: "assistant" as const,
-              content: assistantSoFar,
-              timestamp: new Date(),
-            },
-          ];
+          return [...prev, { id: assistantId, role: "assistant" as const, content: assistantSoFar, timestamp: new Date() }];
         });
         scrollToBottom();
       };
 
-      // Delay variável para simular digitação humana (1-4 segundos)
+      // Human-like delay (1-4s)
       const humanDelay = 1000 + Math.random() * 3000;
       await new Promise(resolve => setTimeout(resolve, humanDelay));
 
@@ -729,13 +309,9 @@ const ChatFunnel = () => {
 
         if (!resp.ok || !resp.body) {
           const errorData = await resp.json().catch(() => ({}));
-          if (resp.status === 429) {
-            toast.error("Muitas mensagens! Aguarde um momento.");
-          } else if (resp.status === 402) {
-            toast.error("Serviço temporariamente indisponível.");
-          } else {
-            toast.error(errorData.error || "Erro ao enviar mensagem");
-          }
+          if (resp.status === 429) toast.error("Muitas mensagens! Aguarde um momento.");
+          else if (resp.status === 402) toast.error("Serviço temporariamente indisponível.");
+          else toast.error(errorData.error || "Erro ao enviar mensagem");
           throw new Error(errorData.error || "Failed");
         }
 
@@ -759,21 +335,16 @@ const ChatFunnel = () => {
             if (!line.startsWith("data: ")) continue;
 
             const jsonStr = line.slice(6).trim();
-            if (jsonStr === "[DONE]") {
-              streamDone = true;
-              break;
-            }
+            if (jsonStr === "[DONE]") { streamDone = true; break; }
 
             try {
               const parsed = JSON.parse(jsonStr);
 
-              // Check for metadata event (client_id, vehicles)
               if (parsed.metadata) {
                 if (parsed.metadata.client_id) {
                   const newClientId = parsed.metadata.client_id;
                   latestClientId = newClientId;
                   setClientId(newClientId);
-                  // Fetch client name
                   supabase.from("clients").select("name").eq("id", newClientId).maybeSingle().then(({ data: c }) => {
                     if (c?.name) setClientName(c.name.split(" ")[0]);
                   });
@@ -799,7 +370,7 @@ const ChatFunnel = () => {
           }
         }
 
-        // Flush remaining buffer
+        // Flush remaining
         if (textBuffer.trim()) {
           for (let raw of textBuffer.split("\n")) {
             if (!raw) continue;
@@ -812,9 +383,7 @@ const ChatFunnel = () => {
               const parsed = JSON.parse(jsonStr);
               const content = parsed.choices?.[0]?.delta?.content as string | undefined;
               if (content) upsertAssistant(content);
-            } catch {
-              /* ignore */
-            }
+            } catch { /* ignore */ }
           }
         }
       } catch (e) {
@@ -827,24 +396,17 @@ const ChatFunnel = () => {
         inputRef.current?.focus();
         playNotificationSound();
 
-        // Attach pending vehicles to the last assistant message
         const vehiclesToAttach = pendingVehiclesRef.current;
         const photosToAttach = pendingPhotosRef.current;
         setMessages(prev => {
           let updated = [...prev];
-
-          // Attach vehicles to last assistant message
           if (vehiclesToAttach && vehiclesToAttach.length > 0) {
             updated = updated.map((m, i) =>
-              i === updated.length - 1 && m.role === "assistant"
-                ? { ...m, vehicles: vehiclesToAttach }
-                : m
+              i === updated.length - 1 && m.role === "assistant" ? { ...m, vehicles: vehiclesToAttach } : m
             );
             setPendingVehicles(null);
             pendingVehiclesRef.current = null;
           }
-
-          // Add individual photos as separate messages after the assistant text
           if (photosToAttach && photosToAttach.length > 0) {
             const photoMessages: ChatMessage[] = photosToAttach.map((url, i) => ({
               id: `photo-${Date.now()}-${i}`,
@@ -857,7 +419,6 @@ const ChatFunnel = () => {
             setPendingPhotos(null);
             pendingPhotosRef.current = null;
           }
-
           saveConversation(updated, latestClientId);
           return updated;
         });
@@ -866,7 +427,7 @@ const ChatFunnel = () => {
     [messages, isLoading, isTransferred, clientId, scrollToBottom, saveConversation]
   );
 
-  // Auto-send message when coming from catalog with ?veiculo= param
+  // Auto-send message from catalog param
   const vehicleParamSent = useRef(false);
   useEffect(() => {
     if (vehicleParamSent.current || isRestoringChat || isLoading) return;
@@ -889,13 +450,12 @@ const ChatFunnel = () => {
     }
   };
 
-  const handleSuggestion = (text: string) => {
-    sendMessage(text);
-  };
+  const handleSuggestion = (text: string) => sendMessage(text);
 
   // Document photo handler
   const processDocumentFile = useCallback(async (file: File) => {
     setIsAnalyzingDoc(true);
+    setUploadProgress("Enviando...");
 
     const thumbnailUrl = file.type.startsWith("image/") ? URL.createObjectURL(file) : undefined;
 
@@ -911,6 +471,7 @@ const ChatFunnel = () => {
     scrollToBottom();
 
     try {
+      setUploadProgress("Processando imagem...");
       const reader = new FileReader();
       const base64 = await new Promise<string>((resolve, reject) => {
         reader.onload = () => resolve(reader.result as string);
@@ -918,6 +479,7 @@ const ChatFunnel = () => {
         reader.readAsDataURL(file);
       });
 
+      setUploadProgress("Analisando documento...");
       const resp = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-document`,
         {
@@ -946,7 +508,6 @@ const ChatFunnel = () => {
       let responseContent = "";
 
       if (result.document_type === "not_document") {
-        // Check what docs are pending to guide the client
         let pendingHint = "";
         if (clientId) {
           const { data: cl } = await supabase.from("clients").select("financing_docs").eq("id", clientId).maybeSingle();
@@ -956,9 +517,7 @@ const ChatFunnel = () => {
             if (!docs.cnh) pending.push("📸 **CNH** (frente e verso) — ou RG + CPF se não tiver CNH");
             if (!docs.pay_stub) pending.push("💰 **Holerite/Contracheque** — foto do seu comprovante de renda");
             if (!docs.proof_of_residence) pending.push("🏠 **Comprovante de residência** — conta de luz, água ou telefone recente");
-            if (pending.length > 0) {
-              pendingHint = "\n\nO que eu preciso agora:\n" + pending.join("\n");
-            }
+            if (pending.length > 0) pendingHint = "\n\nO que eu preciso agora:\n" + pending.join("\n");
           }
         }
         if (!pendingHint) {
@@ -1001,15 +560,12 @@ const ChatFunnel = () => {
           responseContent += "Agora manda seu **comprovante de renda** (holerite ou contracheque) pra eu adiantar a análise de crédito! 📋";
         } else if (result.document_type === "income_proof") {
           responseContent += "Massa! Agora só falta o **comprovante de residência** e ficamos prontos! 🏠";
-          
-          // Auto-trigger CNPJ verification if extracted
+
           if (result.extracted_data?.employer_cnpj && clientId) {
             try {
               const cleanCnpj = result.extracted_data.employer_cnpj.replace(/[^\d]/g, "");
               if (cleanCnpj.length === 14) {
-                const verifyResp = await fetch(
-                  `https://brasilapi.com.br/api/cnpj/v1/${cleanCnpj}`
-                );
+                const verifyResp = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cleanCnpj}`);
                 if (verifyResp.ok) {
                   const cnpjData = await verifyResp.json();
                   const isActive = cnpjData.descricao_situacao_cadastral === "ATIVA";
@@ -1017,8 +573,7 @@ const ChatFunnel = () => {
                   if (cnpjData.razao_social) responseContent += `\n🏛️ ${cnpjData.razao_social}`;
                   if (cnpjData.cnae_fiscal_descricao) responseContent += `\n🏭 ${cnpjData.cnae_fiscal_descricao}`;
                   if (cnpjData.descricao_situacao_cadastral) responseContent += `\n📊 Situação: ${cnpjData.descricao_situacao_cadastral}`;
-                  
-                  // Save verification to DB via edge function
+
                   fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-employer`, {
                     method: "POST",
                     headers: {
@@ -1038,11 +593,7 @@ const ChatFunnel = () => {
         }
 
         if (clientId) {
-          const { data: client } = await supabase
-            .from("clients")
-            .select("financing_docs")
-            .eq("id", clientId)
-            .maybeSingle();
+          const { data: client } = await supabase.from("clients").select("financing_docs").eq("id", clientId).maybeSingle();
           const docs = client?.financing_docs as Record<string, boolean> | null;
           if (docs?.cnh && docs?.pay_stub && docs?.proof_of_residence) {
             responseContent += "\n\n🎉 **Documentação completa!** Vou encaminhar pra análise de crédito!";
@@ -1071,34 +622,24 @@ const ChatFunnel = () => {
       toast.error("Erro ao analisar documento");
     } finally {
       setIsAnalyzingDoc(false);
+      setUploadProgress(null);
       scrollToBottom();
     }
   }, [clientId, scrollToBottom, saveConversation]);
 
   const handleDocumentUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files || files.length === 0) {
-      console.log("No files selected");
-      return;
-    }
+    if (!files || files.length === 0) return;
     if (isLoading || isTransferred) return;
 
-    // Copy files before clearing input
     const fileList = Array.from(files);
-    // Reset input so same file can be re-selected
     if (fileInputRef.current) fileInputRef.current.value = "";
 
     const validFiles = fileList.filter(file => {
       const isImage = file.type.startsWith("image/") || /\.(jpg|jpeg|png|gif|webp|heic|heif)$/i.test(file.name);
       const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
-      if (!isImage && !isPdf) {
-        toast.error(`"${file.name}" não é uma imagem ou PDF`);
-        return false;
-      }
-      if (file.size > 10 * 1024 * 1024) {
-        toast.error(`"${file.name}" é muito grande (máx 10MB)`);
-        return false;
-      }
+      if (!isImage && !isPdf) { toast.error(`"${file.name}" não é uma imagem ou PDF`); return false; }
+      if (file.size > 10 * 1024 * 1024) { toast.error(`"${file.name}" é muito grande (máx 10MB)`); return false; }
       return true;
     });
     if (!validFiles.length) return;
@@ -1108,7 +649,7 @@ const ChatFunnel = () => {
     }
   }, [isLoading, isTransferred, processDocumentFile]);
 
-  // Audio recording — uses Web Speech API (Chrome) with MediaRecorder fallback (Safari/Firefox)
+  // Audio recording
   const startRecording = useCallback(async () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
@@ -1116,9 +657,7 @@ const ChatFunnel = () => {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
       if (SpeechRecognition) {
-        // Chrome path: Web Speech API for real-time transcription
         stream.getTracks().forEach(t => t.stop());
-
         const recognition = new SpeechRecognition();
         recognition.lang = "pt-BR";
         recognition.continuous = true;
@@ -1129,9 +668,7 @@ const ChatFunnel = () => {
 
         recognition.onresult = (event: any) => {
           for (let i = event.resultIndex; i < event.results.length; i++) {
-            if (event.results[i].isFinal) {
-              finalTranscript += event.results[i][0].transcript + " ";
-            }
+            if (event.results[i].isFinal) finalTranscript += event.results[i][0].transcript + " ";
           }
         };
 
@@ -1139,22 +676,15 @@ const ChatFunnel = () => {
           if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
           setRecordingDuration(0);
           setIsRecording(false);
-
           const text = finalTranscript.trim();
-          if (text) {
-            sendMessage(text);
-          } else {
-            toast.error("Não consegui entender o áudio. Tente novamente.");
-          }
+          if (text) sendMessage(text);
+          else toast.error("Não consegui entender o áudio. Tente novamente.");
         };
 
         recognition.onerror = (event: any) => {
           console.error("Speech recognition error:", event.error);
-          if (event.error === "not-allowed") {
-            toast.error("Permita o acesso ao microfone para enviar áudios");
-          } else if (event.error !== "aborted") {
-            toast.error("Erro no reconhecimento de voz. Tente novamente.");
-          }
+          if (event.error === "not-allowed") toast.error("Permita o acesso ao microfone para enviar áudios");
+          else if (event.error !== "aborted") toast.error("Erro no reconhecimento de voz. Tente novamente.");
           setIsRecording(false);
           if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
           setRecordingDuration(0);
@@ -1163,10 +693,9 @@ const ChatFunnel = () => {
         mediaRecorderRef.current = recognition as any;
         recognition.start();
       } else {
-        // Safari/Firefox fallback: MediaRecorder → send audio to transcription edge function
         audioChunksRef.current = [];
         const recorder = new MediaRecorder(stream, { mimeType: MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "audio/mp4" });
-        
+
         recorder.ondataavailable = (e) => {
           if (e.data.size > 0) audioChunksRef.current.push(e.data);
         };
@@ -1178,18 +707,15 @@ const ChatFunnel = () => {
           setIsRecording(false);
 
           const blob = new Blob(audioChunksRef.current, { type: recorder.mimeType });
-          if (blob.size < 1000) {
-            toast.error("Áudio muito curto. Tente novamente.");
-            return;
-          }
+          if (blob.size < 1000) { toast.error("Áudio muito curto. Tente novamente."); return; }
 
           setIsTranscribing(true);
           try {
-            const reader = new FileReader();
-            const base64 = await new Promise<string>((resolve, reject) => {
-              reader.onload = () => resolve(reader.result as string);
-              reader.onerror = reject;
-              reader.readAsDataURL(blob);
+            const fileReader = new FileReader();
+            const audioBase64 = await new Promise<string>((resolve, reject) => {
+              fileReader.onload = () => resolve(fileReader.result as string);
+              fileReader.onerror = reject;
+              fileReader.readAsDataURL(blob);
             });
 
             const resp = await fetch(
@@ -1200,18 +726,15 @@ const ChatFunnel = () => {
                   "Content-Type": "application/json",
                   Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
                 },
-                body: JSON.stringify({ audio_base64: base64 }),
+                body: JSON.stringify({ audio_base64: audioBase64 }),
               }
             );
 
             if (!resp.ok) throw new Error("Transcription failed");
             const result = await resp.json();
             const text = result.text?.trim();
-            if (text) {
-              sendMessage(text);
-            } else {
-              toast.error("Não consegui entender o áudio. Tente novamente.");
-            }
+            if (text) sendMessage(text);
+            else toast.error("Não consegui entender o áudio. Tente novamente.");
           } catch (err) {
             console.error("Transcription error:", err);
             toast.error("Erro ao transcrever áudio. Tente novamente.");
@@ -1233,8 +756,6 @@ const ChatFunnel = () => {
     }
   }, [sendMessage]);
 
-
-
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current) {
       try { (mediaRecorderRef.current as any).stop(); } catch {}
@@ -1251,21 +772,13 @@ const ChatFunnel = () => {
     setRecordingDuration(0);
   }, []);
 
-  const formatDuration = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
-
-  // Show transfer button after 4+ user messages (lead likely qualified)
   const showTransferButton = messageCount >= 4 && !isTransferred;
 
   return (
     <div className="flex flex-col h-screen bg-background">
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3 border-b border-border/50 backdrop-blur-xl bg-background/80 sticky top-0 z-10">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="shrink-0 rounded-full"
-          onClick={() => navigate(-1)}
-        >
+        <Button variant="ghost" size="icon" className="shrink-0 rounded-full" onClick={() => navigate(-1)}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="relative">
@@ -1273,25 +786,18 @@ const ChatFunnel = () => {
             <AvatarImage src={consultantAvatar} alt="Consultor Arsenal" />
             <AvatarFallback className="bg-primary/20 text-primary font-bold text-sm">L</AvatarFallback>
           </Avatar>
-          <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-background ${isOnline ? "bg-emerald-500" : "bg-muted-foreground"}`} />
+          <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-background bg-emerald-500" />
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-display font-semibold text-foreground text-sm">
             {clientName ? `Lucas está atendendo ${clientName}` : "Lucas — Arsenal Motors"}
           </p>
           <p className="text-xs text-muted-foreground flex items-center gap-1">
-            {isOnline ? (
-              <>
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
-                online agora
-              </>
-            ) : (
-              lastSeen
-            )}
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
+            online agora
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {/* New conversation button */}
           {!isRestoringChat && messages.length > 1 && (
             <Button
               variant="ghost"
@@ -1328,13 +834,8 @@ const ChatFunnel = () => {
           </div>
         ) : (
           <>
-            {/* Restored conversation indicator */}
             {conversationSaved && messages.length > 1 && messages[0]?.id?.startsWith("restored") && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex justify-center mb-4"
-              >
+              <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex justify-center mb-4">
                 <div className="bg-secondary/80 text-muted-foreground text-[10px] px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-border/50">
                   <RotateCcw className="w-3 h-3" />
                   Conversa anterior restaurada
@@ -1344,16 +845,11 @@ const ChatFunnel = () => {
 
             <AnimatePresence mode="popLayout">
               {messages.map((msg, idx) => {
-                // User messages are "read" if there's a subsequent assistant message
-                const isRead = msg.role === "user"
-                  ? messages.slice(idx + 1).some(m => m.role === "assistant")
-                  : undefined;
+                const isRead = msg.role === "user" ? messages.slice(idx + 1).some(m => m.role === "assistant") : undefined;
                 return (
                   <div key={msg.id}>
                     <ChatBubble msg={msg} isRead={isRead} />
-                    {msg.vehicles && msg.vehicles.length > 0 && (
-                      <VehicleCarousel vehicles={msg.vehicles} />
-                    )}
+                    {msg.vehicles && msg.vehicles.length > 0 && <VehicleCarousel vehicles={msg.vehicles} />}
                   </div>
                 );
               })}
@@ -1377,7 +873,7 @@ const ChatFunnel = () => {
               </Avatar>
               <div className="glass-card px-4 py-3 rounded-2xl rounded-bl-sm flex items-center gap-2.5">
                 <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                <span className="text-sm text-muted-foreground">Analisando documento...</span>
+                <span className="text-sm text-muted-foreground">{uploadProgress || "Analisando documento..."}</span>
               </div>
             </motion.div>
           )}
@@ -1388,11 +884,7 @@ const ChatFunnel = () => {
         )}
 
         {isTransferred && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex justify-center my-4"
-          >
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex justify-center my-4">
             <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs px-4 py-2 rounded-full flex items-center gap-2">
               <UserCheck className="w-3.5 h-3.5" />
               Gerente vai te atender em breve
