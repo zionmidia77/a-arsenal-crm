@@ -863,23 +863,35 @@ async function executeTool(
       case "check_documents": {
         const { data: client } = await supabase
           .from("clients")
-          .select("financing_docs, name, cpf, salary, employer, reference_name, reference_phone, marital_status")
+          .select("financing_docs, name, cpf, salary, employer, reference_name, reference_phone, reference_relation, reference_name_2, reference_phone_2, reference_relation_2, marital_status")
           .eq("id", args.client_id)
           .single();
 
         if (!client) return JSON.stringify({ error: "Client not found" });
 
         const docs = (client.financing_docs as Record<string, boolean>) || {};
+        const ref1Done = !!(client.reference_name && client.reference_phone && client.reference_relation);
+        const ref2Done = !!(client.reference_name_2 && client.reference_phone_2 && client.reference_relation_2);
         const checklist = {
           cnh: { label: "CNH / RG + CPF", done: !!docs.cnh },
           pay_stub: { label: "Comprovante de Renda (holerite)", done: !!docs.pay_stub },
           proof_of_residence: { label: "Comprovante de Residência", done: !!docs.proof_of_residence },
-          reference: { label: "Referência Pessoal", done: !!(client.reference_name && client.reference_phone) },
+          reference_1: { label: "Referência Pessoal 1 (nome + tel + relação)", done: ref1Done },
+          reference_2: { label: "Referência Pessoal 2 (nome + tel + relação)", done: ref2Done },
           cpf_info: { label: "CPF informado", done: !!client.cpf },
           income_info: { label: "Renda informada", done: !!client.salary },
           employer_info: { label: "Empresa/Empregador", done: !!client.employer },
           marital_info: { label: "Estado civil", done: !!client.marital_status },
         };
+
+        // Update financing_docs with reference status
+        if (ref1Done || ref2Done) {
+          const updatedDocs = { ...docs, reference_1: ref1Done, reference_2: ref2Done };
+          await supabase
+            .from("clients")
+            .update({ financing_docs: updatedDocs })
+            .eq("id", args.client_id);
+        }
 
         const total = Object.keys(checklist).length;
         const done = Object.values(checklist).filter(c => c.done).length;
@@ -896,7 +908,7 @@ ${"▓".repeat(Math.round(percent / 10))}${"░".repeat(10 - Math.round(percent 
 
 ${Object.values(checklist).map(c => `${c.done ? "✅" : "⬜"} ${c.label}`).join("\n")}
 
-Se faltam itens, pergunte o próximo dado pendente de forma natural.`,
+Se faltam itens, pergunte o próximo dado pendente de forma natural. Referências pessoais são coletadas por TEXTO (nome + telefone + grau de relação). Peça uma referência de cada vez.`,
         });
       }
 
