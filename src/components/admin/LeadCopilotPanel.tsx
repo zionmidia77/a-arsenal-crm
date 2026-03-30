@@ -98,7 +98,31 @@ const LeadCopilotPanel = ({ clientId, clientName, clientPhone, vehiclePhotos }: 
     toast.success("Mensagem copiada!");
   };
 
-  const tempColors: Record<string, string> = {
+  const handleExportPdf = async (content: string) => {
+    setIsExporting(true);
+    try {
+      const catalogUrl = `${window.location.origin}/catalogo`;
+      const blob = await generateProposalPdf({
+        clientName,
+        clientPhone,
+        proposalText: content,
+        vehiclePhotos,
+        qrUrl: catalogUrl,
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Proposta_${clientName.replace(/\s+/g, "_")}_${new Date().toISOString().slice(0, 10)}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("PDF exportado com sucesso!");
+    } catch (e) {
+      console.error("PDF export error:", e);
+      toast.error("Erro ao exportar PDF");
+    } finally {
+      setIsExporting(false);
+    }
+  };
     hot: "text-primary bg-primary/10",
     warm: "text-warning bg-warning/10",
     cold: "text-info bg-info/10",
