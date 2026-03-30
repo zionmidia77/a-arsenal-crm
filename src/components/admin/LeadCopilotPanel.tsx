@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bot, Send, Copy, Clipboard, ChevronDown, ChevronUp, Sparkles, Target, AlertTriangle, MessageCircle, Zap, ThermometerSun, Tag, Clock } from "lucide-react";
+import { Bot, Send, Copy, Clipboard, ChevronDown, ChevronUp, Sparkles, Target, AlertTriangle, MessageCircle, Zap, ThermometerSun, Tag, Clock, ImagePlus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -32,11 +32,48 @@ const LeadCopilotPanel = ({ clientId, clientName }: LeadCopilotPanelProps) => {
   const [pasteText, setPasteText] = useState("");
   const [showMemory, setShowMemory] = useState(false);
   const [expanded, setExpanded] = useState(true);
+  const [selectedImages, setSelectedImages] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSend = () => {
-    if (!input.trim() || copilot.isLoading) return;
-    copilot.sendMessage(input.trim());
+    if ((!input.trim() && selectedImages.length === 0) || copilot.isLoading) return;
+    copilot.sendMessage(input.trim(), selectedImages.length > 0 ? selectedImages : undefined);
     setInput("");
+    setSelectedImages([]);
+    setImagePreviews([]);
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    const total = selectedImages.length + files.length;
+    if (total > 10) {
+      toast.error("Máximo 10 imagens por envio");
+      return;
+    }
+
+    const newFiles = [...selectedImages, ...files].slice(0, 10);
+    setSelectedImages(newFiles);
+
+    // Generate previews
+    const newPreviews: string[] = [];
+    newFiles.forEach(file => {
+      const url = URL.createObjectURL(file);
+      newPreviews.push(url);
+    });
+    // Revoke old previews
+    imagePreviews.forEach(url => URL.revokeObjectURL(url));
+    setImagePreviews(newPreviews);
+
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const removeImage = (index: number) => {
+    URL.revokeObjectURL(imagePreviews[index]);
+    setSelectedImages(prev => prev.filter((_, i) => i !== index));
+    setImagePreviews(prev => prev.filter((_, i) => i !== index));
   };
 
   const handlePaste = () => {
@@ -47,7 +84,6 @@ const LeadCopilotPanel = ({ clientId, clientName }: LeadCopilotPanelProps) => {
   };
 
   const copyToClipboard = (text: string) => {
-    // Extract message after "Mensagem pronta:" or similar patterns
     const msgMatch = text.match(/(?:mensagem pronta|💬.*?mensagem|copie.*?envie)[:\s]*\n*([^]*?)(?:\n\n\*\*|$)/i);
     const toCopy = msgMatch ? msgMatch[1].trim() : text;
     navigator.clipboard.writeText(toCopy);
@@ -241,6 +277,19 @@ const LeadCopilotPanel = ({ clientId, clientName }: LeadCopilotPanelProps) => {
                           ? "bg-primary text-primary-foreground rounded-2xl rounded-br-md px-3 py-2"
                           : "bg-card border border-border/50 rounded-2xl rounded-bl-md px-3 py-2"
                       }`}>
+                        {/* Show image thumbnails in user messages */}
+                        {msg.images && msg.images.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 mb-2">
+                            {msg.images.map((src, imgIdx) => (
+                              <img
+                                key={imgIdx}
+                                src={src}
+                                alt={`Imagem ${imgIdx + 1}`}
+                                className="w-16 h-16 rounded-lg object-cover border border-white/20"
+                              />
+                            ))}
+                          </div>
+                        )}
                         {msg.role === "assistant" ? (
                           <div className="prose prose-sm dark:prose-invert max-w-none text-xs [&_p]:mb-1 [&_ul]:mb-1 [&_li]:mb-0.5 [&_h1]:text-sm [&_h2]:text-xs [&_h3]:text-xs [&_strong]:text-foreground">
                             <ReactMarkdown>{msg.content}</ReactMarkdown>
@@ -270,21 +319,59 @@ const LeadCopilotPanel = ({ clientId, clientName }: LeadCopilotPanelProps) => {
               </div>
             )}
 
+            {/* Image Previews */}
+            {selectedImages.length > 0 && (
+              <div className="px-4 pb-2">
+                <div className="flex flex-wrap gap-2 p-2 bg-secondary/30 rounded-xl">
+                  {imagePreviews.map((src, i) => (
+                    <div key={i} className="relative group">
+                      <img src={src} alt={`Preview ${i + 1}`} className="w-14 h-14 rounded-lg object-cover border border-border/50" />
+                      <button
+                        onClick={() => removeImage(i)}
+                        className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                  <p className="text-[10px] text-muted-foreground self-end ml-1">{selectedImages.length}/10</p>
+                </div>
+              </div>
+            )}
+
             {/* Input */}
             <div className="px-4 pb-4">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={handleImageSelect}
+              />
               <div className="flex gap-2">
+                <Button
+                  size="icon"
+                  variant="outline"
+                  className="rounded-xl h-10 w-10 shrink-0 border-border/50"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={copilot.isLoading || selectedImages.length >= 10}
+                  title="Anexar imagens (até 10)"
+                >
+                  <ImagePlus className="w-4 h-4" />
+                </Button>
                 <Input
                   value={input}
                   onChange={e => setInput(e.target.value)}
                   onKeyDown={e => e.key === "Enter" && handleSend()}
-                  placeholder="Pergunte sobre este lead..."
+                  placeholder={selectedImages.length > 0 ? "Descreva o que analisar nas imagens..." : "Pergunte sobre este lead..."}
                   className="rounded-xl bg-secondary border-border/50 h-10 text-xs"
                   disabled={copilot.isLoading}
                 />
                 <Button
                   size="icon"
                   className="rounded-xl h-10 w-10 shrink-0"
-                  disabled={!input.trim() || copilot.isLoading}
+                  disabled={(!input.trim() && selectedImages.length === 0) || copilot.isLoading}
                   onClick={handleSend}
                 >
                   <Send className="w-4 h-4" />
