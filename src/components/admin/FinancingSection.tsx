@@ -74,6 +74,7 @@ const FinancingSection = ({ client }: FinancingSectionProps) => {
   const [showHistory, setShowHistory] = useState(false);
   const [docUrls, setDocUrls] = useState<Record<string, string>>({});
   const [loadingUrls, setLoadingUrls] = useState(false);
+  const [previewDoc, setPreviewDoc] = useState<{ key: string; url: string; label: string } | null>(null);
   const [editFields, setEditFields] = useState({
     phone: client.phone || "",
     employer: client.employer || "",
