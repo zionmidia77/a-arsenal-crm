@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import {
-  FileCheck, Upload, CheckCircle2, Circle, AlertTriangle, Send, Eye,
+  FileCheck, Upload, CheckCircle2, Circle, AlertTriangle, Send, Eye, Trash2,
   MessageCircle, Crown, Shield, Briefcase, DollarSign, Loader2, Edit2, Save,
   Building2, Search, ShieldCheck, ShieldAlert, ChevronDown, ChevronUp, History, Clock, ExternalLink,
 } from "lucide-react";
@@ -65,6 +65,7 @@ const FinancingSection = ({ client }: FinancingSectionProps) => {
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [verifyStep, setVerifyStep] = useState<number>(-1); // -1 = idle, 0-3 = steps
   const [verification, setVerification] = useState<any>(null);
@@ -245,6 +246,39 @@ const FinancingSection = ({ client }: FinancingSectionProps) => {
       toast.error("Erro ao verificar empresa: " + (err.message || "tente novamente"));
     } finally {
       setVerifyStep(-1);
+    }
+  };
+
+  const handleDeleteDoc = async (docKey: string) => {
+    setDeleting(docKey);
+    try {
+      // List files for this doc type
+      const { data: files } = await supabase.storage
+        .from("financing-docs")
+        .list(client.id);
+      const toDelete = (files || []).filter(f => f.name.startsWith(docKey));
+      if (toDelete.length > 0) {
+        await supabase.storage
+          .from("financing-docs")
+          .remove(toDelete.map(f => `${client.id}/${f.name}`));
+      }
+      // Unmark doc
+      const newDocs = { ...docs, [docKey]: false };
+      updateClient.mutate({
+        id: client.id,
+        financing_docs: newDocs,
+        financing_status: "incomplete",
+      } as any);
+      setDocUrls(prev => {
+        const next = { ...prev };
+        delete next[docKey];
+        return next;
+      });
+      toast.success("Documento removido!");
+    } catch (err: any) {
+      toast.error("Erro ao remover: " + (err.message || "tente novamente"));
+    } finally {
+      setDeleting(null);
     }
   };
 
@@ -476,14 +510,29 @@ const FinancingSection = ({ client }: FinancingSectionProps) => {
                 {doc.emoji} {doc.label}
               </span>
               {docUrls[doc.key] && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="rounded-full text-[10px] h-7 gap-1 text-primary"
-                  onClick={() => openDocPreview(doc.key, docUrls[doc.key])}
-                >
-                  <Eye className="w-3 h-3" /> Ver
-                </Button>
+                <>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="rounded-full text-[10px] h-7 gap-1 text-primary"
+                    onClick={() => openDocPreview(doc.key, docUrls[doc.key])}
+                  >
+                    <Eye className="w-3 h-3" /> Ver
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="rounded-full text-[10px] h-7 gap-1 text-destructive"
+                    disabled={deleting === doc.key}
+                    onClick={() => handleDeleteDoc(doc.key)}
+                  >
+                    {deleting === doc.key ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <Trash2 className="w-3 h-3" />
+                    )}
+                  </Button>
+                </>
               )}
               <Button
                 size="sm"
