@@ -712,9 +712,16 @@ async function executeTool(
           created_by: "ai-consultant",
         });
 
+        // Fetch updated name if name was changed
+        let updatedName: string | null = null;
+        if (cleanFields.name) {
+          updatedName = cleanFields.name as string;
+        }
+
         return JSON.stringify({
           success: true,
           client_id: client_id,
+          ...(updatedName ? { client_name: updatedName } : {}),
           message: `Lead atualizado com: ${Object.keys(cleanFields).join(", ")}`,
         });
       }
