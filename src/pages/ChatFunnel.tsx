@@ -634,6 +634,10 @@ const ChatFunnel = () => {
                   setPendingVehicles(parsed.metadata.vehicles);
                   pendingVehiclesRef.current = parsed.metadata.vehicles;
                 }
+                if (parsed.metadata.individual_photos?.length) {
+                  setPendingPhotos(parsed.metadata.individual_photos);
+                  pendingPhotosRef.current = parsed.metadata.individual_photos;
+                }
                 continue;
               }
 
