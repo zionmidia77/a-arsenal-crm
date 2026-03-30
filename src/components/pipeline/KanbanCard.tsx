@@ -1,9 +1,10 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { MessageCircle, Eye } from "lucide-react";
+import { MessageCircle, Eye, AlertCircle } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { Draggable } from "@hello-pangea/dnd";
 import TagManager from "@/components/admin/TagManager";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const tempBadge: Record<string, string> = {
   hot: "bg-primary/15 text-primary",
@@ -17,10 +18,15 @@ interface KanbanCardProps {
   client: Tables<"clients">;
   index: number;
   highlight?: boolean;
+  chatCount?: number;
+  hasActiveChat?: boolean;
+  interactionCount?: number;
 }
 
-const KanbanCard = ({ client, index, highlight }: KanbanCardProps) => {
+const KanbanCard = ({ client, index, highlight, chatCount = 0, hasActiveChat = false, interactionCount = 0 }: KanbanCardProps) => {
   const navigate = useNavigate();
+
+  const noContact = interactionCount === 0 && client.pipeline_stage === "new";
 
   return (
     <Draggable draggableId={client.id} index={index}>
@@ -41,7 +47,51 @@ const KanbanCard = ({ client, index, highlight }: KanbanCardProps) => {
               {tempEmoji[client.temperature]}
             </span>
             <span className="text-sm font-medium truncate flex-1">{client.name}</span>
-            <span className="text-[10px] text-muted-foreground tabular-nums font-mono">{client.lead_score}pts</span>
+            <div className="flex items-center gap-1">
+              {hasActiveChat && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="relative flex items-center">
+                        <MessageCircle className="w-3 h-3 text-primary" />
+                        <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="text-xs">
+                      Conversa IA ativa
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+              {chatCount > 0 && !hasActiveChat && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="text-[9px] text-muted-foreground flex items-center gap-0.5">
+                        <MessageCircle className="w-2.5 h-2.5" />
+                        {chatCount}
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="text-xs">
+                      {chatCount} conversa{chatCount > 1 ? "s" : ""} IA
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+              {noContact && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <AlertCircle className="w-3 h-3 text-destructive" />
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="text-xs">
+                      Sem contato ainda
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+              <span className="text-[10px] text-muted-foreground tabular-nums font-mono">{client.lead_score}pts</span>
+            </div>
           </div>
 
           {client.interest && (

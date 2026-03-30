@@ -11,13 +11,26 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { MessageSquare, User, Clock, UserCheck, X, Search, CalendarIcon, Filter, Send, Phone, Mail, MapPin, Bike, DollarSign, Flame, Thermometer, FileText, ExternalLink, Sparkles, Link2 } from "lucide-react";
+import { MessageSquare, User, Clock, UserCheck, X, Search, CalendarIcon, Filter, Send, Phone, Mail, MapPin, Bike, DollarSign, Flame, Thermometer, FileText, ExternalLink, Sparkles, Link2, Columns3 } from "lucide-react";
 import { toast } from "sonner";
 import { format, isAfter, isBefore, startOfDay, endOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import ChatConversionDashboard from "@/components/admin/ChatConversionDashboard";
+
+const PIPELINE_STAGES = [
+  { key: "new", label: "Novo", emoji: "🆕" },
+  { key: "contacted", label: "Contatado", emoji: "📞" },
+  { key: "interested", label: "Interessado", emoji: "🔥" },
+  { key: "attending", label: "Em atendimento", emoji: "🤝" },
+  { key: "thinking", label: "Pensando", emoji: "🤔" },
+  { key: "waiting_response", label: "Aguardando", emoji: "⏳" },
+  { key: "scheduled", label: "Agendado", emoji: "📅" },
+  { key: "negotiating", label: "Negociação", emoji: "💰" },
+  { key: "closed_won", label: "Fechado ✅", emoji: "🏆" },
+  { key: "closed_lost", label: "Perdido", emoji: "❌" },
+];
 
 interface ConversationMessage {
   role: "user" | "assistant";
@@ -462,6 +475,48 @@ const AdminChatHistory = () => {
                       >
                         <Link2 className="w-3 h-3" /> Vincular lead
                       </Button>
+                    )}
+                    {selectedConvo.client_id && (
+                      <>
+                        {/* Pipeline stage quick-change */}
+                        <Select
+                          value={selectedConvo.clients?.pipeline_stage || "new"}
+                          onValueChange={async (val) => {
+                            try {
+                              await supabase
+                                .from("clients")
+                                .update({ pipeline_stage: val as any })
+                                .eq("id", selectedConvo.client_id!);
+                              queryClient.invalidateQueries({ queryKey: ["chat-conversations"] });
+                              const label = PIPELINE_STAGES.find(s => s.key === val)?.label || val;
+                              toast.success(`Pipeline: ${label}`);
+                            } catch {
+                              toast.error("Erro ao mudar estágio");
+                            }
+                          }}
+                        >
+                          <SelectTrigger className="h-7 w-auto text-[10px] gap-1 border-dashed">
+                            <Columns3 className="w-3 h-3" />
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {PIPELINE_STAGES.map(s => (
+                              <SelectItem key={s.key} value={s.key} className="text-xs">
+                                {s.emoji} {s.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {/* Ver no Pipeline */}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-[10px] gap-1"
+                          onClick={() => navigate(`/admin/pipeline?highlight=${selectedConvo.client_id}`)}
+                        >
+                          <Columns3 className="w-3 h-3" /> Pipeline
+                        </Button>
+                      </>
                     )}
                     {(selectedConvo.status === "transferred" || selectedConvo.status === "attended") && (
                       <Badge className={`gap-1 ${statusColor(selectedConvo.status)}`}>
