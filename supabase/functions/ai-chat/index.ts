@@ -118,6 +118,7 @@ const tools = [
             type: "string",
             description: "The UUID of the lead to update",
           },
+          name: { type: "string", description: "Updated full name of the client (use when client introduces themselves or corrects their name)" },
           interest: { type: "string", description: "comprar, trocar, vender, refinanciar" },
           budget_range: { type: "string", description: "e.g. 'R$ 15 a 30 mil'" },
           has_trade_in: { type: "boolean" },
@@ -566,6 +567,7 @@ async function executeTool(
           return JSON.stringify({
             success: true,
             client_id: existingClient.id,
+            client_name: existingClient.name,
             existing_client: true,
             message: `CLIENTE JÁ CADASTRADO! "${existingClient.name}" (ID: ${existingClient.id}) já existe no sistema. NÃO crie outro lead. Use update_lead para atualizar dados.\n\nDADOS EXISTENTES:\n${history.join("\n")}\n\nÚLTIMAS INTERAÇÕES:\n${interactionSummary || "Nenhuma interação recente."}\n\nIMPORTANTE: Cumprimente o cliente pelo nome, demonstre que já o conhece e pergunte como pode ajudar desta vez. Retome o contexto anterior naturalmente.`,
           });
@@ -650,6 +652,7 @@ async function executeTool(
         return JSON.stringify({
           success: true,
           client_id: data.id,
+          client_name: data.name,
           existing_client: false,
           message: `Lead "${data.name}" criado com sucesso. IMPORTANTE: Use este client_id (${data.id}) em TODAS as chamadas futuras de update_lead, register_trade_in, simulate_financing, schedule_visit e log_interaction.`,
         });
@@ -711,9 +714,16 @@ async function executeTool(
           created_by: "ai-consultant",
         });
 
+        // Fetch updated name if name was changed
+        let updatedName: string | null = null;
+        if (cleanFields.name) {
+          updatedName = cleanFields.name as string;
+        }
+
         return JSON.stringify({
           success: true,
           client_id: client_id,
+          ...(updatedName ? { client_name: updatedName } : {}),
           message: `Lead atualizado com: ${Object.keys(cleanFields).join(", ")}`,
         });
       }
@@ -1586,7 +1596,8 @@ Quando o cliente pedir para ver fotos de um veículo específico ("tem foto?", "
 2. NUNCA invente preços — use search_vehicles e simulate_financing
 3. Assim que tiver NOME + TELEFONE → create_lead IMEDIATO (ele automaticamente detecta se o cliente já existe!)
 4. Se create_lead retornar existing_client=true: CUMPRIMENTE O CLIENTE PELO NOME, mostre que já o conhece, retome o contexto anterior e pergunte como pode ajudar desta vez. NUNCA trate como novo.
-5. A CADA nova informação → update_lead (NADA se perde!)
+5. **ATUALIZAÇÃO AUTOMÁTICA DE NOME**: Se o cliente informar seu nome completo durante a conversa e o lead já existir com nome parcial/apelido, use update_lead com o campo "name" para atualizar o nome. Exemplo: lead "Bruna" → cliente diz "sou Bruna Oliveira Silva" → update_lead(name="Bruna Oliveira Silva"). O nome atualizado será refletido automaticamente no histórico e no CRM.
+6. A CADA nova informação → update_lead (NADA se perde!)
 6. Se o cliente tem veículo pra troca → register_trade_in com todos os dados
 7. Quando souber o perfil → search_vehicles + simulate_financing
 8. Use log_interaction para: agendou visita, pediu proposta, interessou em veículo específico
@@ -1666,8 +1677,9 @@ serve(async (req) => {
       ...messages,
     ];
 
-    // Track client_id and vehicles found during tool calls
+    // Track client_id, client_name and vehicles found during tool calls
     let createdClientId: string | null = context?.clientId || null;
+    let createdClientName: string | null = null;
     let foundVehicles: unknown[] = [];
     let individualPhotos: string[] = [];
 
@@ -1762,6 +1774,7 @@ serve(async (req) => {
           try {
             const parsed = JSON.parse(toolResult);
             if (parsed.client_id) createdClientId = parsed.client_id;
+            if (parsed.client_name) createdClientName = parsed.client_name;
           } catch {}
         }
 
@@ -1813,10 +1826,11 @@ serve(async (req) => {
     }
 
     // If we have metadata (client_id or vehicles), prepend SSE events
-    const hasMetadata = createdClientId || foundVehicles.length > 0 || individualPhotos.length > 0;
+    const hasMetadata = createdClientId || createdClientName || foundVehicles.length > 0 || individualPhotos.length > 0;
     if (hasMetadata) {
       const metaPayload: Record<string, unknown> = {};
       if (createdClientId) metaPayload.client_id = createdClientId;
+      if (createdClientName) metaPayload.client_name = createdClientName;
       if (foundVehicles.length > 0) metaPayload.vehicles = foundVehicles;
       if (individualPhotos.length > 0) metaPayload.individual_photos = individualPhotos;
 
