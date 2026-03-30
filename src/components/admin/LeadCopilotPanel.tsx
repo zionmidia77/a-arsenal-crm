@@ -123,6 +123,7 @@ const LeadCopilotPanel = ({ clientId, clientName, clientPhone, vehiclePhotos }: 
       setIsExporting(false);
     }
   };
+  const tempColors: Record<string, string> = {
     hot: "text-primary bg-primary/10",
     warm: "text-warning bg-warning/10",
     cold: "text-info bg-info/10",
