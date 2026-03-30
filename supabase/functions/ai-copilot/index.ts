@@ -581,24 +581,33 @@ serve(async (req) => {
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       start(controller) {
-        // Send content as SSE chunks
+        let closed = false;
         const words = fullContent.split(" ");
         let i = 0;
         const sendChunk = () => {
-          if (i < words.length) {
-            const chunk = (i === 0 ? "" : " ") + words[i];
-            const sseData = JSON.stringify({
-              choices: [{ delta: { content: chunk } }],
-            });
-            controller.enqueue(encoder.encode(`data: ${sseData}\n\n`));
-            i++;
-            setTimeout(sendChunk, 10);
-          } else {
-            controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-            controller.close();
+          if (closed) return;
+          try {
+            if (i < words.length) {
+              const chunk = (i === 0 ? "" : " ") + words[i];
+              const sseData = JSON.stringify({
+                choices: [{ delta: { content: chunk } }],
+              });
+              controller.enqueue(encoder.encode(`data: ${sseData}\n\n`));
+              i++;
+              setTimeout(sendChunk, 10);
+            } else {
+              controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+              controller.close();
+              closed = true;
+            }
+          } catch {
+            closed = true;
           }
         };
         sendChunk();
+      },
+      cancel() {
+        // Client disconnected — no-op, sendChunk will stop via closed flag
       },
     });
 
