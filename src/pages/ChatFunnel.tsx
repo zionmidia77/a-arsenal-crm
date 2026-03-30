@@ -967,18 +967,8 @@ const ChatFunnel = () => {
       toast.error("Permita o acesso ao microfone para enviar áudios");
     }
   }, [sendMessage]);
-        }
-      };
 
-      mediaRecorder.start(250);
-      setIsRecording(true);
-      setRecordingDuration(0);
-      recordingTimerRef.current = setInterval(() => setRecordingDuration(d => d + 1), 1000);
-    } catch (err) {
-      console.error("Mic error:", err);
-      toast.error("Permita o acesso ao microfone para enviar áudios");
-    }
-  }, [sendMessage]);
+
 
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
