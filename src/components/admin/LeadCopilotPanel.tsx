@@ -14,17 +14,18 @@ interface LeadCopilotPanelProps {
 }
 
 const QUICK_COMMANDS = [
-  { label: "📝 Proposta completa", cmd: "Monte uma proposta comercial COMPLETA para este cliente. Escolha o melhor veículo do estoque disponível baseado no perfil, calcule financiamento com múltiplas opções de entrada e parcelas, e gere a mensagem pronta para enviar no WhatsApp." },
-  { label: "📊 Comparativo", cmd: "Monte uma proposta COMPARATIVA com 2-3 opções de veículos do estoque para este cliente, com simulações de financiamento lado a lado, destacando prós e contras de cada opção." },
-  { label: "💰 Simular parcelas", cmd: "Simule diferentes cenários de financiamento para este lead: com e sem entrada, em 24x, 36x, 48x e 60x. Considere a renda do cliente e sugira a melhor opção." },
-  { label: "🔄 Proposta c/ troca", cmd: "Monte uma proposta considerando que o cliente tem um veículo para troca. Estime o valor da troca, calcule o valor restante e simule as parcelas." },
-  { label: "📊 Análise completa", cmd: "Faça uma análise completa deste lead com diagnóstico, temperatura, objeções e próxima ação." },
-  { label: "💬 Gerar mensagem", cmd: "Gere uma mensagem pronta para enviar no WhatsApp para este lead agora." },
-  { label: "🎯 Próxima ação", cmd: "Qual a melhor próxima ação para este lead? O que eu devo fazer agora?" },
-  { label: "⚡ Quebrar objeção", cmd: "Quais são as principais objeções deste lead e como posso quebrá-las?" },
-  { label: "🌡️ Temperatura", cmd: "Esse lead está quente, morno ou frio? Justifique com dados." },
-  { label: "🏍️ Sugerir veículo", cmd: "Qual o melhor veículo do estoque disponível para recomendar a este cliente baseado no perfil e orçamento dele?" },
-  { label: "🔄 Reativação", cmd: "Crie uma mensagem de reativação para este lead que está inativo." },
+  { label: "📝 Proposta completa", cmd: "Monte uma proposta comercial COMPLETA para este cliente. Escolha o melhor veículo do estoque baseado no perfil, calcule financiamento com múltiplas opções de entrada e parcelas, compare com FIPE, adicione gatilhos de urgência e gere a mensagem WhatsApp pronta." },
+  { label: "📊 Comparativo", cmd: "Monte uma proposta COMPARATIVA com 2-3 opções de veículos do estoque para este cliente, com simulações de financiamento lado a lado e análise de custo-benefício." },
+  { label: "💰 Simular parcelas", cmd: "Simule diferentes cenários de financiamento: com e sem entrada, em 24x, 36x, 48x e 60x. Verifique se cabe no bolso (máx 30% da renda). Sugira a melhor opção." },
+  { label: "🔄 Proposta c/ troca", cmd: "Monte proposta considerando o veículo de troca do cliente. Estime valor da troca, calcule restante e simule parcelas com gatilhos mentais." },
+  { label: "⚡ Quebrar objeção", cmd: "Identifique a principal objeção deste lead (preço, parcela, entrada, pensar, nome sujo, concorrência) e me dê o SCRIPT COMPLETO de como quebrar, com mensagem WhatsApp pronta usando técnicas SPIN + gatilhos mentais." },
+  { label: "📅 Follow-up 24/48/72h", cmd: "Gere a SEQUÊNCIA COMPLETA de follow-up pós-proposta: mensagens para 24h (lembrete), 48h (escassez), 72h (última chance) e 7 dias (reengajamento). Todas prontas para copiar no WhatsApp." },
+  { label: "🏆 Fechar agora", cmd: "Crie uma ESTRATÉGIA DE FECHAMENTO completa para este lead usando Sandler + SPIN + gatilhos mentais. Inclua: perguntas de qualificação, script de fechamento, mensagem WhatsApp com urgência e plano B se disser não." },
+  { label: "📈 Arsenal vs Mercado", cmd: "Faça uma análise comparativa Arsenal vs mercado para este lead: compare preços com FIPE, destaque diferenciais, crie argumentos competitivos e monte uma tabela Arsenal vs Concorrência." },
+  { label: "📊 Análise SPIN", cmd: "Faça uma análise SPIN completa deste lead: Situação atual, Problemas identificados, Implicações de não agir e Necessidade de solução. Gere as perguntas que o vendedor deve fazer." },
+  { label: "🌡️ Diagnóstico", cmd: "Faça um diagnóstico completo: temperatura, objeções, estágio do funil, próxima ação e mensagem pronta." },
+  { label: "🏍️ Sugerir veículo", cmd: "Qual o melhor veículo do estoque para este cliente? Considere orçamento, renda, interesse e perfil. Justifique a escolha e monte uma mini-proposta." },
+  { label: "🔄 Reativação", cmd: "Crie uma estratégia de reativação com 3 mensagens progressivas usando gatilhos de escassez, novidade e prova social." },
 ];
 
 const LeadCopilotPanel = ({ clientId, clientName }: LeadCopilotPanelProps) => {
