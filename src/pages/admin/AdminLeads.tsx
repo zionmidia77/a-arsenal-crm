@@ -195,8 +195,8 @@ const AdminLeads = () => {
     });
 
   return (
-    <motion.div variants={stagger} initial="initial" animate="animate" className="p-5 md:p-6 space-y-5 max-w-4xl">
-      <motion.div variants={fadeUp} className="flex items-start justify-between">
+    <motion.div variants={stagger} initial="initial" animate="animate" className="p-4 md:p-6 space-y-4 md:space-y-5 max-w-5xl xl:max-w-6xl">
+      <motion.div variants={fadeUp} className="flex items-start justify-between gap-2 flex-wrap">
         <div>
           <h1 className="text-2xl font-display font-bold">Leads</h1>
           <p className="text-sm text-muted-foreground">{clients?.length || 0} leads capturados</p>
@@ -262,13 +262,13 @@ const AdminLeads = () => {
 
       <motion.div variants={fadeUp} className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input placeholder="Buscar por nome, telefone ou interesse..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 rounded-xl bg-secondary border-border/50 h-10" />
+        <Input placeholder="Buscar por nome, telefone ou interesse..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 rounded-xl bg-secondary border-border/50 h-11 md:h-10 text-base md:text-sm" />
       </motion.div>
 
       {/* Temperature filter */}
       <motion.div variants={fadeUp} className="flex gap-2 overflow-x-auto">
         {(["all", "hot", "warm", "cold"] as const).map((f) => (
-          <Button key={f} variant={filter === f ? "default" : "outline"} size="sm" onClick={() => setFilter(f)} className="rounded-full shrink-0 text-xs">
+          <Button key={f} variant={filter === f ? "default" : "outline"} size="sm" onClick={() => setFilter(f)} className="rounded-full shrink-0 text-xs min-h-[40px] md:min-h-[32px] px-4 md:px-3">
             {f === "all" ? "Todos" : f === "hot" ? "🔥 Quentes" : f === "warm" ? "🟡 Mornos" : "🔵 Frios"}
           </Button>
         ))}

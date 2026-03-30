@@ -121,17 +121,17 @@ const AdminLayout = () => {
           <span className="font-display font-bold text-sm">Arsenal <span className="text-primary">CRM</span></span>
         </div>
 
-        <nav className="flex-1 p-3 space-y-1">
+        <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
           {navItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
               end={item.to === "/admin"}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-muted-foreground hover:bg-accent transition-all duration-200"
+              className="flex items-center gap-3 px-3 py-3 md:py-2.5 rounded-xl text-sm text-muted-foreground hover:bg-accent transition-all duration-200 min-h-[44px]"
               activeClassName="bg-primary/10 text-primary font-medium"
               onClick={() => setOpen(false)}
             >
-              <item.icon className="w-4 h-4" />
+              <item.icon className="w-5 h-5 md:w-4 md:h-4 shrink-0" />
               {item.label}
             </NavLink>
           ))}
@@ -162,7 +162,7 @@ const AdminLayout = () => {
 
       <div className="flex-1 flex flex-col min-w-0">
         <header className="flex items-center gap-2 px-4 py-3 border-b border-border/50 backdrop-blur-xl bg-background/80 sticky top-0 z-20">
-          <Button variant="ghost" size="icon" onClick={() => setOpen(!open)} className="rounded-full md:hidden">
+          <Button variant="ghost" size="icon" onClick={() => setOpen(!open)} className="rounded-full md:hidden min-h-[44px] min-w-[44px]">
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
           <div className="flex items-center gap-2 md:hidden">

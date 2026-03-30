@@ -13,7 +13,7 @@ interface KanbanColumnProps {
 
 const KanbanColumn = ({ stage, clients, highlightId, chatDataByClient = {}, interactionsByClient = {}, compact = false }: KanbanColumnProps) => {
   return (
-    <div className={`flex flex-col min-w-[260px] max-w-[280px] rounded-2xl border border-border/40 bg-secondary/30 backdrop-blur-sm`}>
+    <div className={`flex flex-col min-w-[260px] max-w-[280px] md:max-w-[280px] rounded-2xl border border-border/40 bg-secondary/30 backdrop-blur-sm ${compact ? "max-w-full" : ""}`}>
       {/* Header */}
       <div className={`flex items-center justify-between px-3 py-2.5 border-b border-border/30 rounded-t-2xl border-t-2 ${stage.color}`}>
         <div className="flex items-center gap-1.5">

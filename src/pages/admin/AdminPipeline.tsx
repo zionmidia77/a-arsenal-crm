@@ -137,7 +137,7 @@ const AdminPipeline = () => {
       className="flex flex-col h-full"
     >
       {/* Header */}
-      <div className="px-5 pt-5 pb-3 space-y-3">
+      <div className="px-4 md:px-5 pt-4 md:pt-5 pb-3 space-y-3">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-display font-bold">Pipeline</h1>
@@ -169,7 +169,7 @@ const AdminPipeline = () => {
             variant={activeFilter === null ? "default" : "outline"}
             size="sm"
             onClick={() => setActiveFilter(null)}
-            className="rounded-full shrink-0 text-xs h-8"
+            className="rounded-full shrink-0 text-xs min-h-[40px] md:min-h-[32px] h-auto px-4 md:px-3"
           >
             Todos
           </Button>
@@ -183,7 +183,7 @@ const AdminPipeline = () => {
                 onClick={() =>
                   setActiveFilter(activeFilter === stage.key ? null : stage.key)
                 }
-                className="rounded-full shrink-0 text-xs gap-1 h-8"
+                className="rounded-full shrink-0 text-xs gap-1 min-h-[40px] md:min-h-[32px] h-auto px-4 md:px-3"
               >
                 {stage.emoji} {stage.label}
                 {count > 0 && (
@@ -205,8 +205,11 @@ const AdminPipeline = () => {
 
       {/* Kanban Board */}
       <DragDropContext onDragEnd={onDragEnd}>
-        <div className="flex-1 overflow-x-auto px-5 pb-24">
-          <div className="flex gap-3 min-h-[400px]">
+        <div className="flex-1 overflow-x-auto px-4 md:px-5 pb-24">
+          {/* Mobile: vertical stack when single stage filtered, horizontal scroll otherwise */}
+          <div className={`flex gap-3 min-h-[400px] ${
+            activeFilter ? "flex-col md:flex-row" : ""
+          }`}>
             {visibleStages.map((stage) => (
               <KanbanColumn
                 key={stage.key}
