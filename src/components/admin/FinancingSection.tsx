@@ -4,9 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import {
-  FileCheck, Upload, CheckCircle2, Circle, AlertTriangle, Send,
+  FileCheck, Upload, CheckCircle2, Circle, AlertTriangle, Send, Eye,
   MessageCircle, Crown, Shield, Briefcase, DollarSign, Loader2, Edit2, Save,
-  Building2, Search, ShieldCheck, ShieldAlert, ChevronDown, ChevronUp, History, Clock,
+  Building2, Search, ShieldCheck, ShieldAlert, ChevronDown, ChevronUp, History, Clock, ExternalLink,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUpdateClient } from "@/hooks/useSupabase";
@@ -72,6 +72,8 @@ const FinancingSection = ({ client }: FinancingSectionProps) => {
   const [showVerification, setShowVerification] = useState(true);
   const [verificationHistory, setVerificationHistory] = useState<any[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [docUrls, setDocUrls] = useState<Record<string, string>>({});
+  const [loadingUrls, setLoadingUrls] = useState(false);
   const [editFields, setEditFields] = useState({
     phone: client.phone || "",
     employer: client.employer || "",
@@ -83,6 +85,33 @@ const FinancingSection = ({ client }: FinancingSectionProps) => {
     reference_phone: client.reference_phone || "",
     down_payment_amount: client.down_payment_amount || "",
   });
+
+  // Load uploaded document URLs
+  useEffect(() => {
+    const loadDocUrls = async () => {
+      try {
+        const { data: files } = await supabase.storage
+          .from("financing-docs")
+          .list(client.id, { sortBy: { column: "created_at", order: "desc" } });
+        if (!files || files.length === 0) return;
+
+        const urls: Record<string, string> = {};
+        for (const docType of DOC_LABELS) {
+          const docFile = files.find(f => f.name.startsWith(docType.key));
+          if (docFile) {
+            const { data } = await supabase.storage
+              .from("financing-docs")
+              .createSignedUrl(`${client.id}/${docFile.name}`, 3600);
+            if (data?.signedUrl) urls[docType.key] = data.signedUrl;
+          }
+        }
+        setDocUrls(urls);
+      } catch (err) {
+        console.error("Error loading doc URLs:", err);
+      }
+    };
+    loadDocUrls();
+  }, [client.id, uploading]);
 
   // Load verification history
   useEffect(() => {
@@ -319,10 +348,20 @@ const FinancingSection = ({ client }: FinancingSectionProps) => {
       client.notes ? `📝 *Obs:* ${client.notes}` : "",
     ].filter(Boolean);
 
+    // Add document links if available
+    const docLinks = Object.entries(docUrls);
+    if (docLinks.length > 0) {
+      lines.push("", "━━━ *ANEXOS (DOCS)* ━━━");
+      for (const [key, url] of docLinks) {
+        const label = DOC_LABELS.find(d => d.key === key);
+        if (label) lines.push(`📎 ${label.emoji} ${label.label}: ${url}`);
+      }
+    }
+
     return lines.join("\n");
   };
 
-  const sendFichaWhatsApp = () => {
+  const sendFichaWhatsApp = async () => {
     const FINANCEIRA_NUMBER = "5500000000000"; // placeholder
     const msg = buildWhatsAppFicha();
     window.open(`https://wa.me/${FINANCEIRA_NUMBER}?text=${encodeURIComponent(msg)}`);
@@ -331,7 +370,11 @@ const FinancingSection = ({ client }: FinancingSectionProps) => {
 
   const copyFicha = () => {
     navigator.clipboard.writeText(buildWhatsAppFicha());
-    toast.success("Ficha copiada!");
+    toast.success("Ficha copiada com links dos documentos!");
+  };
+
+  const openDocImage = (url: string) => {
+    window.open(url, "_blank");
   };
 
   return (
@@ -419,7 +462,7 @@ const FinancingSection = ({ client }: FinancingSectionProps) => {
 
         <div className="space-y-2">
           {DOC_LABELS.map((doc) => (
-            <div key={doc.key} className="flex items-center gap-3 py-2 border-b border-border/30 last:border-0">
+            <div key={doc.key} className="flex items-center gap-2 py-2 border-b border-border/30 last:border-0">
               <button onClick={() => toggleDoc(doc.key)} className="shrink-0">
                 {docs[doc.key] ? (
                   <CheckCircle2 className="w-5 h-5 text-green-400" />
@@ -427,9 +470,19 @@ const FinancingSection = ({ client }: FinancingSectionProps) => {
                   <Circle className="w-5 h-5 text-muted-foreground" />
                 )}
               </button>
-              <span className="text-sm flex-1">
+              <span className="text-xs flex-1">
                 {doc.emoji} {doc.label}
               </span>
+              {docUrls[doc.key] && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="rounded-full text-[10px] h-7 gap-1 text-primary"
+                  onClick={() => openDocImage(docUrls[doc.key])}
+                >
+                  <Eye className="w-3 h-3" /> Ver
+                </Button>
+              )}
               <Button
                 size="sm"
                 variant="ghost"
