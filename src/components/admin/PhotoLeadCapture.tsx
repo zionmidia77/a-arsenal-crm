@@ -221,6 +221,7 @@ const PhotoLeadCapture = () => {
   const [candidates, setCandidates] = useState<SimilarityCandidate[]>([]);
   const [selectedCandidate, setSelectedCandidate] = useState<string | null>(null);
   const [result, setResult] = useState<{ action: string; client: any } | null>(null);
+  const [nameConflict, setNameConflict] = useState<NameConflict | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
   const qc = useQueryClient();
