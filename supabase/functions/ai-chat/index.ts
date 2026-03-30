@@ -454,11 +454,89 @@ async function executeTool(
   try {
     switch (name) {
       case "create_lead": {
+        const phone = args.phone as string;
+        const name = args.name as string;
+
+        // ── Check for existing client by phone ──
+        let existingClient = null;
+        if (phone) {
+          // Normalize phone: keep only digits
+          const normalizedPhone = phone.replace(/\D/g, "");
+          const { data: phoneMatches } = await supabase
+            .from("clients")
+            .select("id, name, phone, interest, pipeline_stage, temperature, notes, financing_docs, employer, salary, budget_range, has_trade_in, cpf, birthdate, city, marital_status, reference_name, reference_phone, reference_name_2, reference_phone_2")
+            .or(`phone.ilike.%${normalizedPhone.slice(-8)}%`)
+            .limit(5);
+
+          if (phoneMatches && phoneMatches.length > 0) {
+            // Try exact match first (last 8 digits), then fuzzy name match
+            existingClient = phoneMatches.find(c => {
+              const cPhone = (c.phone || "").replace(/\D/g, "");
+              return cPhone.slice(-8) === normalizedPhone.slice(-8);
+            }) || null;
+          }
+        }
+
+        // If existing client found, return it with history instead of creating duplicate
+        if (existingClient) {
+          // Fetch recent conversations for context
+          const { data: recentConvos } = await supabase
+            .from("chat_conversations")
+            .select("messages, created_at, status")
+            .eq("client_id", existingClient.id)
+            .order("created_at", { ascending: false })
+            .limit(3);
+
+          // Fetch recent interactions
+          const { data: recentInteractions } = await supabase
+            .from("interactions")
+            .select("content, type, created_at")
+            .eq("client_id", existingClient.id)
+            .order("created_at", { ascending: false })
+            .limit(10);
+
+          // Build a context summary
+          const history: string[] = [];
+          if (existingClient.interest) history.push(`Interesse: ${existingClient.interest}`);
+          if (existingClient.budget_range) history.push(`Orçamento: ${existingClient.budget_range}`);
+          if (existingClient.pipeline_stage) history.push(`Estágio: ${existingClient.pipeline_stage}`);
+          if (existingClient.employer) history.push(`Empregador: ${existingClient.employer}`);
+          if (existingClient.salary) history.push(`Salário: R$ ${existingClient.salary}`);
+          if (existingClient.has_trade_in) history.push(`Tem veículo de troca`);
+          if (existingClient.notes) history.push(`Notas: ${existingClient.notes}`);
+
+          const interactionSummary = (recentInteractions || [])
+            .slice(0, 5)
+            .map(i => `[${new Date(i.created_at).toLocaleDateString("pt-BR")}] ${i.content}`)
+            .join("\n");
+
+          // Update last_contact_at
+          await supabase
+            .from("clients")
+            .update({ last_contact_at: new Date().toISOString() })
+            .eq("id", existingClient.id);
+
+          await supabase.from("interactions").insert({
+            client_id: existingClient.id,
+            type: "system",
+            content: `Cliente retornou ao chat IA. Sessão anterior reconhecida.`,
+            created_by: "ai-consultant",
+          });
+
+          return JSON.stringify({
+            success: true,
+            client_id: existingClient.id,
+            existing_client: true,
+            message: `CLIENTE JÁ CADASTRADO! "${existingClient.name}" (ID: ${existingClient.id}) já existe no sistema. NÃO crie outro lead. Use update_lead para atualizar dados.\n\nDADOS EXISTENTES:\n${history.join("\n")}\n\nÚLTIMAS INTERAÇÕES:\n${interactionSummary || "Nenhuma interação recente."}\n\nIMPORTANTE: Cumprimente o cliente pelo nome, demonstre que já o conhece e pergunte como pode ajudar desta vez. Retome o contexto anterior naturalmente.`,
+          });
+        }
+
+        // ── No existing client — create new one ──
         const { data, error } = await supabase
           .from("clients")
           .insert({
-            name: args.name as string,
-            phone: args.phone as string,
+            name,
+            phone,
             interest: (args.interest as string) || null,
             budget_range: (args.budget_range as string) || null,
             has_trade_in: (args.has_trade_in as boolean) || false,
@@ -524,6 +602,7 @@ async function executeTool(
         return JSON.stringify({
           success: true,
           client_id: data.id,
+          existing_client: false,
           message: `Lead "${data.name}" criado com sucesso. IMPORTANTE: Use este client_id (${data.id}) em TODAS as chamadas futuras de update_lead, register_trade_in, simulate_financing, schedule_visit e log_interaction.`,
         });
       }
@@ -1403,15 +1482,17 @@ Quando o cliente pedir para ver fotos de um veículo específico ("tem foto?", "
 ## REGRAS DE OURO
 1. NUNCA faça mais de UMA pergunta por mensagem
 2. NUNCA invente preços — use search_vehicles e simulate_financing
-3. Assim que tiver NOME + TELEFONE → create_lead IMEDIATO
-4. A CADA nova informação → update_lead (NADA se perde!)
-5. Se o cliente tem veículo pra troca → register_trade_in com todos os dados
-6. Quando souber o perfil → search_vehicles + simulate_financing
-7. Use log_interaction para: agendou visita, pediu proposta, interessou em veículo específico
-8. CONDUZA a conversa — não espere o cliente perguntar
-9. Seja CONSULTIVO: "Com esse perfil, a melhor opção pra você é..."
-10. Se não tem no estoque → "Vou verificar com minha equipe e te retorno!"
-11. Apresente veículos em formato visual com emojis e tabelas markdown
+3. Assim que tiver NOME + TELEFONE → create_lead IMEDIATO (ele automaticamente detecta se o cliente já existe!)
+4. Se create_lead retornar existing_client=true: CUMPRIMENTE O CLIENTE PELO NOME, mostre que já o conhece, retome o contexto anterior e pergunte como pode ajudar desta vez. NUNCA trate como novo.
+5. A CADA nova informação → update_lead (NADA se perde!)
+6. Se o cliente tem veículo pra troca → register_trade_in com todos os dados
+7. Quando souber o perfil → search_vehicles + simulate_financing
+8. Use log_interaction para: agendou visita, pediu proposta, interessou em veículo específico
+9. CONDUZA a conversa — não espere o cliente perguntar
+10. Seja CONSULTIVO: "Com esse perfil, a melhor opção pra você é..."
+11. Se não tem no estoque → "Vou verificar com minha equipe e te retorno!"
+12. Apresente veículos em formato visual com emojis e tabelas markdown
+13. Sempre calcule % da renda quando souber o salário
 12. Sempre calcule % da renda quando souber o salário
 13. **NUNCA peça CPF/RG por texto! SEMPRE peça FOTO da CNH (ou RG+CPF como alternativa)**
 14. **Todos os documentos (CNH, holerite, comp. residência) são OBRIGATORIAMENTE por FOTO**
