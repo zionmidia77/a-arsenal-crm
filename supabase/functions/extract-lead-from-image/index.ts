@@ -308,13 +308,34 @@ Para budget_range, use: "Até R$ 15 mil", "R$ 15 a 30 mil", "R$ 30 a 50 mil", "A
 
   if (!aiResponse.ok) {
     const raw = await aiResponse.text();
-    const err: any = new Error("Erro ao processar imagem com IA");
-    err.status = aiResponse.status;
-    err.raw = raw;
+    console.error("[extract-lead-from-image] AI API error:", aiResponse.status, raw);
+    
+    let errorMessage = "Erro ao processar imagem com IA";
     try {
       const parsed = JSON.parse(raw);
-      err.message = parsed?.error || parsed?.message || err.message;
+      // Handle nested error structures from AI gateway
+      if (typeof parsed?.error === "string") {
+        errorMessage = parsed.error;
+      } else if (typeof parsed?.error?.message === "string") {
+        errorMessage = parsed.error.message;
+      } else if (typeof parsed?.error?.metadata?.raw === "string") {
+        try {
+          const innerParsed = JSON.parse(parsed.error.metadata.raw);
+          errorMessage = innerParsed?.error?.message || errorMessage;
+        } catch { /* ignore */ }
+      } else if (typeof parsed?.message === "string") {
+        errorMessage = parsed.message;
+      }
     } catch { /* ignore */ }
+    
+    // Map common AI errors to user-friendly messages
+    if (errorMessage.includes("Unable to process input image")) {
+      errorMessage = "A IA não conseguiu processar esta imagem. Tente com outra foto mais nítida.";
+    }
+    
+    const err: any = new Error(errorMessage);
+    err.status = aiResponse.status;
+    err.raw = raw;
     throw err;
   }
 
@@ -344,6 +365,8 @@ serve(async (req) => {
       return jsonResponse({ error: "Não autorizado" }, 401);
     }
 
+    const token = authHeader.replace("Bearer ", "");
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
@@ -353,16 +376,15 @@ serve(async (req) => {
     }
 
     const supabase = createClient(supabaseUrl, serviceRoleKey);
-    const userClient = createClient(supabaseUrl, anonKey, {
+    
+    // Validate token by getting user
+    const { data: { user }, error: userError } = await createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
-    });
+    }).auth.getUser(token);
+    const userId = user?.id;
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
-    const userId = claimsData?.claims?.sub;
-
-    if (claimsError || !userId) {
-      console.error("[extract-lead-from-image] invalid token", claimsError);
+    if (userError || !userId) {
+      console.error("[extract-lead-from-image] invalid token", userError);
       return jsonResponse({ error: "Token inválido" }, 401);
     }
 
