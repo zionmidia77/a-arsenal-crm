@@ -83,7 +83,41 @@ const AdminChatHistory = () => {
     refetchInterval: 5000,
   });
 
-  // Realtime subscription for live updates
+  // Notification sound for admin
+  const playAdminNotification = useCallback(() => {
+    try {
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      // Two-tone notification
+      osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+      osc.frequency.setValueAtTime(900, audioCtx.currentTime + 0.1);
+      osc.frequency.setValueAtTime(600, audioCtx.currentTime + 0.2);
+      gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
+      osc.start(audioCtx.currentTime);
+      osc.stop(audioCtx.currentTime + 0.35);
+    } catch {}
+  }, []);
+
+  // Realtime subscription for live updates + notifications
+  const prevConvoCountRef = useRef(conversations.length);
+  useEffect(() => {
+    // Check if new conversations appeared
+    if (conversations.length > prevConvoCountRef.current && prevConvoCountRef.current > 0) {
+      playAdminNotification();
+      const newConvo = conversations[0]; // Most recent
+      if (newConvo?.status === "transferred") {
+        toast("🔔 Nova conversa transferida!", {
+          description: `${(newConvo as any).clients?.name || "Visitante"} aguardando atendimento`,
+        });
+      }
+    }
+    prevConvoCountRef.current = conversations.length;
+  }, [conversations, playAdminNotification]);
+
   useEffect(() => {
     const channel = supabase
       .channel('admin-chat-updates')
