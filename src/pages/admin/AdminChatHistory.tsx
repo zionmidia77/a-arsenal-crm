@@ -277,9 +277,15 @@ const AdminChatHistory = () => {
                   // Try to extract name from messages if no client linked
                   let clientName = convo.clients?.name || "";
                   if (!clientName && Array.isArray(convo.messages)) {
-                    // Look for assistant messages that greet by name (e.g. "Fala João", "E aí Maria")
                     for (const msg of convo.messages) {
                       if (msg.role === "assistant") {
+                        // Match "Nome: FULL NAME" or "nome de Full Name"
+                        const nameFieldMatch = msg.content.match(/\*?\*?Nome:?\*?\*?\s+([A-ZÀ-Ú][A-ZÀ-Úa-zà-ú\s]+?)(?:\n|$)/);
+                        if (nameFieldMatch) {
+                          clientName = nameFieldMatch[1].trim().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+                          break;
+                        }
+                        // Match greetings like "Fala João", "E aí Maria"
                         const greetMatch = msg.content.match(/(?:fala|e aí|oi|olá|eai)\s+([A-ZÀ-Ú][a-zà-ú]+)/i);
                         if (greetMatch) {
                           clientName = greetMatch[1];
@@ -342,6 +348,11 @@ const AdminChatHistory = () => {
                       if (!name && Array.isArray(selectedConvo.messages)) {
                         for (const msg of selectedConvo.messages) {
                           if (msg.role === "assistant") {
+                            const nameFieldMatch = msg.content.match(/\*?\*?Nome:?\*?\*?\s+([A-ZÀ-Ú][A-ZÀ-Úa-zà-ú\s]+?)(?:\n|$)/);
+                            if (nameFieldMatch) {
+                              name = nameFieldMatch[1].trim().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+                              break;
+                            }
                             const m = msg.content.match(/(?:fala|e aí|oi|olá|eai)\s+([A-ZÀ-Ú][a-zà-ú]+)/i);
                             if (m) { name = m[1]; break; }
                           }
