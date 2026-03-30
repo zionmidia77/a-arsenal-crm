@@ -731,6 +731,13 @@ async function executeTool(
         if (args.brand) {
           query = query.ilike("brand", `%${args.brand}%`);
         }
+        if (args.model) {
+          query = query.ilike("model", `%${args.model}%`);
+        }
+        if (args.search_term) {
+          // Search in both brand and model
+          query = query.or(`brand.ilike.%${args.search_term}%,model.ilike.%${args.search_term}%`);
+        }
         if (args.max_value) {
           query = query.lte("price", args.max_value as number);
         }
