@@ -318,7 +318,6 @@ const AdminChatHistory = () => {
                               <span className="text-[8px] px-1 py-0.5 rounded bg-amber-500/15 text-amber-400 shrink-0">IA</span>
                             )}
                           </div>
-                          </div>
                           <Badge className={`text-[10px] ${statusColor(convo.status)}`}>
                             {statusLabel(convo.status)}
                           </Badge>
