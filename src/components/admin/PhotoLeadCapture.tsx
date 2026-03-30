@@ -148,17 +148,26 @@ const PhotoLeadCapture = () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        toast.error("Você precisa estar logado");
+        toast.error("Você precisa estar logado. Faça login novamente.");
         setStep("upload");
         return;
       }
 
+      toast.info("Comprimindo imagens...");
       const base64Images: string[] = await Promise.all(imageFiles.map((f) => compressImage(f)));
       setPreviews(base64Images);
+
+      toast.info("Enviando para análise com IA...");
+
+      // Add timeout to prevent infinite loading
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 60000); // 60s timeout
 
       const response = await supabase.functions.invoke("extract-lead-from-image", {
         body: { image_base64_list: base64Images, action: "extract_only" },
       });
+
+      clearTimeout(timeout);
 
       if (response.error) {
         throw new Error(getInvokeErrorMessage(response.error));
@@ -172,7 +181,6 @@ const PhotoLeadCapture = () => {
       const similarCandidates: SimilarityCandidate[] = data.similar_candidates || [];
       setCandidates(similarCandidates);
 
-      // If there are similar candidates, show the duplicates step
       if (similarCandidates.length > 0) {
         setStep("duplicates");
         toast.info(`${similarCandidates.length} lead(s) similar(es) encontrado(s)`);
@@ -181,7 +189,10 @@ const PhotoLeadCapture = () => {
         toast.success(`${base64Images.length} imagem(ns) processada(s) — nenhum duplicado encontrado`);
       }
     } catch (err: any) {
-      toast.error(err.message || "Erro ao processar imagens");
+      const msg = err?.name === "AbortError" 
+        ? "Tempo limite excedido. Tente com uma imagem menor." 
+        : (err.message || "Erro ao processar imagens");
+      toast.error(msg);
       setStep("upload");
     }
   }, []);
