@@ -39,6 +39,8 @@ type SimilarityCandidate = {
 type Step = "upload" | "processing" | "review" | "duplicates" | "done";
 
 const MAX_IMAGES = 5;
+const FUNCTION_TIMEOUT_MS = 90_000;
+const IMAGE_PREP_TIMEOUT_MS = 12_000;
 
 const compressImage = (file: File, maxWidth = 1200, quality = 0.7): Promise<string> =>
   new Promise((resolve, reject) => {
@@ -46,7 +48,7 @@ const compressImage = (file: File, maxWidth = 1200, quality = 0.7): Promise<stri
     reader.onerror = () => reject(new Error("Falha ao ler imagem"));
     reader.onload = () => {
       const img = new Image();
-      img.onerror = () => reject(new Error("Imagem inválida"));
+      img.onerror = () => reject(new Error("Imagem inválida ou formato não suportado"));
       img.onload = () => {
         const canvas = document.createElement("canvas");
         let { width, height } = img;
@@ -56,7 +58,11 @@ const compressImage = (file: File, maxWidth = 1200, quality = 0.7): Promise<stri
         }
         canvas.width = width;
         canvas.height = height;
-        const ctx = canvas.getContext("2d")!;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          reject(new Error("Não foi possível preparar a imagem"));
+          return;
+        }
         ctx.drawImage(img, 0, 0, width, height);
         resolve(canvas.toDataURL("image/jpeg", quality));
       };
@@ -64,6 +70,56 @@ const compressImage = (file: File, maxWidth = 1200, quality = 0.7): Promise<stri
     };
     reader.readAsDataURL(file);
   });
+
+const readFileAsDataUrl = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Falha ao ler arquivo"));
+    reader.onload = () => resolve(reader.result as string);
+    reader.readAsDataURL(file);
+  });
+
+const withTimeout = async <T,>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> => {
+  let timeoutId: number | undefined;
+
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = window.setTimeout(() => reject(new Error(message)), timeoutMs);
+  });
+
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    if (timeoutId) {
+      window.clearTimeout(timeoutId);
+    }
+  }
+};
+
+const prepareImageForUpload = async (file: File) => {
+  const fileType = file.type.toLowerCase();
+  const isHeic = fileType.includes("heic") || fileType.includes("heif");
+
+  if (isHeic) {
+    console.warn("[PhotoCapture] HEIC/HEIF detectado, enviando original sem compressão:", file.name);
+    return readFileAsDataUrl(file);
+  }
+
+  if (file.size <= 2 * 1024 * 1024) {
+    console.log("[PhotoCapture] Imagem pequena, enviando sem compressão:", file.name);
+    return readFileAsDataUrl(file);
+  }
+
+  try {
+    return await withTimeout(
+      compressImage(file),
+      IMAGE_PREP_TIMEOUT_MS,
+      "Tempo limite ao preparar a imagem",
+    );
+  } catch (error) {
+    console.warn("[PhotoCapture] Falha ao comprimir, usando arquivo original:", file.name, error);
+    return readFileAsDataUrl(file);
+  }
+};
 
 const getInvokeErrorMessage = (error: any) => {
   const status = error?.context?.status;
@@ -73,14 +129,63 @@ const getInvokeErrorMessage = (error: any) => {
     try {
       const parsed = JSON.parse(body);
       if (parsed?.error) return parsed.error;
-    } catch { /* ignore */ }
+    } catch {
+      if (body.trim()) return body;
+    }
   }
 
   if (status === 429) return "Muitas tentativas agora. Aguarde alguns segundos e tente novamente.";
   if (status === 402) return "Limite de IA atingido. Adicione créditos para continuar.";
-  if (status === 401) return "Você precisa estar logado para usar a captura por foto.";
+  if (status === 401) return "Sua sessão expirou. Faça login novamente para usar a captura por foto.";
 
   return error?.message || "Erro ao processar imagem";
+};
+
+const invokeExtractLeadFunction = async (accessToken: string, payload: Record<string, unknown>) => {
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), FUNCTION_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/extract-lead-from-image`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      },
+    );
+
+    const rawBody = await response.text();
+    let parsedBody: any = null;
+
+    try {
+      parsedBody = rawBody ? JSON.parse(rawBody) : null;
+    } catch {
+      parsedBody = rawBody;
+    }
+
+    if (!response.ok) {
+      const invokeError: any = new Error(
+        parsedBody?.error || parsedBody?.message || `Erro HTTP ${response.status}`,
+      );
+      invokeError.context = { status: response.status, body: rawBody };
+      throw invokeError;
+    }
+
+    return parsedBody;
+  } catch (error: any) {
+    if (error?.name === "AbortError") {
+      throw new Error("A análise demorou demais. Tente novamente com menos imagens ou imagens menores.");
+    }
+    throw error;
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
 };
 
 const scoreColor = (score: number) => {
@@ -154,36 +259,31 @@ const PhotoLeadCapture = () => {
       console.log("[PhotoCapture] Checking auth session...");
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       console.log("[PhotoCapture] Session:", session ? "exists (user: " + session.user?.email + ")" : "NULL", "error:", sessionError);
-      if (!session) {
+      if (!session?.access_token) {
         toast.error("Você precisa estar logado. Faça login novamente.");
         setStep("upload");
         return;
       }
 
-      console.log("[PhotoCapture] Compressing", imageFiles.length, "image(s)...");
-      toast.info("Comprimindo imagens...");
-      const base64Images: string[] = await Promise.all(imageFiles.map((f) => compressImage(f)));
-      console.log("[PhotoCapture] Compression done. Sizes:", base64Images.map((b) => (b.length / 1024).toFixed(0) + "KB"));
+      console.log("[PhotoCapture] Preparing", imageFiles.length, "image(s)...");
+      toast.info("Preparando imagens...");
+      const base64Images: string[] = await Promise.all(imageFiles.map((file) => prepareImageForUpload(file)));
+      console.log("[PhotoCapture] Images ready. Sizes:", base64Images.map((b) => (b.length / 1024).toFixed(0) + "KB"));
       setPreviews(base64Images);
 
-      console.log("[PhotoCapture] Invoking edge function extract-lead-from-image...");
+      console.log("[PhotoCapture] Invoking edge function extract-lead-from-image with explicit auth header...");
       toast.info("Enviando para análise com IA...");
 
       const startTime = Date.now();
-      const response = await supabase.functions.invoke("extract-lead-from-image", {
-        body: { image_base64_list: base64Images, action: "extract_only" },
+      const data = await invokeExtractLeadFunction(session.access_token, {
+        image_base64_list: base64Images,
+        action: "extract_only",
       });
       const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
 
       console.log("[PhotoCapture] Response received in", elapsed + "s");
-      console.log("[PhotoCapture] response.error:", response.error);
-      console.log("[PhotoCapture] response.data:", JSON.stringify(response.data)?.slice(0, 500));
+      console.log("[PhotoCapture] response.data:", JSON.stringify(data)?.slice(0, 500));
 
-      if (response.error) {
-        throw new Error(getInvokeErrorMessage(response.error));
-      }
-
-      const data = response.data;
       if (data?.error) throw new Error(data.error);
       if (!data?.extracted) throw new Error("Não foi possível extrair os dados das imagens");
 
@@ -204,9 +304,9 @@ const PhotoLeadCapture = () => {
     } catch (err: any) {
       console.error("[PhotoCapture] ERROR:", err);
       console.error("[PhotoCapture] Error name:", err?.name, "message:", err?.message);
-      const msg = err?.name === "AbortError" 
-        ? "Tempo limite excedido. Tente com uma imagem menor." 
-        : (err.message || "Erro ao processar imagens");
+      const msg = err?.name === "AbortError"
+        ? "Tempo limite excedido. Tente com uma imagem menor."
+        : getInvokeErrorMessage(err);
       toast.error(msg);
       setStep("upload");
     }
@@ -226,18 +326,14 @@ const PhotoLeadCapture = () => {
     setStep("processing");
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Não autorizado");
+      if (!session?.access_token) throw new Error("Não autorizado");
 
-      const response = await supabase.functions.invoke("extract-lead-from-image", {
-        body: {
-          image_base64_list: previews,
-          action: "merge",
-          merge_target_id: candidateId,
-        },
+      const data = await invokeExtractLeadFunction(session.access_token, {
+        image_base64_list: previews,
+        action: "merge",
+        merge_target_id: candidateId,
       });
 
-      if (response.error) throw new Error(getInvokeErrorMessage(response.error));
-      const data = response.data;
       if (data?.error) throw new Error(data.error);
 
       setResult({ action: data.action || "merged", client: data.client });
@@ -246,7 +342,7 @@ const PhotoLeadCapture = () => {
       qc.invalidateQueries({ queryKey: ["clients-all"] });
       toast.success("Lead mesclado com sucesso! 🔗");
     } catch (err: any) {
-      toast.error(err.message || "Erro ao mesclar lead");
+      toast.error(getInvokeErrorMessage(err));
       setStep("duplicates");
     }
   };

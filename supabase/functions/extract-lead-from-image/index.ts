@@ -340,7 +340,7 @@ serve(async (req) => {
 
   try {
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
+    if (!authHeader?.startsWith("Bearer ")) {
       return jsonResponse({ error: "Não autorizado" }, 401);
     }
 
@@ -357,12 +357,12 @@ serve(async (req) => {
       global: { headers: { Authorization: authHeader } },
     });
 
-    const {
-      data: { user },
-      error: authError,
-    } = await userClient.auth.getUser();
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
+    const userId = claimsData?.claims?.sub;
 
-    if (authError || !user) {
+    if (claimsError || !userId) {
+      console.error("[extract-lead-from-image] invalid token", claimsError);
       return jsonResponse({ error: "Token inválido" }, 401);
     }
 
@@ -379,6 +379,8 @@ serve(async (req) => {
       .filter((img: unknown): img is string => typeof img === "string" && img.trim().length > 0)
       .slice(0, MAX_IMAGES_PER_REQUEST);
 
+    console.log("[extract-lead-from-image] request received", JSON.stringify({ userId, action, images: imageList.length }));
+
     if (rawImages.length > MAX_IMAGES_PER_REQUEST) {
       return jsonResponse({ error: `Máximo de ${MAX_IMAGES_PER_REQUEST} imagens por envio` }, 400);
     }
@@ -393,6 +395,7 @@ serve(async (req) => {
     }
 
     const extracted = await extractWithAI(LOVABLE_API_KEY, imageList);
+    console.log("[extract-lead-from-image] extraction complete", JSON.stringify({ userId, hasName: Boolean(extracted.name), hasPhone: Boolean(extracted.phone), hasEmail: Boolean(extracted.email) }));
 
     // Find similar candidates for deduplication
     const similar_candidates = await findSimilarCandidates(supabase, extracted);
