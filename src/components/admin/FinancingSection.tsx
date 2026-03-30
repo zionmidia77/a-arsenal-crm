@@ -66,6 +66,7 @@ const FinancingSection = ({ client }: FinancingSectionProps) => {
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [verifyStep, setVerifyStep] = useState<number>(-1); // -1 = idle, 0-3 = steps
   const [verification, setVerification] = useState<any>(null);
@@ -519,19 +520,36 @@ const FinancingSection = ({ client }: FinancingSectionProps) => {
                   >
                     <Eye className="w-3 h-3" /> Ver
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="rounded-full text-[10px] h-7 gap-1 text-destructive"
-                    disabled={deleting === doc.key}
-                    onClick={() => handleDeleteDoc(doc.key)}
-                  >
-                    {deleting === doc.key ? (
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                    ) : (
+                  {confirmDelete === doc.key ? (
+                    <div className="flex items-center gap-1">
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="rounded-full text-[10px] h-7 px-2"
+                        disabled={deleting === doc.key}
+                        onClick={() => { handleDeleteDoc(doc.key); setConfirmDelete(null); }}
+                      >
+                        {deleting === doc.key ? <Loader2 className="w-3 h-3 animate-spin" /> : "Sim"}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="rounded-full text-[10px] h-7 px-2"
+                        onClick={() => setConfirmDelete(null)}
+                      >
+                        Não
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="rounded-full text-[10px] h-7 gap-1 text-destructive"
+                      onClick={() => setConfirmDelete(doc.key)}
+                    >
                       <Trash2 className="w-3 h-3" />
-                    )}
-                  </Button>
+                    </Button>
+                  )}
                 </>
               )}
               <Button
