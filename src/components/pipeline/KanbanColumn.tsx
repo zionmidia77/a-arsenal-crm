@@ -5,9 +5,10 @@ import type { Tables } from "@/integrations/supabase/types";
 interface KanbanColumnProps {
   stage: { key: string; label: string; emoji: string; color: string };
   clients: Tables<"clients">[];
+  highlightId?: string | null;
 }
 
-const KanbanColumn = ({ stage, clients }: KanbanColumnProps) => {
+const KanbanColumn = ({ stage, clients, highlightId }: KanbanColumnProps) => {
   return (
     <div className={`flex flex-col min-w-[260px] max-w-[280px] rounded-2xl border border-border/40 bg-secondary/30 backdrop-blur-sm`}>
       {/* Header */}
@@ -32,7 +33,7 @@ const KanbanColumn = ({ stage, clients }: KanbanColumnProps) => {
             }`}
           >
             {clients.map((client, index) => (
-              <KanbanCard key={client.id} client={client} index={index} />
+              <KanbanCard key={client.id} client={client} index={index} highlight={highlightId === client.id} />
             ))}
             {provided.placeholder}
             {clients.length === 0 && !snapshot.isDraggingOver && (

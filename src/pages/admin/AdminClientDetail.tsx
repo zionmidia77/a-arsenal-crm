@@ -9,7 +9,8 @@ import { useClient, useClientInteractions, useClientVehicles, useCreateInteracti
 import {
   ArrowLeft, MessageCircle, Phone, Mail, MapPin, Calendar, Bike,
   TrendingUp, Clock, Plus, Star, CalendarPlus, Check, AlertTriangle,
-  Copy, Send, Bot, Tag, FileCheck, Trophy, Sparkles, CalendarIcon, Cake, Edit2
+  Copy, Send, Bot, Tag, FileCheck, Trophy, Sparkles, CalendarIcon, Cake, Edit2,
+  Columns3
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -206,9 +207,14 @@ const AdminClientDetail = () => {
             <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${tempBadge[client.temperature]}`}>
               {tempLabel[client.temperature]}
             </span>
-            <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${stageBadge[client.pipeline_stage] || ''}`}>
+            <button
+              onClick={() => navigate(`/admin/pipeline?highlight=${client.id}`)}
+              className={`text-[10px] font-medium px-2 py-0.5 rounded-full flex items-center gap-1 hover:ring-1 hover:ring-primary/50 transition-all cursor-pointer ${stageBadge[client.pipeline_stage] || ''}`}
+              title="Ver no Pipeline"
+            >
+              <Columns3 className="w-3 h-3" />
               {STAGES.find(s => s.key === client.pipeline_stage)?.label}
-            </span>
+            </button>
             <span className="text-[10px] text-muted-foreground">· {daysAgo === 0 ? "hoje" : `${daysAgo}d atrás`}</span>
           </div>
         </div>
