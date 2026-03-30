@@ -326,14 +326,25 @@ const LeadCopilotPanel = ({ clientId, clientName, clientPhone, vehiclePhotos }: 
                         {msg.role === "assistant" ? (
                           <div className="prose prose-sm dark:prose-invert max-w-none text-xs [&_p]:mb-1 [&_ul]:mb-1 [&_li]:mb-0.5 [&_h1]:text-sm [&_h2]:text-xs [&_h3]:text-xs [&_strong]:text-foreground">
                             <ReactMarkdown>{msg.content}</ReactMarkdown>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-6 text-[10px] mt-1 gap-1 text-muted-foreground hover:text-foreground"
-                              onClick={() => copyToClipboard(msg.content)}
-                            >
-                              <Copy className="w-3 h-3" /> Copiar
-                            </Button>
+                            <div className="flex gap-1 mt-1">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 text-[10px] gap-1 text-muted-foreground hover:text-foreground"
+                                onClick={() => copyToClipboard(msg.content)}
+                              >
+                                <Copy className="w-3 h-3" /> Copiar
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 text-[10px] gap-1 text-muted-foreground hover:text-foreground"
+                                onClick={() => handleExportPdf(msg.content)}
+                                disabled={isExporting}
+                              >
+                                <FileDown className="w-3 h-3" /> {isExporting ? "Gerando..." : "PDF"}
+                              </Button>
+                            </div>
                           </div>
                         ) : (
                           <p className="text-xs">{msg.content}</p>
