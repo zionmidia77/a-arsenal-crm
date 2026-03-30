@@ -348,49 +348,72 @@ const PhotoLeadCapture = () => {
                 extrai os dados em uma única ficha.
               </p>
 
+              {/* Hidden file inputs - outside clickable areas to avoid double-trigger on mobile */}
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={(e) => {
+                  console.log("[PhotoCapture] File input onChange fired, files:", e.target.files?.length);
+                  const files = Array.from(e.target.files || []);
+                  if (files.length) handleFiles(files);
+                  e.target.value = "";
+                }}
+              />
+              <input
+                ref={cameraRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={(e) => {
+                  console.log("[PhotoCapture] Camera input onChange fired, files:", e.target.files?.length);
+                  const file = e.target.files?.[0];
+                  if (file) handleFiles([file]);
+                  e.target.value = "";
+                }}
+              />
+
               <div
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={handleDrop}
-                onClick={() => fileRef.current?.click()}
-                className="border-2 border-dashed border-border/60 rounded-2xl p-8 text-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  console.log("[PhotoCapture] Drop zone clicked");
+                  fileRef.current?.click();
+                }}
+                className="border-2 border-dashed border-border/60 rounded-2xl p-8 text-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all active:bg-primary/10"
               >
                 <Upload className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
-                <p className="text-sm font-medium">Arraste imagens ou clique para selecionar da galeria</p>
+                <p className="text-sm font-medium">Toque para selecionar imagens</p>
                 <p className="text-xs text-muted-foreground mt-1">PNG/JPG • até 10MB por imagem • máx. {MAX_IMAGES}</p>
-
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  className="hidden"
-                  onChange={(e) => {
-                    const files = Array.from(e.target.files || []);
-                    if (files.length) handleFiles(files);
-                    e.target.value = "";
-                  }}
-                />
               </div>
 
               <div className="flex gap-2">
-                <Button variant="outline" className="flex-1 rounded-xl" onClick={() => fileRef.current?.click()}>
-                  <Upload className="w-4 h-4 mr-2" /> Galeria (múltiplas)
+                <Button
+                  variant="outline"
+                  className="flex-1 rounded-xl"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    console.log("[PhotoCapture] Gallery button clicked");
+                    fileRef.current?.click();
+                  }}
+                >
+                  <Upload className="w-4 h-4 mr-2" /> Galeria
                 </Button>
-                <Button variant="outline" className="flex-1 rounded-xl" onClick={() => cameraRef.current?.click()}>
+                <Button
+                  variant="outline"
+                  className="flex-1 rounded-xl"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    console.log("[PhotoCapture] Camera button clicked");
+                    cameraRef.current?.click();
+                  }}
+                >
                   <Camera className="w-4 h-4 mr-2" /> Câmera
                 </Button>
-                <input
-                  ref={cameraRef}
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) handleFiles([file]);
-                    e.target.value = "";
-                  }}
-                />
               </div>
             </motion.div>
           )}
