@@ -646,7 +646,7 @@ const ChatFunnel = () => {
       });
     }
     
-    toast.success("Conversa transferida para um especialista!");
+    toast.success("Conversa transferida para o gerente!");
     scrollToBottom();
   }, [messages, clientId, saveConversation, scrollToBottom]);
 
