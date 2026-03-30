@@ -449,6 +449,20 @@ const AdminChatHistory = () => {
                     )}
                   </CardTitle>
                   <div className="flex items-center gap-2">
+                    {!selectedConvo.client_id && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 text-[10px] gap-1"
+                        onClick={() => {
+                          setLinkConvoId(selectedConvo.id);
+                          setLinkSearch("");
+                          setLinkDialogOpen(true);
+                        }}
+                      >
+                        <Link2 className="w-3 h-3" /> Vincular lead
+                      </Button>
+                    )}
                     {(selectedConvo.status === "transferred" || selectedConvo.status === "attended") && (
                       <Badge className={`gap-1 ${statusColor(selectedConvo.status)}`}>
                         <UserCheck className="w-3 h-3" /> {statusLabel(selectedConvo.status)}
