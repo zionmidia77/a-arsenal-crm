@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Send, ArrowLeft, Sparkles, UserCheck, Camera, FileCheck, Loader2, Car, ChevronLeft, ChevronRight, RotateCcw, Mic, Square } from "lucide-react";
+import { Send, ArrowLeft, UserCheck, Camera, FileCheck, Loader2, Car, ChevronLeft, ChevronRight, RotateCcw, Mic, Square, ImageUp } from "lucide-react";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
