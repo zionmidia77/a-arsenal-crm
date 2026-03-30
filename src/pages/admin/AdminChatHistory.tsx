@@ -756,6 +756,68 @@ const AdminChatHistory = () => {
           </div>
         )}
       </div>
+
+      {/* Link conversation to lead dialog */}
+      <Dialog open={linkDialogOpen} onOpenChange={(open) => { setLinkDialogOpen(open); if (!open) { setLinkConvoId(null); setLinkSearch(""); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Link2 className="w-4 h-4 text-primary" />
+              Vincular conversa a um lead
+            </DialogTitle>
+            <DialogDescription>
+              Busque por nome ou telefone para vincular esta conversa a um lead existente no CRM.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+              <Input
+                placeholder="Buscar lead por nome ou telefone..."
+                value={linkSearch}
+                onChange={(e) => setLinkSearch(e.target.value)}
+                className="pl-8"
+                autoFocus
+              />
+            </div>
+            <ScrollArea className="max-h-[300px]">
+              <div className="space-y-1.5">
+                {linkSearch.length < 2 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    Digite pelo menos 2 caracteres para buscar
+                  </p>
+                ) : searchedLeads.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    Nenhum lead encontrado
+                  </p>
+                ) : (
+                  searchedLeads.map((lead) => (
+                    <button
+                      key={lead.id}
+                      onClick={() => handleLinkLead(lead.id, lead.name)}
+                      disabled={isLinking}
+                      className="w-full flex items-center gap-3 p-2.5 rounded-lg hover:bg-secondary/80 transition-colors text-left border border-transparent hover:border-border/50"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                        <User className="w-4 h-4 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{lead.name}</p>
+                        <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                          {lead.phone && <span>{lead.phone}</span>}
+                          {lead.city && <span>· {lead.city}</span>}
+                          {lead.interest && <span>· {lead.interest}</span>}
+                        </div>
+                      </div>
+                      <Link2 className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                    </button>
+                  ))
+                )}
+              </div>
+            </ScrollArea>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
