@@ -33,10 +33,15 @@ const navItems = [
 
 const AdminLayout = () => {
   const [open, setOpen] = useState(false);
+  const [addLeadOpen, setAddLeadOpen] = useState(false);
   const location = useLocation();
   const isClientDetail = location.pathname.includes("/admin/client/");
   const { signOut, user } = useAuth();
   useRealtimeLeads();
+
+  const handleNewLead = useCallback(() => {
+    setAddLeadOpen(true);
+  }, []);
 
   useEffect(() => {
     if ("Notification" in window && Notification.permission === "default") {
