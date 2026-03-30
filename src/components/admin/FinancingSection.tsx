@@ -4,9 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import {
-  FileCheck, Upload, CheckCircle2, Circle, AlertTriangle, Send,
+  FileCheck, Upload, CheckCircle2, Circle, AlertTriangle, Send, Eye,
   MessageCircle, Crown, Shield, Briefcase, DollarSign, Loader2, Edit2, Save,
-  Building2, Search, ShieldCheck, ShieldAlert, ChevronDown, ChevronUp, History, Clock,
+  Building2, Search, ShieldCheck, ShieldAlert, ChevronDown, ChevronUp, History, Clock, ExternalLink,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUpdateClient } from "@/hooks/useSupabase";
