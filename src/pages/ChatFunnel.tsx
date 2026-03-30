@@ -486,7 +486,7 @@ const ChatFunnel = () => {
             id: "welcome",
             role: "assistant",
             content:
-              "E aí! Tudo bem? 👊\n\nSou o consultor da Arsenal Motors. Tô aqui pra te ajudar a encontrar o veículo perfeito, fazer uma troca ou o que precisar!\n\nComo posso te ajudar?",
+              "E aí! Tudo bem? 👊\n\nAqui é o Lucas da Arsenal Motors. Tô aqui pra te ajudar, seja pra comprar, trocar ou o que precisar!\n\nMe conta, o que tá procurando?",
             timestamp: new Date(),
           };
           setMessages([welcome]);
