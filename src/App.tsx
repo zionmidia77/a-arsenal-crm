@@ -27,6 +27,7 @@ const AdminCalendar = lazy(() => import("./pages/admin/AdminCalendar"));
 const AdminChatHistory = lazy(() => import("./pages/admin/AdminChatHistory"));
 const AdminSimulations = lazy(() => import("./pages/admin/AdminSimulations"));
 const AdminCatalog = lazy(() => import("./pages/admin/AdminCatalog"));
+const AdminSMS = lazy(() => import("./pages/admin/AdminSMS"));
 const MemberArea = lazy(() => import("./pages/MemberArea"));
 const PublicCatalog = lazy(() => import("./pages/PublicCatalog"));
 const Login = lazy(() => import("./pages/auth/Login"));
