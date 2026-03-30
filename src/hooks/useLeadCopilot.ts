@@ -123,7 +123,8 @@ export const useLeadCopilot = (clientId: string) => {
       qc.invalidateQueries({ queryKey: ["lead-timeline", clientId] });
     } catch (e) {
       console.error("Copilot error:", e);
-      upsertAssistant("Erro ao processar. Tente novamente.");
+      const msg = e instanceof Error ? e.message : "Erro ao processar. Tente novamente.";
+      upsertAssistant(`⚠️ ${msg}`);
     } finally {
       setIsLoading(false);
     }
