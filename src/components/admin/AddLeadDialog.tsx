@@ -11,8 +11,15 @@ const SOURCES = ["whatsapp", "facebook", "marketplace", "indicação", "loja", "
 const INTERESTS = ["Quero comprar uma moto", "Quero trocar minha moto", "Quero vender minha moto", "Preciso de dinheiro"];
 const BUDGETS = ["Até R$ 15 mil", "R$ 15 a 30 mil", "R$ 30 a 50 mil", "Acima de R$ 50 mil"];
 
-const AddLeadDialog = () => {
-  const [open, setOpen] = useState(false);
+interface AddLeadDialogProps {
+  externalOpen?: boolean;
+  onExternalOpenChange?: (open: boolean) => void;
+}
+
+const AddLeadDialog = ({ externalOpen, onExternalOpenChange }: AddLeadDialogProps = {}) => {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = externalOpen !== undefined ? externalOpen : internalOpen;
+  const setOpen = onExternalOpenChange || setInternalOpen;
   const [form, setForm] = useState({ name: "", phone: "", interest: "", budget_range: "", source: "", notes: "", birthdate: "" });
   const createClient = useCreateClient();
 
