@@ -83,14 +83,7 @@ const AdminChatHistory = () => {
   });
 
   // Realtime subscription for live updates
-  const { } = useQuery({
-    queryKey: ["chat-realtime-sub"],
-    queryFn: () => null,
-    enabled: false,
-  });
-
-  // Subscribe to realtime changes
-  useState(() => {
+  useEffect(() => {
     const channel = supabase
       .channel('admin-chat-updates')
       .on(
@@ -98,23 +91,12 @@ const AdminChatHistory = () => {
         { event: '*', schema: 'public', table: 'chat_conversations' },
         () => {
           queryClient.invalidateQueries({ queryKey: ["chat-conversations"] });
-          // Update selected conversation if it changed
-          if (selectedConvo) {
-            supabase
-              .from("chat_conversations")
-              .select("*, clients(name, phone, email, city, interest, budget_range, temperature, pipeline_stage, has_trade_in, has_clean_credit, has_down_payment, down_payment_amount, salary, employer, financing_status, lead_score, source, notes, birthdate)")
-              .eq("id", selectedConvo.id)
-              .maybeSingle()
-              .then(({ data }) => {
-                if (data) setSelectedConvo(data as unknown as Conversation);
-              });
-          }
         }
       )
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  });
+  }, [queryClient]);
 
   const filteredConversations = useMemo(() => {
     return conversations.filter((convo) => {
