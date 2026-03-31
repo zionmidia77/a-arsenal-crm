@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Copy, Check, Search, MessageCircle, Users, Send, Plus, Trash2, Eye, EyeOff } from "lucide-react";
 import { useMessageTemplates, useClients, useCreateMessageTemplate, useDeleteMessageTemplate } from "@/hooks/useSupabase";
 import { MessageCardSkeleton } from "@/components/admin/SkeletonLoaders";
+import PageTour from "@/components/admin/PageTour";
+import { MessageCircle as MsgIcon, Users as UsersIcon2, Copy as CopyIcon, Plus as PlusIcon } from "lucide-react";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 

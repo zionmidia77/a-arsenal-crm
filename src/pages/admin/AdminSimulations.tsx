@@ -98,7 +98,7 @@ const AdminSimulations = () => {
       </div>
 
       {/* Filter */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2" data-tour="sim-filter">
         <Filter className="w-4 h-4 text-muted-foreground" />
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-40">

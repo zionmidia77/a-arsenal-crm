@@ -351,7 +351,7 @@ const AdminSMS = () => {
         <StatCard icon={BarChart3} label="Mês" value={stats?.month || 0} color="bg-amber-500/10 text-amber-500" />
       </div>
 
-      <Tabs defaultValue="dashboard">
+      <Tabs defaultValue="dashboard" data-tour="sms-tabs">
         <TabsList className="w-full justify-start">
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="automations">Automações</TabsTrigger>

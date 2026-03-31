@@ -78,7 +78,7 @@ const AdminCalendar = () => {
       </motion.div>
 
       {/* Month navigation */}
-      <motion.div variants={fadeUp} className="glass-card p-4">
+      <motion.div variants={fadeUp} className="glass-card p-4" data-tour="calendar-grid">
         <div className="flex items-center justify-between mb-4">
           <Button variant="ghost" size="icon" className="rounded-full h-8 w-8" onClick={() => shiftMonth(-1)}>
             <ChevronLeft className="w-4 h-4" />

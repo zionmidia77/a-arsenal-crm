@@ -276,7 +276,7 @@ const AdminChatHistory = () => {
       </div>
 
       {/* Filters */}
-      <Card>
+      <Card data-tour="chat-filters">
         <CardContent className="p-3">
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative flex-1 min-w-[180px]">

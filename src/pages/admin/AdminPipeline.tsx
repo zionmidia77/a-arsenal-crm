@@ -130,12 +130,19 @@ const AdminPipeline = () => {
 
   const totalLeads = clients?.length || 0;
 
+  const pipelineTourSteps = [
+    { target: '[data-tour="pipeline-stages"]', title: "Colunas do pipeline", description: "Cada coluna representa uma etapa da negociação. Leads fluem da esquerda para a direita.", icon: Kanban, position: "bottom" as const },
+    { target: '[data-tour="pipeline-filters"]', title: "Filtros por etapa", description: "Clique em uma etapa para focar apenas nela, ou veja todas de uma vez.", icon: Filter, position: "bottom" as const },
+    { target: '[data-tour="pipeline-compact"]', title: "Modo compacto", description: "Alterne entre cards detalhados e uma visualização mais enxuta.", icon: LayoutListIcon, position: "bottom" as const },
+  ];
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       className="flex flex-col h-full"
     >
+      <PageTour tourKey="pipeline" steps={pipelineTourSteps} />
       {/* Header */}
       <div className="px-4 md:px-5 pt-4 md:pt-5 pb-3 space-y-3">
         <div className="flex items-center justify-between">

@@ -80,7 +80,7 @@ const AdminTasks = () => {
       </motion.div>
 
       {/* Tab: Day / Overdue / Upcoming */}
-      <motion.div variants={fadeUp} className="flex gap-2">
+      <motion.div variants={fadeUp} className="flex gap-2" data-tour="tasks-tabs">
         <Button
           variant={activeTab === "day" ? "default" : "outline"}
           size="sm"

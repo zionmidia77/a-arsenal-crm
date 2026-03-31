@@ -237,6 +237,7 @@ const AdminLeads = () => {
             size="sm"
             className="rounded-full text-xs gap-1.5 h-9"
             onClick={exportCSV}
+            data-tour="leads-export"
           >
             <FileDown className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Exportar</span>

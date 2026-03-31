@@ -308,7 +308,7 @@ const AdminSmartQueue = () => {
 
           {/* Smart messages based on objection */}
           {objMessages.length > 0 && (
-            <div className="glass-card p-4 space-y-2">
+            <div className="glass-card p-4 space-y-2" data-tour="queue-messages">
               <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
                 <Flame className="w-3.5 h-3.5 text-primary" />
                 Mensagens sugeridas (baseadas na objeção)
