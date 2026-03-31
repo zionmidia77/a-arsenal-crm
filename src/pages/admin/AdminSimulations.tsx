@@ -12,6 +12,8 @@ import { SimulationCardSkeleton } from "@/components/admin/SkeletonLoaders";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
+import PageTour from "@/components/admin/PageTour";
+import { Calculator as CalcIcon, Filter as FilterIcon2, DollarSign as Dollar2 } from "lucide-react";
 
 const statusMap: Record<string, { label: string; color: string; icon: typeof CheckCircle2 }> = {
   pending: { label: "Pendente", color: "bg-warning/10 text-warning border-warning/20", icon: Clock },
