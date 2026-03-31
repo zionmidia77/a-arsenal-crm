@@ -438,6 +438,16 @@ const AdminDashboard = () => {
         )}
       </motion.div>
 
+      {/* ⏱️ Speed-to-Lead */}
+      <motion.div variants={fadeUp}>
+        <SpeedToLeadCard />
+      </motion.div>
+
+      {/* 🎯 Follow-up por Inatividade */}
+      <motion.div variants={fadeUp}>
+        <InactivityAlerts />
+      </motion.div>
+
       {/* 🧠 Smart Alerts */}
       <SmartAlerts />
 
