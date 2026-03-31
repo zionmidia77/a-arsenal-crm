@@ -170,8 +170,15 @@ const AdminMetrics = () => {
     { label: "Score médio", value: metrics.avgScore, icon: Award, color: "text-primary", bg: "bg-primary/10" },
   ];
 
+  const metricsTourSteps = [
+    { target: '[data-tour="metrics-period"]', title: "Período de análise", description: "Escolha entre 7, 14 ou 30 dias para ajustar o período de análise.", icon: CalendarDays, position: "bottom" as const },
+    { target: '[data-tour="metrics-export"]', title: "Exportar relatório", description: "Gere um PDF completo com todas as métricas e gráficos para compartilhar.", icon: FileDown, position: "bottom" as const },
+    { target: '[data-tour="metrics-stats"]', title: "Indicadores principais", description: "Veja total de leads, taxas de conversão e perda, e score médio de um relance.", icon: TrendingUp, position: "bottom" as const },
+  ];
+
   return (
     <motion.div variants={stagger} initial="initial" animate="animate" className="p-5 md:p-6 space-y-5 max-w-5xl">
+      <PageTour tourKey="metrics" steps={metricsTourSteps} />
       {/* Header */}
       <motion.div variants={fadeUp} className="flex items-end justify-between">
         <div>
