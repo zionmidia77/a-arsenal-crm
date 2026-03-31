@@ -156,7 +156,7 @@ const AdminSmartQueue = () => {
       </div>
 
       {/* Progress bar */}
-      <div className="space-y-1">
+      <div className="space-y-1" data-tour="queue-progress">
         <div className="flex justify-between text-xs text-muted-foreground">
           <span>Lead {currentIndex + 1} de {total}</span>
           <span>Faltam {total - currentIndex - 1}</span>
