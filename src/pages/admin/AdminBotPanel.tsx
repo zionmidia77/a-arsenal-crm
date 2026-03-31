@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,12 +8,13 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Bot, Plus, Activity, Users, Zap, AlertTriangle, CheckCircle2, XCircle, MessageSquare, RefreshCw, Settings2 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Bot, Plus, Activity, Users, Zap, AlertTriangle, CheckCircle2, XCircle, MessageSquare, RefreshCw, Settings2, Clock, Radio, Send } from "lucide-react";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 type BotConfig = {
@@ -30,6 +31,10 @@ type BotConfig = {
   last_reset_at: string | null;
   created_at: string;
   updated_at: string;
+  bot_type: string | null;
+  schedule_time: string | null;
+  last_heartbeat_at: string | null;
+  last_run_at: string | null;
 };
 
 type BotLog = {
@@ -46,13 +51,37 @@ type BotLog = {
   created_at: string;
 };
 
+// Heartbeat status helper
+const getHeartbeatStatus = (lastHeartbeat: string | null): { color: string; label: string; bgClass: string } => {
+  if (!lastHeartbeat) return { color: "bg-red-500", label: "Nunca conectou", bgClass: "bg-red-500/10" };
+  const diffMs = Date.now() - new Date(lastHeartbeat).getTime();
+  const diffMin = diffMs / 60000;
+  if (diffMin < 5) return { color: "bg-green-500", label: `Visto ${formatDistanceToNow(new Date(lastHeartbeat), { locale: ptBR, addSuffix: true })}`, bgClass: "bg-green-500/10" };
+  if (diffMin < 15) return { color: "bg-yellow-500", label: `Visto ${formatDistanceToNow(new Date(lastHeartbeat), { locale: ptBR, addSuffix: true })}`, bgClass: "bg-yellow-500/10" };
+  return { color: "bg-red-500", label: `Offline — visto ${formatDistanceToNow(new Date(lastHeartbeat), { locale: ptBR, addSuffix: true })}`, bgClass: "bg-red-500/10" };
+};
+
+const getBotTypeLabel = (botType: string | null) => {
+  if (botType === "posting") return { label: "Postagem", icon: Send, color: "text-orange-500" };
+  return { label: "Mensageria", icon: MessageSquare, color: "text-blue-500" };
+};
+
 const useBotConfigs = () =>
   useQuery({
     queryKey: ["bot-configs"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("bot_configs").select("*").order("created_at", { ascending: false });
+      const { data, error } = await supabase
+        .from("bot_configs")
+        .select("*")
+        .order("created_at", { ascending: true });
       if (error) throw error;
-      return data as BotConfig[];
+      return (data as any[]).map((d) => ({
+        ...d,
+        bot_type: d.bot_type ?? "messaging",
+        schedule_time: d.schedule_time ?? null,
+        last_heartbeat_at: d.last_heartbeat_at ?? null,
+        last_run_at: d.last_run_at ?? null,
+      })) as BotConfig[];
     },
   });
 
@@ -76,27 +105,51 @@ const AdminBotPanel = () => {
   const { data: logs } = useBotLogs(selectedBot);
   const [addOpen, setAddOpen] = useState(false);
   const [editBot, setEditBot] = useState<BotConfig | null>(null);
+  const [confirmDeactivate, setConfirmDeactivate] = useState<BotConfig | null>(null);
+  const [, setTick] = useState(0);
 
-  // Realtime logs subscription
+  // Tick every 30s to update heartbeat labels
+  useEffect(() => {
+    const interval = setInterval(() => setTick((t) => t + 1), 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Realtime subscription for bot_configs AND bot_logs
   useEffect(() => {
     const channel = supabase
-      .channel("bot-logs-realtime")
+      .channel("bot-panel-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "bot_configs" }, () => {
+        qc.invalidateQueries({ queryKey: ["bot-configs"] });
+      })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "bot_logs" }, () => {
         qc.invalidateQueries({ queryKey: ["bot-logs"] });
         qc.invalidateQueries({ queryKey: ["bot-configs"] });
       })
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [qc]);
 
   const toggleBot = useMutation({
     mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
-      const { error } = await supabase.from("bot_configs").update({ is_active, updated_at: new Date().toISOString() }).eq("id", id);
+      const { error } = await supabase.from("bot_configs").update({ is_active, updated_at: new Date().toISOString() } as any).eq("id", id);
       if (error) throw error;
     },
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ["bot-configs"] });
       toast.success(vars.is_active ? "Bot ativado!" : "Bot desativado!");
+    },
+  });
+
+  const updateField = useMutation({
+    mutationFn: async ({ id, field, value }: { id: string; field: string; value: any }) => {
+      const { error } = await supabase.from("bot_configs").update({ [field]: value, updated_at: new Date().toISOString() } as any).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["bot-configs"] });
+      toast.success("Atualizado!");
     },
   });
 
@@ -114,7 +167,7 @@ const AdminBotPanel = () => {
 
   const updateBot = useMutation({
     mutationFn: async ({ id, ...updates }: Partial<BotConfig> & { id: string }) => {
-      const { error } = await supabase.from("bot_configs").update({ ...updates, updated_at: new Date().toISOString() }).eq("id", id);
+      const { error } = await supabase.from("bot_configs").update({ ...updates, updated_at: new Date().toISOString() } as any).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -124,9 +177,21 @@ const AdminBotPanel = () => {
     },
   });
 
+  const handleToggle = (bot: BotConfig, checked: boolean) => {
+    if (!checked) {
+      setConfirmDeactivate(bot);
+    } else {
+      toggleBot.mutate({ id: bot.id, is_active: true });
+    }
+  };
+
   const totalLeadsToday = configs?.reduce((sum, c) => sum + (c.leads_captured_today || 0), 0) || 0;
   const activeBots = configs?.filter((c) => c.is_active).length || 0;
   const totalBots = configs?.length || 0;
+  const onlineBots = configs?.filter((c) => {
+    if (!c.last_heartbeat_at) return false;
+    return (Date.now() - new Date(c.last_heartbeat_at).getTime()) < 5 * 60000;
+  }).length || 0;
   const errorLogs = logs?.filter((l) => l.error).length || 0;
 
   return (
@@ -136,9 +201,9 @@ const AdminBotPanel = () => {
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <Bot className="w-6 h-6 text-primary" />
-            Painel de Bots
+            Centro de Comando — Bots
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">Gerencie bots de mensageria por vendedor</p>
+          <p className="text-sm text-muted-foreground mt-1">Controle total dos bots de mensageria e postagem</p>
         </div>
         <Dialog open={addOpen} onOpenChange={setAddOpen}>
           <DialogTrigger asChild>
@@ -161,17 +226,17 @@ const AdminBotPanel = () => {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard icon={Bot} label="Bots Ativos" value={`${activeBots}/${totalBots}`} color="text-primary" />
-        <StatCard icon={Users} label="Leads Hoje" value={totalLeadsToday.toString()} color="text-green-500" />
-        <StatCard icon={Activity} label="Logs Recentes" value={(logs?.length || 0).toString()} color="text-blue-500" />
+        <StatCard icon={Radio} label="Online Agora" value={onlineBots.toString()} color="text-green-500" />
+        <StatCard icon={Users} label="Leads Hoje" value={totalLeadsToday.toString()} color="text-blue-500" />
         <StatCard icon={AlertTriangle} label="Erros" value={errorLogs.toString()} color="text-destructive" />
       </div>
 
       {/* Bot Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2">
         {isLoading ? (
-          Array.from({ length: 3 }).map((_, i) => (
+          Array.from({ length: 2 }).map((_, i) => (
             <Card key={i} className="animate-pulse">
-              <CardContent className="p-6 h-48" />
+              <CardContent className="p-6 h-56" />
             </Card>
           ))
         ) : configs?.length === 0 ? (
@@ -185,62 +250,121 @@ const AdminBotPanel = () => {
             </CardContent>
           </Card>
         ) : (
-          configs?.map((bot) => (
-            <Card
-              key={bot.id}
-              className={`cursor-pointer transition-all border-2 ${
-                selectedBot === bot.id ? "border-primary" : "border-transparent hover:border-border"
-              } ${bot.is_active ? "" : "opacity-60"}`}
-              onClick={() => setSelectedBot(selectedBot === bot.id ? undefined : bot.id)}
-            >
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <div className={`w-2.5 h-2.5 rounded-full ${bot.is_active ? "bg-green-500 animate-pulse" : "bg-muted-foreground/30"}`} />
-                    {bot.seller_name}
-                  </CardTitle>
-                  <Switch
-                    checked={bot.is_active}
-                    onCheckedChange={(checked) => {
-                      toggleBot.mutate({ id: bot.id, is_active: checked });
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Plataforma</span>
-                  <Badge variant="secondary" className="capitalize">{bot.platform}</Badge>
-                </div>
-                {bot.facebook_account && (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Conta</span>
-                    <span className="truncate max-w-[150px] text-right">{bot.facebook_account}</span>
+          configs?.map((bot) => {
+            const heartbeat = getHeartbeatStatus(bot.last_heartbeat_at);
+            const typeInfo = getBotTypeLabel(bot.bot_type);
+            const TypeIcon = typeInfo.icon;
+
+            return (
+              <Card
+                key={bot.id}
+                className={`cursor-pointer transition-all border-2 ${
+                  selectedBot === bot.id ? "border-primary" : "border-transparent hover:border-border"
+                }`}
+                onClick={() => setSelectedBot(selectedBot === bot.id ? undefined : bot.id)}
+              >
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <TypeIcon className={`w-4 h-4 ${typeInfo.color}`} />
+                      {bot.seller_name}
+                      <Badge variant="outline" className="text-[10px] font-normal capitalize">
+                        {typeInfo.label}
+                      </Badge>
+                    </CardTitle>
+                    <Switch
+                      checked={bot.is_active}
+                      onCheckedChange={(checked) => handleToggle(bot, checked)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
                   </div>
-                )}
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Leads hoje</span>
-                  <span className="font-bold text-primary text-lg">{bot.leads_captured_today}</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Settings2 className="w-3 h-3" />
-                  <span>Max: {bot.max_per_cycle}/ciclo · Delay: {bot.delay_seconds}s</span>
-                  {bot.dry_mode && <Badge variant="outline" className="text-[10px] px-1.5 py-0">DRY</Badge>}
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full mt-2 gap-1"
-                  onClick={(e) => { e.stopPropagation(); setEditBot(bot); }}
-                >
-                  <Settings2 className="w-3.5 h-3.5" /> Configurar
-                </Button>
-              </CardContent>
-            </Card>
-          ))
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {/* Heartbeat status */}
+                  <div className={`flex items-center gap-2 p-2 rounded-lg ${heartbeat.bgClass}`}>
+                    <div className={`w-2.5 h-2.5 rounded-full ${heartbeat.color} ${heartbeat.color === "bg-green-500" ? "animate-pulse" : ""}`} />
+                    <span className="text-xs font-medium">{heartbeat.label}</span>
+                  </div>
+
+                  {/* Leads today */}
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Leads capturados hoje</span>
+                    <span className="font-bold text-primary text-2xl">{bot.leads_captured_today}</span>
+                  </div>
+
+                  {/* Dry mode toggle */}
+                  <div className="flex items-center justify-between text-sm" onClick={(e) => e.stopPropagation()}>
+                    <span className="text-muted-foreground flex items-center gap-1">
+                      <Zap className="w-3 h-3" /> Modo Teste (Dry)
+                    </span>
+                    <Switch
+                      checked={bot.dry_mode}
+                      onCheckedChange={(v) => updateField.mutate({ id: bot.id, field: "dry_mode", value: v })}
+                    />
+                  </div>
+
+                  {/* Schedule time — only for posting bot */}
+                  {bot.bot_type === "posting" && (
+                    <div className="flex items-center justify-between text-sm" onClick={(e) => e.stopPropagation()}>
+                      <span className="text-muted-foreground flex items-center gap-1">
+                        <Clock className="w-3 h-3" /> Horário
+                      </span>
+                      <Input
+                        type="time"
+                        className="w-28 h-7 text-xs"
+                        value={bot.schedule_time || ""}
+                        onChange={(e) => updateField.mutate({ id: bot.id, field: "schedule_time", value: e.target.value || null })}
+                      />
+                    </div>
+                  )}
+
+                  {/* Config summary */}
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Settings2 className="w-3 h-3" />
+                    <span>Max: {bot.max_per_cycle}/ciclo · Delay: {bot.delay_seconds}s</span>
+                    {bot.dry_mode && <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-yellow-600 border-yellow-300">DRY</Badge>}
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full mt-2 gap-1"
+                    onClick={(e) => { e.stopPropagation(); setEditBot(bot); }}
+                  >
+                    <Settings2 className="w-3.5 h-3.5" /> Configurar
+                  </Button>
+                </CardContent>
+              </Card>
+            );
+          })
         )}
       </div>
+
+      {/* Deactivation confirmation */}
+      <AlertDialog open={!!confirmDeactivate} onOpenChange={(open) => !open && setConfirmDeactivate(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Desativar {confirmDeactivate?.seller_name}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              O bot vai parar de operar na próxima verificação (até 60s). Você pode reativá-lo a qualquer momento.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (confirmDeactivate) {
+                  toggleBot.mutate({ id: confirmDeactivate.id, is_active: false });
+                }
+                setConfirmDeactivate(null);
+              }}
+            >
+              Desativar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Edit dialog */}
       <Dialog open={!!editBot} onOpenChange={(open) => !open && setEditBot(null)}>
@@ -361,30 +485,45 @@ const BotForm = ({ initial, onSubmit, loading }: { initial?: BotConfig; onSubmit
     seller_name: initial?.seller_name || "",
     seller_email: initial?.seller_email || "",
     facebook_account: initial?.facebook_account || "",
-    platform: initial?.platform || "facebook",
+    platform: initial?.platform || "facebook_marketplace",
     max_per_cycle: initial?.max_per_cycle || 5,
     delay_seconds: initial?.delay_seconds || 30,
     dry_mode: initial?.dry_mode || false,
+    bot_type: initial?.bot_type || "messaging",
+    schedule_time: initial?.schedule_time || "",
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.seller_name.trim()) return toast.error("Nome do vendedor é obrigatório");
-    onSubmit(form);
+    onSubmit({
+      ...form,
+      schedule_time: form.schedule_time || null,
+    });
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
-        <Label>Nome do Vendedor *</Label>
-        <Input value={form.seller_name} onChange={(e) => setForm({ ...form, seller_name: e.target.value })} placeholder="Ex: Lucas" />
+        <Label>Nome do Bot / Vendedor *</Label>
+        <Input value={form.seller_name} onChange={(e) => setForm({ ...form, seller_name: e.target.value })} placeholder="Ex: Bot Messenger" />
+      </div>
+      <div className="space-y-2">
+        <Label>Tipo do Bot</Label>
+        <Select value={form.bot_type} onValueChange={(v) => setForm({ ...form, bot_type: v })}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="messaging">Mensageria (responde mensagens)</SelectItem>
+            <SelectItem value="posting">Postagem (publica anúncios)</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
       <div className="space-y-2">
         <Label>Email</Label>
         <Input value={form.seller_email} onChange={(e) => setForm({ ...form, seller_email: e.target.value })} placeholder="lucas@empresa.com" />
       </div>
       <div className="space-y-2">
-        <Label>Conta Facebook/WhatsApp</Label>
+        <Label>Conta Facebook</Label>
         <Input value={form.facebook_account} onChange={(e) => setForm({ ...form, facebook_account: e.target.value })} placeholder="URL ou ID da conta" />
       </div>
       <div className="space-y-2">
@@ -392,12 +531,19 @@ const BotForm = ({ initial, onSubmit, loading }: { initial?: BotConfig; onSubmit
         <Select value={form.platform} onValueChange={(v) => setForm({ ...form, platform: v })}>
           <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
+            <SelectItem value="facebook_marketplace">Facebook Marketplace</SelectItem>
             <SelectItem value="facebook">Facebook Messenger</SelectItem>
             <SelectItem value="whatsapp">WhatsApp</SelectItem>
             <SelectItem value="instagram">Instagram DM</SelectItem>
           </SelectContent>
         </Select>
       </div>
+      {form.bot_type === "posting" && (
+        <div className="space-y-2">
+          <Label>Horário de Postagem</Label>
+          <Input type="time" value={form.schedule_time} onChange={(e) => setForm({ ...form, schedule_time: e.target.value })} />
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>Max por Ciclo</Label>
@@ -409,7 +555,7 @@ const BotForm = ({ initial, onSubmit, loading }: { initial?: BotConfig; onSubmit
         </div>
       </div>
       <div className="flex items-center justify-between">
-        <Label className="cursor-pointer">Modo Seco (não envia mensagens)</Label>
+        <Label className="cursor-pointer">Modo Teste (não executa ações reais)</Label>
         <Switch checked={form.dry_mode} onCheckedChange={(v) => setForm({ ...form, dry_mode: v })} />
       </div>
       <Button type="submit" className="w-full" disabled={loading}>
