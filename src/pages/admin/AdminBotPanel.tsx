@@ -134,7 +134,18 @@ const AdminBotPanel = () => {
       .channel("bot-panel-realtime")
       .on("postgres_changes", { event: "*", schema: "public", table: "bot_configs" }, () => qc.invalidateQueries({ queryKey: ["bot-configs"] }))
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "bot_logs" }, () => { qc.invalidateQueries({ queryKey: ["bot-logs"] }); qc.invalidateQueries({ queryKey: ["bot-configs"] }); })
-      .on("postgres_changes", { event: "*", schema: "public", table: "bot_posting_queue" }, () => qc.invalidateQueries({ queryKey: ["posting-queue"] }))
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "bot_posting_queue" }, (payload) => {
+        qc.invalidateQueries({ queryKey: ["posting-queue"] });
+        const newRow = payload.new as any;
+        const oldRow = payload.old as any;
+        if (oldRow?.status === "pending" && newRow?.status === "posted") {
+          toast.success(`✅ Veículo ${newRow.local_bot_id || ''} publicado com sucesso!`, { duration: 6000 });
+        } else if (oldRow?.status === "pending" && newRow?.status === "error") {
+          toast.error(`❌ Erro ao publicar ${newRow.local_bot_id || ''}: ${newRow.error_msg || 'erro desconhecido'}`, { duration: 8000 });
+        }
+      })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "bot_posting_queue" }, () => qc.invalidateQueries({ queryKey: ["posting-queue"] }))
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "bot_posting_queue" }, () => qc.invalidateQueries({ queryKey: ["posting-queue"] }))
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [qc]);
