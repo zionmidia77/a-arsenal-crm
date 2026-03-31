@@ -5,6 +5,28 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-bot-token",
 };
 
+// In-memory rate limiting (resets on cold start, good enough for edge)
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT_MAX = 100; // max requests per window
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+
+function checkRateLimit(token: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(token);
+
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(token, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return true;
+  }
+
+  if (entry.count >= RATE_LIMIT_MAX) {
+    return false;
+  }
+
+  entry.count++;
+  return true;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -22,31 +44,72 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Rate limiting
+    if (!checkRateLimit(botToken)) {
+      return new Response(JSON.stringify({ error: "Rate limit excedido. Máximo 100 leads/hora." }), {
+        status: 429,
+        headers: { ...corsHeaders, "Content-Type": "application/json", "Retry-After": "3600" },
+      });
+    }
+
     const body = await req.json();
     const { name, phone, email, interest, source, city, budget_range, notes, seller_name } = body;
 
-    if (!name || name.trim().length === 0) {
+    // Validate name
+    if (!name || typeof name !== "string" || name.trim().length === 0) {
       return new Response(JSON.stringify({ error: "Nome é obrigatório" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    if (name.trim().length > 255) {
+      return new Response(JSON.stringify({ error: "Nome muito longo (máx 255 caracteres)" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Sanitize phone (keep only digits and +)
+    const sanitizedPhone = phone ? String(phone).replace(/[^\d+]/g, "").slice(0, 20) : null;
+
     // Create Supabase client with service_role (bypasses RLS)
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
+    // Deduplication by phone — if phone exists, return existing lead
+    if (sanitizedPhone && sanitizedPhone.length >= 8) {
+      const { data: existing } = await supabase
+        .from("clients")
+        .select("id, name, phone, pipeline_stage, created_at")
+        .eq("phone", sanitizedPhone)
+        .limit(1)
+        .single();
+
+      if (existing) {
+        return new Response(JSON.stringify({
+          success: true,
+          duplicate: true,
+          message: `Lead já existe: ${existing.name}`,
+          lead: existing,
+        }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     // Create the lead
     const { data, error } = await supabase.from("clients").insert({
-      name: name.trim(),
-      phone: phone || null,
-      email: email || null,
-      interest: interest || null,
-      source: source || "bot-messenger",
-      city: city || null,
-      budget_range: budget_range || null,
-      notes: notes || null,
+      name: name.trim().slice(0, 255),
+      phone: sanitizedPhone,
+      email: email ? String(email).trim().slice(0, 255) : null,
+      interest: interest ? String(interest).slice(0, 500) : null,
+      source: source ? String(source).slice(0, 50) : "bot-messenger",
+      city: city ? String(city).slice(0, 100) : null,
+      budget_range: budget_range ? String(budget_range).slice(0, 50) : null,
+      notes: notes ? String(notes).slice(0, 1000) : null,
       status: "lead",
       temperature: "warm",
       pipeline_stage: "new",
@@ -83,7 +146,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    return new Response(JSON.stringify({ success: true, lead: data }), {
+    return new Response(JSON.stringify({ success: true, duplicate: false, lead: data }), {
       status: 201,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
