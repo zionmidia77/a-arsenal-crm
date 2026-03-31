@@ -281,6 +281,26 @@ const AdminDashboard = () => {
         )}
       </AnimatePresence>
 
+      {/* 📱 Quick Actions - Mobile Only */}
+      <motion.div variants={fadeUp} className="grid grid-cols-4 gap-2 md:hidden">
+        {[
+          { icon: Users, label: "Novo Lead", color: "text-info", bg: "bg-info/10", action: () => document.querySelector<HTMLButtonElement>('[data-tour="add-lead"] button')?.click() },
+          { icon: Kanban, label: "Pipeline", color: "text-primary", bg: "bg-primary/10", action: () => navigate("/admin/pipeline") },
+          { icon: MessageCircle, label: "Mensagens", color: "text-success", bg: "bg-success/10", action: () => navigate("/admin/messages") },
+          { icon: CalendarCheck, label: "Agenda", color: "text-amber-500", bg: "bg-amber-500/10", action: () => navigate("/admin/calendar") },
+        ].map((item, i) => (
+          <motion.button
+            key={i}
+            whileTap={{ scale: 0.92 }}
+            onClick={item.action}
+            className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl ${item.bg} active:opacity-70 transition-opacity`}
+          >
+            <item.icon className={`w-5 h-5 ${item.color}`} />
+            <span className="text-[10px] font-medium">{item.label}</span>
+          </motion.button>
+        ))}
+      </motion.div>
+
       {/* Stats */}
       <div className="grid grid-cols-2 gap-3">
         {statCards.map((s, i) => (
