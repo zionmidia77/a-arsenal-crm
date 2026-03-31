@@ -5,7 +5,7 @@ import { ChevronLeft } from "lucide-react";
 import {
   Users, Flame, AlertTriangle, TrendingUp, CalendarCheck,
   MessageCircle, Eye, ChevronRight, BarChart3, Target, Trophy, Activity,
-  Cake, X, Gift, FileDown, Loader2
+  Cake, X, Gift, FileDown, Loader2, Kanban
 } from "lucide-react";
 import { fetchMonthlyData, generateMonthlyPDF } from "@/lib/generateMonthlyReport";
 import { toast } from "sonner";
