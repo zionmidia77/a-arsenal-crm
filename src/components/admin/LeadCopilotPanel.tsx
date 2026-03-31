@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bot, Send, Copy, Clipboard, ChevronDown, ChevronUp, Sparkles, Target, AlertTriangle, MessageCircle, Zap, ThermometerSun, Tag, Clock, ImagePlus, X, FileDown } from "lucide-react";
+import { Bot, Send, Copy, Clipboard, ChevronDown, ChevronUp, Sparkles, Target, AlertTriangle, MessageCircle, Zap, ThermometerSun, Tag, Clock, ImagePlus, X, FileDown, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,11 +8,14 @@ import { toast } from "sonner";
 import { useLeadCopilot, useLeadMemory } from "@/hooks/useLeadCopilot";
 import ReactMarkdown from "react-markdown";
 import { generateProposalPdf } from "@/lib/generateProposalPdf";
+import OfflineSalesScripts from "./OfflineSalesScripts";
 
 interface LeadCopilotPanelProps {
   clientId: string;
   clientName: string;
   clientPhone?: string;
+  clientInterest?: string;
+  clientBudget?: string;
   vehiclePhotos?: string[];
 }
 
@@ -31,10 +34,11 @@ const QUICK_COMMANDS = [
   { label: "🔄 Reativação", cmd: "Crie uma estratégia de reativação com 3 mensagens progressivas usando gatilhos de escassez, novidade e prova social." },
 ];
 
-const LeadCopilotPanel = ({ clientId, clientName, clientPhone, vehiclePhotos }: LeadCopilotPanelProps) => {
+const LeadCopilotPanel = ({ clientId, clientName, clientPhone, clientInterest, clientBudget, vehiclePhotos }: LeadCopilotPanelProps) => {
   const copilot = useLeadCopilot(clientId);
   const { data: memory } = useLeadMemory(clientId);
   const [isExporting, setIsExporting] = useState(false);
+  const [copilotMode, setCopilotMode] = useState<"ai" | "scripts">("ai");
   const [input, setInput] = useState("");
   const [showPaste, setShowPaste] = useState(false);
   const [pasteText, setPasteText] = useState("");
@@ -161,6 +165,37 @@ const LeadCopilotPanel = ({ clientId, clientName, clientPhone, vehiclePhotos }: 
             transition={{ duration: 0.3 }}
             className="overflow-hidden"
           >
+            {/* Mode Toggle */}
+            <div className="px-4 pb-3 flex gap-1.5">
+              <button
+                onClick={() => setCopilotMode("ai")}
+                className={`text-[10px] px-3 py-1.5 rounded-full font-medium transition-colors ${
+                  copilotMode === "ai" ? "bg-primary/15 text-primary" : "bg-muted/30 text-muted-foreground hover:bg-muted/50"
+                }`}
+              >
+                <Sparkles className="w-3 h-3 inline mr-1" />AI Copilot
+              </button>
+              <button
+                onClick={() => setCopilotMode("scripts")}
+                className={`text-[10px] px-3 py-1.5 rounded-full font-medium transition-colors ${
+                  copilotMode === "scripts" ? "bg-emerald-500/15 text-emerald-400" : "bg-muted/30 text-muted-foreground hover:bg-muted/50"
+                }`}
+              >
+                <BookOpen className="w-3 h-3 inline mr-1" />Scripts Offline
+              </button>
+            </div>
+
+            {copilotMode === "scripts" ? (
+              <div className="px-4 pb-4">
+                <OfflineSalesScripts
+                  clientName={clientName}
+                  clientPhone={clientPhone}
+                  clientInterest={clientInterest}
+                  clientBudget={clientBudget}
+                />
+              </div>
+            ) : (
+            <>
             {/* Memory Summary Card */}
             {memory && (
               <div className="px-4 pb-3">
@@ -422,6 +457,8 @@ const LeadCopilotPanel = ({ clientId, clientName, clientPhone, vehiclePhotos }: 
                 </Button>
               </div>
             </div>
+            </>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
