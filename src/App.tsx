@@ -30,6 +30,7 @@ const AdminCatalog = lazy(() => import("./pages/admin/AdminCatalog"));
 const AdminSMS = lazy(() => import("./pages/admin/AdminSMS"));
 const MemberArea = lazy(() => import("./pages/MemberArea"));
 const PublicCatalog = lazy(() => import("./pages/PublicCatalog"));
+const ProposalPage = lazy(() => import("./pages/ProposalPage"));
 const Login = lazy(() => import("./pages/auth/Login"));
 const Signup = lazy(() => import("./pages/auth/Signup"));
 const ForgotPassword = lazy(() => import("./pages/auth/ForgotPassword"));
@@ -60,6 +61,7 @@ const App = () => (
                 <Route path="/dashboard" element={<ClientDashboard />} />
                 <Route path="/simulator" element={<Simulator />} />
                 <Route path="/catalogo" element={<PublicCatalog />} />
+                <Route path="/proposta/:id" element={<ProposalPage />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />

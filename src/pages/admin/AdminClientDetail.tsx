@@ -122,10 +122,12 @@ const AdminClientDetail = () => {
 
   const firstName = client.name.split(" ")[0];
 
+  const proposalLink = `${window.location.origin}/proposta/${client.id}`;
+  
   const quickMessages = [
     { label: "1° Contato", msg: `Fala ${firstName}! Aqui é da Arsenal Motors 🏍️ Vi que você tem interesse em ${(client.interest || "motos").toLowerCase()}. Posso te ajudar?` },
     { label: "Follow-up", msg: `E aí ${firstName}! Passando pra ver se você teve tempo de pensar na nossa proposta. Tem alguma dúvida?` },
-    { label: "Proposta", msg: `${firstName}, consegui uma condição especial pra você! Quer que eu te mande os detalhes?` },
+    { label: "📋 Proposta", msg: `${firstName}, preparei sua proposta com todas as condições! Dá uma olhada aqui:\n\n👉 ${proposalLink}\n\nQualquer dúvida é só me chamar! 🏍️` },
     { label: "Reativação", msg: `Fala ${firstName}! Faz um tempo que a gente conversou. Surgiu algo novo que pode te interessar 🔥` },
   ];
 

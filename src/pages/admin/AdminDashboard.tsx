@@ -22,6 +22,8 @@ import ActivityFeed from "@/components/admin/ActivityFeed";
 import LTVDashboard from "@/components/admin/LTVDashboard";
 import SmartAlerts from "@/components/admin/SmartAlerts";
 import AIUsageDashboard from "@/components/admin/AIUsageDashboard";
+import SpeedToLeadCard from "@/components/admin/SpeedToLeadCard";
+import InactivityAlerts from "@/components/admin/InactivityAlerts";
 
 const tempEmoji: Record<string, string> = { hot: "🔥", warm: "🟡", cold: "🔵", frozen: "⚪" };
 const tempBg: Record<string, string> = { hot: "bg-primary/10", warm: "bg-warning/10", cold: "bg-info/10", frozen: "bg-muted" };
@@ -434,6 +436,16 @@ const AdminDashboard = () => {
             ✅ Nada pendente! Aproveite para prospectar novos leads.
           </p>
         )}
+      </motion.div>
+
+      {/* ⏱️ Speed-to-Lead */}
+      <motion.div variants={fadeUp}>
+        <SpeedToLeadCard />
+      </motion.div>
+
+      {/* 🎯 Follow-up por Inatividade */}
+      <motion.div variants={fadeUp}>
+        <InactivityAlerts />
       </motion.div>
 
       {/* 🧠 Smart Alerts */}
