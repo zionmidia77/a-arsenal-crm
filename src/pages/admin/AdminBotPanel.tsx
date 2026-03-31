@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Bot, Plus, Activity, Users, Zap, AlertTriangle, CheckCircle2, XCircle, MessageSquare, RefreshCw, Settings2, Clock, Radio, Send } from "lucide-react";
+import { Bot, Plus, Activity, Users, Zap, AlertTriangle, CheckCircle2, XCircle, MessageSquare, RefreshCw, Settings2, Clock, Radio, Send, Trash2, ListOrdered, CalendarPlus } from "lucide-react";
 import { toast } from "sonner";
 import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -107,6 +107,69 @@ const AdminBotPanel = () => {
   const [editBot, setEditBot] = useState<BotConfig | null>(null);
   const [confirmDeactivate, setConfirmDeactivate] = useState<BotConfig | null>(null);
   const [, setTick] = useState(0);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [scheduleVehicleId, setScheduleVehicleId] = useState("");
+  const [scheduleTime, setScheduleTime] = useState("");
+
+  // Posting queue query
+  const { data: queueItems } = useQuery({
+    queryKey: ["posting-queue"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("bot_posting_queue" as any)
+        .select("*, stock_vehicles(brand, model, year, local_bot_id)")
+        .order("scheduled_for", { ascending: true })
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return data as any[];
+    },
+  });
+
+  // Stock vehicles for schedule modal
+  const { data: stockVehicles } = useQuery({
+    queryKey: ["stock-vehicles-queue"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("stock_vehicles")
+        .select("id, brand, model, year, local_bot_id")
+        .not("local_bot_id", "is", null)
+        .order("brand");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const schedulePosting = useMutation({
+    mutationFn: async ({ vehicleId, scheduledFor }: { vehicleId: string; scheduledFor: string | null }) => {
+      const vehicle = stockVehicles?.find((v) => v.id === vehicleId);
+      if (!vehicle?.local_bot_id) throw new Error("Veículo sem local_bot_id");
+      const { error } = await supabase.from("bot_posting_queue" as any).insert({
+        vehicle_id: vehicleId,
+        local_bot_id: vehicle.local_bot_id,
+        scheduled_for: scheduledFor || new Date().toISOString(),
+      } as any);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["posting-queue"] });
+      setScheduleOpen(false);
+      setScheduleVehicleId("");
+      setScheduleTime("");
+      toast.success("Postagem agendada!");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const removeQueueItem = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("bot_posting_queue" as any).delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["posting-queue"] });
+      toast.success("Removido da fila!");
+    },
+  });
 
   // Tick every 30s to update heartbeat labels
   useEffect(() => {
@@ -114,7 +177,7 @@ const AdminBotPanel = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Realtime subscription for bot_configs AND bot_logs
+  // Realtime subscription for bot_configs, bot_logs AND bot_posting_queue
   useEffect(() => {
     const channel = supabase
       .channel("bot-panel-realtime")
@@ -124,6 +187,9 @@ const AdminBotPanel = () => {
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "bot_logs" }, () => {
         qc.invalidateQueries({ queryKey: ["bot-logs"] });
         qc.invalidateQueries({ queryKey: ["bot-configs"] });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "bot_posting_queue" }, () => {
+        qc.invalidateQueries({ queryKey: ["posting-queue"] });
       })
       .subscribe();
     return () => {
@@ -381,6 +447,124 @@ const AdminBotPanel = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Posting Queue */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base flex items-center gap-2">
+              <ListOrdered className="w-4 h-4 text-primary" />
+              Fila de Postagem
+              <Badge variant="secondary" className="text-xs">
+                {queueItems?.filter((q) => q.status === "pending").length || 0} pendentes
+              </Badge>
+            </CardTitle>
+            <Dialog open={scheduleOpen} onOpenChange={setScheduleOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="gap-1">
+                  <CalendarPlus className="w-3.5 h-3.5" /> Agendar Postagem
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Agendar Postagem</DialogTitle>
+                  <DialogDescription>Selecione o veículo e horário para publicar no Marketplace</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Veículo *</Label>
+                    <Select value={scheduleVehicleId} onValueChange={setScheduleVehicleId}>
+                      <SelectTrigger><SelectValue placeholder="Selecione um veículo" /></SelectTrigger>
+                      <SelectContent>
+                        {stockVehicles?.map((v) => (
+                          <SelectItem key={v.id} value={v.id}>
+                            [{v.local_bot_id}] {v.brand} {v.model} {v.year}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Horário (opcional — vazio = agora)</Label>
+                    <Input
+                      type="datetime-local"
+                      value={scheduleTime}
+                      onChange={(e) => setScheduleTime(e.target.value)}
+                    />
+                  </div>
+                  <Button
+                    className="w-full"
+                    disabled={!scheduleVehicleId || schedulePosting.isPending}
+                    onClick={() => schedulePosting.mutate({
+                      vehicleId: scheduleVehicleId,
+                      scheduledFor: scheduleTime ? new Date(scheduleTime).toISOString() : null,
+                    })}
+                  >
+                    {schedulePosting.isPending ? "Agendando..." : "Agendar"}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <ScrollArea className="h-[250px]">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>ID Bot</TableHead>
+                  <TableHead>Veículo</TableHead>
+                  <TableHead>Agendado</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="w-[60px]"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {!queueItems?.length ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                      <ListOrdered className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                      Fila vazia
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  queueItems.map((item) => {
+                    const sv = item.stock_vehicles;
+                    return (
+                      <TableRow key={item.id} className={item.status === "error" ? "bg-destructive/5" : item.status === "posted" ? "bg-green-500/5" : ""}>
+                        <TableCell className="font-mono text-xs">{item.local_bot_id}</TableCell>
+                        <TableCell className="text-sm">
+                          {sv ? `${sv.brand} ${sv.model} ${sv.year}` : "—"}
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {format(new Date(item.scheduled_for), "dd/MM HH:mm", { locale: ptBR })}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={item.status === "posted" ? "default" : item.status === "error" ? "destructive" : "secondary"} className="text-xs capitalize">
+                            {item.status === "posted" ? "✓ Publicado" : item.status === "error" ? `❌ ${item.error_msg || "Erro"}` : "⏳ Pendente"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {item.status === "pending" && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-destructive"
+                              onClick={() => removeQueueItem.mutate(item.id)}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
+              </TableBody>
+            </Table>
+          </ScrollArea>
+        </CardContent>
+      </Card>
 
       {/* Logs Table */}
       <Card>
