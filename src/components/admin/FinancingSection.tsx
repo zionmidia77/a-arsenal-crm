@@ -80,6 +80,15 @@ const FinancingSection = ({ client }: FinancingSectionProps) => {
   const [previewDoc, setPreviewDoc] = useState<{ key: string; url: string; label: string } | null>(null);
   const [bankProposalUrl, setBankProposalUrl] = useState<string | null>(null);
   const [uploadingBankProposal, setUploadingBankProposal] = useState(false);
+  const [bankProposal, setBankProposal] = useState<{
+    approved_amount?: number;
+    installments?: Record<string, number>; // e.g. {"12": 850, "24": 500, ...}
+    bank_name?: string;
+    notes?: string;
+  }>(() => {
+    const fd = client.funnel_data as any;
+    return fd?.bank_proposal || {};
+  });
   const [editFields, setEditFields] = useState({
     phone: client.phone || "",
     employer: client.employer || "",
@@ -971,14 +980,14 @@ const FinancingSection = ({ client }: FinancingSectionProps) => {
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="glass-card p-4"
+        className="glass-card p-4 space-y-4"
       >
-        <p className="text-sm font-medium mb-3 flex items-center gap-2">
+        <p className="text-sm font-medium flex items-center gap-2">
           <FileCheck className="w-4 h-4 text-primary" /> Proposta do Banco
         </p>
 
         {/* Status buttons */}
-        <div className="flex gap-1.5 mb-3">
+        <div className="flex gap-1.5">
           {[
             { value: "approved", label: "✅ Aprovado", color: "bg-green-500/15 text-green-400 border-green-500/30" },
             { value: "pre_approved", label: "🟡 Pré-Aprovado", color: "bg-amber-500/15 text-amber-400 border-amber-500/30" },
@@ -1003,6 +1012,151 @@ const FinancingSection = ({ client }: FinancingSectionProps) => {
             </Button>
           ))}
         </div>
+
+        {/* Bank details - show when approved or pre_approved */}
+        {(client.financing_status === "approved" || client.financing_status === "pre_approved") && (
+          <div className="space-y-3 bg-secondary/30 rounded-xl p-3">
+            <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+              📋 Dados da resposta do banco
+            </p>
+
+            {/* Bank name */}
+            <div>
+              <label className="text-[10px] text-muted-foreground mb-0.5 block">🏦 Banco / Financeira</label>
+              <Input
+                value={bankProposal.bank_name || ""}
+                onChange={(e) => setBankProposal(prev => ({ ...prev, bank_name: e.target.value }))}
+                placeholder="Ex: Itaú, Bradesco, BV..."
+                className="rounded-xl bg-secondary border-border/50 h-8 text-xs"
+              />
+            </div>
+
+            {/* Approved amount */}
+            <div>
+              <label className="text-[10px] text-muted-foreground mb-0.5 block">💰 Valor liberado</label>
+              <Input
+                type="number"
+                value={bankProposal.approved_amount || ""}
+                onChange={(e) => setBankProposal(prev => ({ ...prev, approved_amount: e.target.value ? parseFloat(e.target.value) : undefined }))}
+                placeholder="Ex: 25000"
+                className="rounded-xl bg-secondary border-border/50 h-8 text-xs"
+              />
+            </div>
+
+            {/* Installment options */}
+            <div>
+              <label className="text-[10px] text-muted-foreground mb-1.5 block">📊 Parcelas disponíveis (valor de cada)</label>
+              <div className="grid grid-cols-5 gap-1.5">
+                {["12", "24", "36", "48", "60"].map((months) => (
+                  <div key={months} className="text-center">
+                    <p className="text-[9px] font-bold text-primary mb-0.5">{months}x</p>
+                    <Input
+                      type="number"
+                      value={bankProposal.installments?.[months] || ""}
+                      onChange={(e) => {
+                        const val = e.target.value ? parseFloat(e.target.value) : undefined;
+                        setBankProposal(prev => ({
+                          ...prev,
+                          installments: { ...(prev.installments || {}), [months]: val },
+                        }));
+                      }}
+                      placeholder="R$"
+                      className="rounded-lg bg-secondary border-border/50 h-7 text-[10px] text-center px-1"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Notes */}
+            <div>
+              <label className="text-[10px] text-muted-foreground mb-0.5 block">📝 Observações da operadora</label>
+              <Input
+                value={bankProposal.notes || ""}
+                onChange={(e) => setBankProposal(prev => ({ ...prev, notes: e.target.value }))}
+                placeholder="Ex: Precisa de avalista, entrada mínima 30%..."
+                className="rounded-xl bg-secondary border-border/50 h-8 text-xs"
+              />
+            </div>
+
+            {/* Save button */}
+            <Button
+              size="sm"
+              className="w-full rounded-xl h-8 text-xs gap-1.5"
+              onClick={() => {
+                const currentFunnelData = (client.funnel_data as any) || {};
+                updateClient.mutate({
+                  id: client.id,
+                  funnel_data: { ...currentFunnelData, bank_proposal: bankProposal },
+                } as any);
+                toast.success("Dados do banco salvos!");
+              }}
+            >
+              <Save className="w-3 h-3" /> Salvar dados do banco
+            </Button>
+
+            {/* Summary of available installments */}
+            {bankProposal.installments && Object.values(bankProposal.installments).some(v => v) && (
+              <div className="bg-primary/5 border border-primary/20 rounded-lg p-2">
+                <p className="text-[10px] font-medium text-primary mb-1">📊 Resumo das parcelas:</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {Object.entries(bankProposal.installments)
+                    .filter(([_, v]) => v)
+                    .sort(([a], [b]) => Number(a) - Number(b))
+                    .map(([months, value]) => (
+                      <span key={months} className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">
+                        {months}x R$ {Number(value).toLocaleString("pt-BR")}
+                      </span>
+                    ))}
+                </div>
+                {bankProposal.approved_amount && (
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    Valor liberado: <span className="font-bold text-foreground">R$ {Number(bankProposal.approved_amount).toLocaleString("pt-BR")}</span>
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Rejected notes */}
+        {client.financing_status === "rejected" && (
+          <div className="space-y-2 bg-destructive/5 rounded-xl p-3 border border-destructive/20">
+            <div>
+              <label className="text-[10px] text-muted-foreground mb-0.5 block">🏦 Banco que recusou</label>
+              <Input
+                value={bankProposal.bank_name || ""}
+                onChange={(e) => setBankProposal(prev => ({ ...prev, bank_name: e.target.value }))}
+                placeholder="Ex: Itaú, Bradesco..."
+                className="rounded-xl bg-secondary border-border/50 h-8 text-xs"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] text-muted-foreground mb-0.5 block">📝 Motivo / Observação</label>
+              <Input
+                value={bankProposal.notes || ""}
+                onChange={(e) => setBankProposal(prev => ({ ...prev, notes: e.target.value }))}
+                placeholder="Ex: Score baixo, restrição no CPF..."
+                className="rounded-xl bg-secondary border-border/50 h-8 text-xs"
+              />
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              className="w-full rounded-xl h-8 text-xs gap-1.5 border-destructive/30"
+              onClick={() => {
+                const currentFunnelData = (client.funnel_data as any) || {};
+                updateClient.mutate({
+                  id: client.id,
+                  funnel_data: { ...currentFunnelData, bank_proposal: bankProposal },
+                } as any);
+                toast.success("Dados salvos!");
+              }}
+            >
+              <Save className="w-3 h-3" /> Salvar
+            </Button>
+          </div>
+        )}
 
         {/* Upload bank proposal */}
         <div className="flex items-center gap-2">
@@ -1065,27 +1219,10 @@ const FinancingSection = ({ client }: FinancingSectionProps) => {
               }}
             >
               {uploadingBankProposal ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
-              Anexar proposta do banco
+              📎 Anexar print/foto da proposta
             </Button>
           )}
         </div>
-
-        {/* Status-specific info */}
-        {client.financing_status === "approved" && (
-          <div className="mt-3 p-2 rounded-lg bg-green-500/10 border border-green-500/30 text-center">
-            <p className="text-xs text-green-400 font-medium">✅ Financiamento aprovado pelo banco!</p>
-          </div>
-        )}
-        {client.financing_status === "pre_approved" && (
-          <div className="mt-3 p-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-center">
-            <p className="text-xs text-amber-400 font-medium">🟡 Pré-aprovado — aguardando confirmação final</p>
-          </div>
-        )}
-        {client.financing_status === "rejected" && (
-          <div className="mt-3 p-2 rounded-lg bg-destructive/10 border border-destructive/30 text-center">
-            <p className="text-xs text-destructive font-medium">❌ Financiamento recusado pelo banco</p>
-          </div>
-        )}
       </motion.div>
 
       {/* Send to WhatsApp */}

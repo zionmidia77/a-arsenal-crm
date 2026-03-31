@@ -129,25 +129,46 @@ const AdminClientDetail = () => {
     { label: "Reativação", msg: `Fala ${firstName}! Faz um tempo que a gente conversou. Surgiu algo novo que pode te interessar 🔥` },
   ];
 
-  // Mensagens específicas por status de financiamento
+  // Dados reais do banco (salvos em funnel_data)
+  const bankProposal = (client.funnel_data as any)?.bank_proposal || {};
+  const bankAmount = bankProposal.approved_amount;
+  const bankInstallments = bankProposal.installments || {};
+  const bankName = bankProposal.bank_name;
+  
+  // Build installment string for messages
+  const installmentOptions = Object.entries(bankInstallments)
+    .filter(([_, v]) => v)
+    .sort(([a], [b]) => Number(a) - Number(b))
+    .map(([months, value]) => `${months}x de R$ ${Number(value).toLocaleString("pt-BR")}`)
+    .join("\n");
+
+  // Mensagens específicas por status de financiamento com valores reais
   const financingMessages: { label: string; msg: string }[] = [];
   
   if (client.financing_status === "approved") {
+    const amountStr = bankAmount ? `R$ ${Number(bankAmount).toLocaleString("pt-BR")}` : "";
     financingMessages.push(
-      { label: "✅ Aprovado!", msg: `${firstName}, ótima notícia! 🎉 Seu financiamento foi APROVADO pelo banco! Quando você pode passar aqui pra gente finalizar a documentação e você sair com sua moto?` },
-      { label: "✅ Detalhes", msg: `Fala ${firstName}! Seu crédito foi liberado! 🔥 Agora é só assinar os documentos. Posso reservar um horário pra você amanhã?` },
-      { label: "✅ Urgência", msg: `${firstName}, seu financiamento tá aprovado e a moto tá reservada pra você! ⚡ Quanto antes fecharmos, melhor — porque temos outros interessados. Bora?` },
+      { label: "✅ Aprovado!", msg: `${firstName}, ótima notícia! 🎉 Seu financiamento foi APROVADO${bankName ? ` pelo ${bankName}` : ""}!${amountStr ? ` Valor liberado: *${amountStr}*` : ""}\n\n${installmentOptions ? `As opções de parcela são:\n${installmentOptions}\n\n` : ""}Quando você pode passar aqui pra gente finalizar?` },
+      { label: "✅ Melhor parcela", msg: (() => {
+        const entries = Object.entries(bankInstallments).filter(([_, v]) => v).sort(([a], [b]) => Number(a) - Number(b));
+        if (entries.length === 0) return `${firstName}, seu crédito foi liberado! 🔥 Posso te mostrar as condições. Qual horário fica bom?`;
+        const shortest = entries[0];
+        const longest = entries[entries.length - 1];
+        return `${firstName}, olha que legal as condições que consegui pra você! 🔥\n\n💰 Parcela mais curta: *${shortest[0]}x de R$ ${Number(shortest[1]).toLocaleString("pt-BR")}*\n💰 Parcela mais longa: *${longest[0]}x de R$ ${Number(longest[1]).toLocaleString("pt-BR")}*\n\nQual se encaixa melhor no seu bolso?`;
+      })() },
+      { label: "✅ Urgência", msg: `${firstName}, seu financiamento tá aprovado e a moto tá reservada pra você! ⚡${installmentOptions ? `\n\nParcelas a partir de *${Object.entries(bankInstallments).filter(([_, v]) => v).sort(([_, a], [__, b]) => Number(a) - Number(b))[0]?.[0] || ""}x de R$ ${Number(Object.entries(bankInstallments).filter(([_, v]) => v).sort(([_, a], [__, b]) => Number(a) - Number(b))[0]?.[1] || 0).toLocaleString("pt-BR")}*` : ""}\n\nTemos outros interessados, bora fechar? 🏍️` },
     );
   } else if (client.financing_status === "pre_approved") {
+    const amountStr = bankAmount ? `R$ ${Number(bankAmount).toLocaleString("pt-BR")}` : "";
     financingMessages.push(
-      { label: "🟡 Pré-Aprovado", msg: `${firstName}, boas notícias! Seu financiamento foi pré-aprovado! 🟡 Falta só confirmar alguns dados pra liberar de vez. Pode me enviar [documento]?` },
-      { label: "🟡 Pendência", msg: `Fala ${firstName}! O banco sinalizou que seu financiamento tá quase aprovado. Pra finalizar, eles precisam de [documento/informação]. Consegue me mandar hoje?` },
-      { label: "🟡 Incentivo", msg: `${firstName}, tá quase lá! 💪 O banco pré-aprovou seu crédito. Assim que eu receber a documentação pendente, a gente fecha. O que falta do seu lado?` },
+      { label: "🟡 Pré-Aprovado", msg: `${firstName}, boas notícias! 🟡 Seu financiamento foi pré-aprovado${bankName ? ` pelo ${bankName}` : ""}!${amountStr ? ` Valor de *${amountStr}*` : ""}\n\n${installmentOptions ? `Opções de parcela:\n${installmentOptions}\n\n` : ""}Falta só confirmar alguns dados pra liberar de vez. Pode me enviar [documento]?` },
+      { label: "🟡 Pendência", msg: `Fala ${firstName}! O ${bankName || "banco"} sinalizou que seu crédito tá quase aprovado.${amountStr ? ` Valor pré-liberado: *${amountStr}*` : ""}\n\nPra finalizar, eles precisam de [documento/informação]. Consegue me mandar hoje?` },
+      { label: "🟡 Incentivo", msg: `${firstName}, tá quase lá! 💪 O ${bankName || "banco"} pré-aprovou seu crédito.${installmentOptions ? `\n\nParcelas previstas:\n${installmentOptions}` : ""}\n\nAssim que eu receber a documentação pendente, a gente fecha! O que falta do seu lado?` },
     );
   } else if (client.financing_status === "rejected") {
     financingMessages.push(
-      { label: "❌ Alternativas", msg: `${firstName}, infelizmente o banco não liberou dessa vez 😔 Mas calma, temos outras opções! Posso tentar em outro banco, ou a gente pode ajustar a entrada. Bora conversar?` },
-      { label: "❌ Outro banco", msg: `Fala ${firstName}! Sobre o financiamento, o primeiro banco não aprovou, mas isso é normal. Já enviei pra outro parceiro. Te aviso assim que tiver retorno! 💪` },
+      { label: "❌ Alternativas", msg: `${firstName}, infelizmente o ${bankName || "banco"} não liberou dessa vez 😔${bankProposal.notes ? ` (${bankProposal.notes})` : ""}\n\nMas calma, temos outras opções! Posso tentar em outro banco, ou a gente pode ajustar a entrada. Bora conversar?` },
+      { label: "❌ Outro banco", msg: `Fala ${firstName}! Sobre o financiamento, o ${bankName || "primeiro banco"} não aprovou, mas isso é normal. Já enviei pra outro parceiro. Te aviso assim que tiver retorno! 💪` },
       { label: "❌ Consórcio", msg: `${firstName}, o financiamento tradicional não saiu, mas tenho uma alternativa boa: consórcio com carta contemplada! Parcelas menores e sem juros. Quer que eu simule?` },
     );
   }
