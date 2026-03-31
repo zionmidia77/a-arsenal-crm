@@ -76,10 +76,21 @@ const AdminDashboard = () => {
   const { data: overdueTasks } = useOverdueTasks();
   const { data: pendingTasks } = useAllPendingTasks();
   const { data: chartData } = useLeadsChartData();
+  const overdueLeadCount = useOverdueLeads();
   const [dismissedBirthday, setDismissedBirthday] = useState(false);
+  const [dismissedUrgent, setDismissedUrgent] = useState(false);
   const [generatingPDF, setGeneratingPDF] = useState(false);
   const [reportMonth, setReportMonth] = useState(new Date().getMonth() + 1);
   const [reportYear, setReportYear] = useState(new Date().getFullYear());
+
+  // Auto-redirect to queue if there are overdue leads (first visit only)
+  const [hasRedirected, setHasRedirected] = useState(false);
+  useEffect(() => {
+    if (!hasRedirected && overdueLeadCount >= 3) {
+      setHasRedirected(true);
+      navigate("/admin/queue");
+    }
+  }, [overdueLeadCount, hasRedirected, navigate]);
   const [showMonthPicker, setShowMonthPicker] = useState(false);
 
   const MONTH_NAMES_SHORT = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
