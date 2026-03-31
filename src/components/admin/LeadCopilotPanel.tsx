@@ -165,6 +165,37 @@ const LeadCopilotPanel = ({ clientId, clientName, clientPhone, clientInterest, c
             transition={{ duration: 0.3 }}
             className="overflow-hidden"
           >
+            {/* Mode Toggle */}
+            <div className="px-4 pb-3 flex gap-1.5">
+              <button
+                onClick={() => setCopilotMode("ai")}
+                className={`text-[10px] px-3 py-1.5 rounded-full font-medium transition-colors ${
+                  copilotMode === "ai" ? "bg-primary/15 text-primary" : "bg-muted/30 text-muted-foreground hover:bg-muted/50"
+                }`}
+              >
+                <Sparkles className="w-3 h-3 inline mr-1" />AI Copilot
+              </button>
+              <button
+                onClick={() => setCopilotMode("scripts")}
+                className={`text-[10px] px-3 py-1.5 rounded-full font-medium transition-colors ${
+                  copilotMode === "scripts" ? "bg-emerald-500/15 text-emerald-400" : "bg-muted/30 text-muted-foreground hover:bg-muted/50"
+                }`}
+              >
+                <BookOpen className="w-3 h-3 inline mr-1" />Scripts Offline
+              </button>
+            </div>
+
+            {copilotMode === "scripts" ? (
+              <div className="px-4 pb-4">
+                <OfflineSalesScripts
+                  clientName={clientName}
+                  clientPhone={clientPhone}
+                  clientInterest={clientInterest}
+                  clientBudget={clientBudget}
+                />
+              </div>
+            ) : (
+            <>
             {/* Memory Summary Card */}
             {memory && (
               <div className="px-4 pb-3">
