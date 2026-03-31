@@ -89,6 +89,8 @@ const AdminClientDetail = () => {
   const [scheduleDate, setScheduleDate] = useState(new Date().toISOString().split("T")[0]);
   const [scheduleReason, setScheduleReason] = useState("");
   const [copilotOpen, setCopilotOpen] = useState(true);
+  const [showLossDialog, setShowLossDialog] = useState(false);
+  const [lossReason, setLossReason] = useState("");
   const isMobile = useIsMobile();
 
   if (isLoading) {
