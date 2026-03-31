@@ -88,6 +88,8 @@ const App = () => (
                   <Route path="simulations" element={<AdminSimulations />} />
                   <Route path="catalog" element={<AdminCatalog />} />
                   <Route path="sms" element={<AdminSMS />} />
+                  <Route path="queue" element={<AdminSmartQueue />} />
+                  <Route path="briefing" element={<AdminDailyBriefing />} />
                   <Route path="client/:id" element={<AdminClientDetail />} />
                 </Route>
                 <Route
