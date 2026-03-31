@@ -8,6 +8,8 @@ import {
   CheckCircle2, MessageCircle, Users
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import PageTour from "@/components/admin/PageTour";
+import { Sun, BarChart3, Zap as ZapIcon } from "lucide-react";
 
 const fadeUp = { initial: { opacity: 0, y: 12 }, animate: { opacity: 1, y: 0 } };
 
