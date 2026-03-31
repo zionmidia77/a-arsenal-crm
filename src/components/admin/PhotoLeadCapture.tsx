@@ -448,8 +448,9 @@ const PhotoLeadCapture = () => {
       }}
     >
       <DialogTrigger asChild>
-        <Button size="sm" variant="outline" className="rounded-full gap-1.5 h-9 text-xs">
-          <Camera className="w-3.5 h-3.5" /> Captura por foto
+        <Button size="icon" variant="outline" className="rounded-full h-9 w-9 md:w-auto md:h-9 md:px-3 md:gap-1.5" title="Captura por foto">
+          <Camera className="w-4 h-4 md:w-3.5 md:h-3.5" />
+          <span className="hidden md:inline text-xs">Captura por foto</span>
         </Button>
       </DialogTrigger>
 
