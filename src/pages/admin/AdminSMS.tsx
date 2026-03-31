@@ -344,7 +344,7 @@ const AdminSMS = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3" data-tour="sms-stats">
         <StatCard icon={Send} label="Enviados Hoje" value={stats?.today || 0} color="bg-primary/10 text-primary" />
         <StatCard icon={CheckCircle2} label="Taxa de Sucesso" value={`${stats?.successRate || 0}%`} color="bg-green-500/10 text-green-500" />
         <StatCard icon={TrendingUp} label="Semana" value={stats?.week || 0} color="bg-blue-500/10 text-blue-500" />
