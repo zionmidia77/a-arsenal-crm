@@ -75,8 +75,15 @@ const AdminCatalog = () => {
     return Math.floor((Date.now() - new Date(purchaseDate).getTime()) / (1000 * 60 * 60 * 24));
   };
 
+  const catalogTourSteps = [
+    { target: '[data-tour="catalog-tabs"]', title: "Abas do catálogo", description: "Alterne entre visualizar o estoque de veículos e o dashboard financeiro.", icon: PackageIcon, position: "bottom" as const },
+    { target: '[data-tour="catalog-add"]', title: "Cadastrar veículo", description: "Adicione veículos manualmente ou via foto do documento com reconhecimento automático (OCR).", icon: CameraIcon, position: "bottom" as const },
+    { target: '[data-tour="catalog-stats"]', title: "Resumo do estoque", description: "Veja total de veículos, disponíveis, valor investido e valor de venda.", icon: DollarIcon, position: "bottom" as const },
+  ];
+
   return (
     <div className="space-y-6">
+      <PageTour tourKey="catalog" steps={catalogTourSteps} />
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground">🏍️ Catálogo de Estoque</h1>
