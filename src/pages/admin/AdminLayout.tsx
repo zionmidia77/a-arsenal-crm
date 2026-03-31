@@ -19,6 +19,8 @@ import { toast } from "sonner";
 
 const navItems = [
   { to: "/admin", icon: LayoutDashboard, label: "Dashboard" },
+  { to: "/admin/briefing", icon: Sun, label: "Briefing do Dia" },
+  { to: "/admin/queue", icon: Zap, label: "Fila Inteligente" },
   { to: "/admin/leads", icon: Users, label: "Leads" },
   { to: "/admin/pipeline", icon: Kanban, label: "Pipeline" },
   { to: "/admin/tasks", icon: ListChecks, label: "Tarefas" },
