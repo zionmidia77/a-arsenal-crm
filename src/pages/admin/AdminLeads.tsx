@@ -437,9 +437,6 @@ const AdminLeads = () => {
                 <Button size="sm" variant="ghost" className="h-7 w-7 p-0 rounded-full" onClick={(e) => { e.stopPropagation(); navigate(`/admin/client/${client.id}`); }}>
                   <Eye className="w-3.5 h-3.5" />
                 </Button>
-                <Button size="sm" variant="ghost" className="h-7 w-7 p-0 rounded-full text-destructive hover:text-destructive hover:bg-destructive/10" onClick={(e) => { e.stopPropagation(); setDeleteTarget({ id: client.id, name: client.name }); }}>
-                  <Trash2 className="w-3.5 h-3.5" />
-                </Button>
               </div>
             </motion.div>
           ))}
