@@ -552,6 +552,9 @@ const AdminLeads = () => {
                 <Button size="sm" variant="ghost" className="rounded-full text-xs gap-1 h-8 px-2" onClick={() => copyMsg(client)}>
                   {copiedId === client.id ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                 </Button>
+                <Button size="sm" variant="ghost" className="rounded-full text-xs gap-1 h-8 px-2 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => setDeleteTarget({ id: client.id, name: client.name })}>
+                  <Trash2 className="w-3.5 h-3.5" />
+                </Button>
               </div>
             </motion.div>
           ))}
