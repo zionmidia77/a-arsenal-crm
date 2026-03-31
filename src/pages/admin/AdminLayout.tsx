@@ -41,6 +41,7 @@ const AdminLayout = () => {
   const location = useLocation();
   const isClientDetail = location.pathname.includes("/admin/client/");
   const { signOut, user } = useAuth();
+  const overdueLeadCount = useOverdueLeads();
   useRealtimeLeads();
 
   const handleNewLead = useCallback(() => {
