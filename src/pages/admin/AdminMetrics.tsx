@@ -195,8 +195,7 @@ const AdminMetrics = () => {
           >
             <FileDown className="w-3.5 h-3.5" /> Exportar PDF
           </Button>
-          <div data-tour="metrics-period">
-          <Tabs value={period} onValueChange={v => setPeriod(v as any)}>
+          <Tabs value={period} onValueChange={v => setPeriod(v as any)} data-tour="metrics-period">
             <TabsList className="h-8">
               <TabsTrigger value="7" className="text-xs h-6 px-2">7d</TabsTrigger>
               <TabsTrigger value="14" className="text-xs h-6 px-2">14d</TabsTrigger>

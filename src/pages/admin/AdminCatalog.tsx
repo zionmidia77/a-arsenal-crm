@@ -90,8 +90,7 @@ const AdminCatalog = () => {
           <p className="text-muted-foreground">Gerencie seu estoque com fotos, custos e FIPE</p>
         </div>
         <div className="flex gap-2" data-tour="catalog-add">
-          <div data-tour="catalog-tabs">
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <Tabs value={activeTab} onValueChange={setActiveTab} data-tour="catalog-tabs">
             <TabsList>
               <TabsTrigger value="catalog">📋 Estoque</TabsTrigger>
               <TabsTrigger value="dashboard">📊 Financeiro</TabsTrigger>
