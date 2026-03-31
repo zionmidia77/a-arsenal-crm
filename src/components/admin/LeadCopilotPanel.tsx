@@ -38,6 +38,7 @@ const LeadCopilotPanel = ({ clientId, clientName, clientPhone, clientInterest, c
   const copilot = useLeadCopilot(clientId);
   const { data: memory } = useLeadMemory(clientId);
   const [isExporting, setIsExporting] = useState(false);
+  const [copilotMode, setCopilotMode] = useState<"ai" | "scripts">("ai");
   const [input, setInput] = useState("");
   const [showPaste, setShowPaste] = useState(false);
   const [pasteText, setPasteText] = useState("");
