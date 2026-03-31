@@ -13,18 +13,17 @@ const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-// Gather full lead context
+// Gather lead context — optimized: fewer rows, selected columns only
 async function getLeadContext(clientId: string) {
-  const [clientRes, interactionsRes, vehiclesRes, memoryRes, timelineRes, simulationsRes, tagsRes, conversationsRes, stockRes] = await Promise.all([
-    supabase.from("clients").select("*").eq("id", clientId).single(),
-    supabase.from("interactions").select("*").eq("client_id", clientId).order("created_at", { ascending: false }).limit(30),
-    supabase.from("vehicles").select("*").eq("client_id", clientId),
-    supabase.from("lead_memory").select("*").eq("client_id", clientId).maybeSingle(),
-    supabase.from("lead_timeline_events").select("*").eq("client_id", clientId).order("created_at", { ascending: false }).limit(50),
-    supabase.from("financing_simulations").select("*").eq("client_id", clientId).order("created_at", { ascending: false }).limit(5),
-    supabase.from("client_tag_assignments").select("*, client_tags(*)").eq("client_id", clientId),
-    supabase.from("chat_conversations").select("*").eq("client_id", clientId).order("created_at", { ascending: false }).limit(3),
-    supabase.from("stock_vehicles").select("*").eq("status", "available").order("created_at", { ascending: false }).limit(20),
+  const [clientRes, interactionsRes, vehiclesRes, memoryRes, timelineRes, simulationsRes, tagsRes, stockRes] = await Promise.all([
+    supabase.from("clients").select("id,name,phone,email,city,interest,budget_range,payment_type,salary,gross_income,employer,profession,has_trade_in,has_down_payment,down_payment_amount,has_clean_credit,lead_score,arsenal_score,temperature,pipeline_stage,financing_status,source,notes,created_at,last_contact_at").eq("id", clientId).single(),
+    supabase.from("interactions").select("created_at,type,content").eq("client_id", clientId).order("created_at", { ascending: false }).limit(10),
+    supabase.from("vehicles").select("brand,model,year,status,is_financed,installments_paid,installments_total").eq("client_id", clientId),
+    supabase.from("lead_memory").select("summary,objections,interests,behavior_patterns,decisions,ai_tags,recommended_action,last_analyzed_at").eq("client_id", clientId).maybeSingle(),
+    supabase.from("lead_timeline_events").select("created_at,event_type,content").eq("client_id", clientId).order("created_at", { ascending: false }).limit(15),
+    supabase.from("financing_simulations").select("moto_value,down_payment,months,monthly_payment,status").eq("client_id", clientId).order("created_at", { ascending: false }).limit(3),
+    supabase.from("client_tag_assignments").select("client_tags(name)").eq("client_id", clientId),
+    supabase.from("stock_vehicles").select("brand,model,year,color,km,price,fipe_value,condition").eq("status", "available").order("created_at", { ascending: false }).limit(10),
   ]);
 
   return {
@@ -35,7 +34,6 @@ async function getLeadContext(clientId: string) {
     timeline: timelineRes.data || [],
     simulations: simulationsRes.data || [],
     tags: (tagsRes.data || []).map((t: any) => t.client_tags?.name).filter(Boolean),
-    recentConversations: conversationsRes.data || [],
     stockVehicles: stockRes.data || [],
   };
 }
