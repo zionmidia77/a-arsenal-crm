@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { MessageCircle, Copy, Check, Search, Eye, SortAsc, SortDesc, Filter, CalendarIcon, X, GitMerge, CheckSquare, Phone, CalendarPlus, ChevronDown, FileDown, LayoutList, LayoutGrid } from "lucide-react";
+import { MessageCircle, Copy, Check, Search, Eye, SortAsc, SortDesc, Filter, CalendarIcon, X, GitMerge, CheckSquare, Phone, CalendarPlus, ChevronDown, FileDown, LayoutList, LayoutGrid, Trash2 } from "lucide-react";
 import { useClients, useTags, useMessageTemplates } from "@/hooks/useSupabase";
 import { useNavigate } from "react-router-dom";
 import { LeadCardSkeleton } from "@/components/admin/SkeletonLoaders";
@@ -12,10 +12,11 @@ import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
 import MergeLeadsDialog from "@/components/admin/MergeLeadsDialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 
 const tempStyles: Record<string, string> = {
