@@ -88,7 +88,7 @@ const AdminDailyBriefing = () => {
       </motion.div>
 
       {/* Urgency indicator */}
-      <motion.div variants={fadeUp} className={cn(
+      <motion.div variants={fadeUp} data-tour="briefing-urgency" className={cn(
         "rounded-2xl border-2 p-5 text-center space-y-2",
         urgencyScore > 60 ? "border-destructive bg-destructive/5" :
         urgencyScore > 30 ? "border-warning bg-warning/5" :
