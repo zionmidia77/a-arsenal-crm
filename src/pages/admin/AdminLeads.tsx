@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { MessageCircle, Copy, Check, Search, Eye, SortAsc, SortDesc, Filter, CalendarIcon, X, GitMerge, CheckSquare, Phone, CalendarPlus, ChevronDown, FileDown, LayoutList, LayoutGrid } from "lucide-react";
+import { MessageCircle, Copy, Check, Search, Eye, SortAsc, SortDesc, Filter, CalendarIcon, X, GitMerge, CheckSquare, Phone, CalendarPlus, ChevronDown, FileDown, LayoutList, LayoutGrid, Trash2 } from "lucide-react";
 import { useClients, useTags, useMessageTemplates } from "@/hooks/useSupabase";
 import { useNavigate } from "react-router-dom";
 import { LeadCardSkeleton } from "@/components/admin/SkeletonLoaders";
@@ -12,10 +12,11 @@ import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
 import MergeLeadsDialog from "@/components/admin/MergeLeadsDialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 
 const tempStyles: Record<string, string> = {
@@ -70,7 +71,9 @@ const AdminLeads = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [mergeOpen, setMergeOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"expanded" | "compact">("expanded");
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const { data: clients, isLoading } = useClients(
     filter !== "all" ? { temperature: filter } : undefined
@@ -162,6 +165,15 @@ const AdminLeads = () => {
   const exitSelectMode = () => {
     setSelectMode(false);
     setSelectedIds(new Set());
+  };
+
+  const handleDeleteLead = async () => {
+    if (!deleteTarget) return;
+    const { error } = await supabase.from("clients").delete().eq("id", deleteTarget.id);
+    if (error) { toast.error("Erro ao excluir lead"); return; }
+    toast.success(`Lead "${deleteTarget.name}" excluído!`);
+    setDeleteTarget(null);
+    queryClient.invalidateQueries({ queryKey: ["clients"] });
   };
 
   const selectedLeads = (clients || []).filter((c) => selectedIds.has(c.id));
@@ -433,6 +445,9 @@ const AdminLeads = () => {
                 <Button size="sm" variant="ghost" className="h-7 w-7 p-0 rounded-full" onClick={(e) => { e.stopPropagation(); navigate(`/admin/client/${client.id}`); }}>
                   <Eye className="w-3.5 h-3.5" />
                 </Button>
+                <Button size="sm" variant="ghost" className="h-7 w-7 p-0 rounded-full text-destructive hover:text-destructive hover:bg-destructive/10" onClick={(e) => { e.stopPropagation(); setDeleteTarget({ id: client.id, name: client.name }); }}>
+                  <Trash2 className="w-3.5 h-3.5" />
+                </Button>
               </div>
             </motion.div>
           ))}
@@ -537,6 +552,9 @@ const AdminLeads = () => {
                 <Button size="sm" variant="ghost" className="rounded-full text-xs gap-1 h-8 px-2" onClick={() => copyMsg(client)}>
                   {copiedId === client.id ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                 </Button>
+                <Button size="sm" variant="ghost" className="rounded-full text-xs gap-1 h-8 px-2 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => setDeleteTarget({ id: client.id, name: client.name })}>
+                  <Trash2 className="w-3.5 h-3.5" />
+                </Button>
               </div>
             </motion.div>
           ))}
@@ -552,6 +570,23 @@ const AdminLeads = () => {
         selectedLeads={selectedLeads}
         onComplete={exitSelectMode}
       />
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir lead</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir <strong>{deleteTarget?.name}</strong>? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteLead} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </motion.div>
   );
 };
