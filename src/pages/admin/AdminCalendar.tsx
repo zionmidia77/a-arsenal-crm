@@ -5,6 +5,8 @@ import { ChevronLeft, ChevronRight, MessageCircle, Check } from "lucide-react";
 import { useAllPendingTasks, useUpdateTask } from "@/hooks/useSupabase";
 import { useNavigate } from "react-router-dom";
 import { CalendarSkeleton } from "@/components/admin/SkeletonLoaders";
+import PageTour from "@/components/admin/PageTour";
+import { CalendarDays, Eye, ListChecks } from "lucide-react";
 
 const DAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 const MONTHS = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
