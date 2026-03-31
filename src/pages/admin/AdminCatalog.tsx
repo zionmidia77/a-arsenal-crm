@@ -22,6 +22,8 @@ import VehicleDocOCR from "@/components/catalog/VehicleDocOCR";
 import StockFinancialDashboard from "@/components/catalog/StockFinancialDashboard";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import PageTour from "@/components/admin/PageTour";
+import { Package as PackageIcon, Camera as CameraIcon, DollarSign as DollarIcon, Search as SearchIcon2 } from "lucide-react";
 
 const AdminCatalog = () => {
   const [activeTab, setActiveTab] = useState("catalog");
