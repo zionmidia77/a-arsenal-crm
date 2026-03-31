@@ -141,16 +141,27 @@ export type Database = {
           address_number: string | null
           address_state: string | null
           address_street: string | null
+          approval_probability: number | null
           arsenal_score: number
           birth_city: string | null
           birthdate: string | null
           budget_range: string | null
+          churn_risk: number | null
           city: string | null
+          client_promise: string | null
+          client_promise_due: string | null
+          client_promise_status:
+            | Database["public"]["Enums"]["client_promise_status"]
+            | null
           cnh_category: string | null
           cnh_number: string | null
           cpf: string | null
           created_at: string
+          credit_status: Database["public"]["Enums"]["credit_status"] | null
+          deal_type: Database["public"]["Enums"]["deal_type"] | null
+          deal_value: number | null
           dependents: number | null
+          docs_status: Database["public"]["Enums"]["docs_status"] | null
           down_payment_amount: number | null
           education_level: string | null
           email: string | null
@@ -160,6 +171,7 @@ export type Database = {
           employer_cnpj: string | null
           employer_phone: string | null
           employment_time: string | null
+          estimated_margin: number | null
           father_name: string | null
           financing_docs: Json | null
           financing_status: string | null
@@ -174,14 +186,23 @@ export type Database = {
           interest: string | null
           last_contact_at: string | null
           lead_score: number
+          loss_notes: string | null
+          loss_reason: Database["public"]["Enums"]["loss_reason"] | null
           marital_status: string | null
           mother_name: string | null
           name: string
+          next_action: string | null
+          next_action_due: string | null
+          next_action_type:
+            | Database["public"]["Enums"]["next_action_type"]
+            | null
           notes: string | null
+          objection_type: Database["public"]["Enums"]["objection_type"] | null
           payment_type: string | null
           phone: string | null
           pipeline_stage: Database["public"]["Enums"]["pipeline_stage"]
           position: string | null
+          priority_score: number | null
           profession: string | null
           reference_name: string | null
           reference_name_2: string | null
@@ -207,16 +228,27 @@ export type Database = {
           address_number?: string | null
           address_state?: string | null
           address_street?: string | null
+          approval_probability?: number | null
           arsenal_score?: number
           birth_city?: string | null
           birthdate?: string | null
           budget_range?: string | null
+          churn_risk?: number | null
           city?: string | null
+          client_promise?: string | null
+          client_promise_due?: string | null
+          client_promise_status?:
+            | Database["public"]["Enums"]["client_promise_status"]
+            | null
           cnh_category?: string | null
           cnh_number?: string | null
           cpf?: string | null
           created_at?: string
+          credit_status?: Database["public"]["Enums"]["credit_status"] | null
+          deal_type?: Database["public"]["Enums"]["deal_type"] | null
+          deal_value?: number | null
           dependents?: number | null
+          docs_status?: Database["public"]["Enums"]["docs_status"] | null
           down_payment_amount?: number | null
           education_level?: string | null
           email?: string | null
@@ -226,6 +258,7 @@ export type Database = {
           employer_cnpj?: string | null
           employer_phone?: string | null
           employment_time?: string | null
+          estimated_margin?: number | null
           father_name?: string | null
           financing_docs?: Json | null
           financing_status?: string | null
@@ -240,14 +273,23 @@ export type Database = {
           interest?: string | null
           last_contact_at?: string | null
           lead_score?: number
+          loss_notes?: string | null
+          loss_reason?: Database["public"]["Enums"]["loss_reason"] | null
           marital_status?: string | null
           mother_name?: string | null
           name: string
+          next_action?: string | null
+          next_action_due?: string | null
+          next_action_type?:
+            | Database["public"]["Enums"]["next_action_type"]
+            | null
           notes?: string | null
+          objection_type?: Database["public"]["Enums"]["objection_type"] | null
           payment_type?: string | null
           phone?: string | null
           pipeline_stage?: Database["public"]["Enums"]["pipeline_stage"]
           position?: string | null
+          priority_score?: number | null
           profession?: string | null
           reference_name?: string | null
           reference_name_2?: string | null
@@ -273,16 +315,27 @@ export type Database = {
           address_number?: string | null
           address_state?: string | null
           address_street?: string | null
+          approval_probability?: number | null
           arsenal_score?: number
           birth_city?: string | null
           birthdate?: string | null
           budget_range?: string | null
+          churn_risk?: number | null
           city?: string | null
+          client_promise?: string | null
+          client_promise_due?: string | null
+          client_promise_status?:
+            | Database["public"]["Enums"]["client_promise_status"]
+            | null
           cnh_category?: string | null
           cnh_number?: string | null
           cpf?: string | null
           created_at?: string
+          credit_status?: Database["public"]["Enums"]["credit_status"] | null
+          deal_type?: Database["public"]["Enums"]["deal_type"] | null
+          deal_value?: number | null
           dependents?: number | null
+          docs_status?: Database["public"]["Enums"]["docs_status"] | null
           down_payment_amount?: number | null
           education_level?: string | null
           email?: string | null
@@ -292,6 +345,7 @@ export type Database = {
           employer_cnpj?: string | null
           employer_phone?: string | null
           employment_time?: string | null
+          estimated_margin?: number | null
           father_name?: string | null
           financing_docs?: Json | null
           financing_status?: string | null
@@ -306,14 +360,23 @@ export type Database = {
           interest?: string | null
           last_contact_at?: string | null
           lead_score?: number
+          loss_notes?: string | null
+          loss_reason?: Database["public"]["Enums"]["loss_reason"] | null
           marital_status?: string | null
           mother_name?: string | null
           name?: string
+          next_action?: string | null
+          next_action_due?: string | null
+          next_action_type?:
+            | Database["public"]["Enums"]["next_action_type"]
+            | null
           notes?: string | null
+          objection_type?: Database["public"]["Enums"]["objection_type"] | null
           payment_type?: string | null
           phone?: string | null
           pipeline_stage?: Database["public"]["Enums"]["pipeline_stage"]
           position?: string | null
+          priority_score?: number | null
           profession?: string | null
           reference_name?: string | null
           reference_name_2?: string | null
@@ -1311,7 +1374,15 @@ export type Database = {
       auto_escalate_stale_leads: { Args: never; Returns: undefined }
       auto_revision_reminders: { Args: never; Returns: undefined }
       auto_upgrade_alerts: { Args: never; Returns: undefined }
+      calculate_churn_risk: {
+        Args: { client_id_param: string }
+        Returns: number
+      }
       calculate_lead_score: {
+        Args: { client_id_param: string }
+        Returns: number
+      }
+      calculate_priority_score: {
         Args: { client_id_param: string }
         Returns: number
       }
@@ -1325,7 +1396,21 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
+      client_promise_status: "pending" | "overdue" | "fulfilled" | "broken"
       client_status: "lead" | "active" | "inactive" | "lost"
+      credit_status:
+        | "pending"
+        | "submitted"
+        | "approved"
+        | "denied"
+        | "renegotiating"
+      deal_type:
+        | "cash"
+        | "financing_down"
+        | "financing_full"
+        | "trade_financing"
+        | "trade_only"
+      docs_status: "incomplete" | "collecting" | "complete"
       interaction_type:
         | "whatsapp"
         | "call"
@@ -1334,6 +1419,42 @@ export type Database = {
         | "email"
         | "sms"
       lead_temperature: "hot" | "warm" | "cold" | "frozen"
+      loss_reason:
+        | "price_too_high"
+        | "no_down_payment"
+        | "installment_too_high"
+        | "credit_denied"
+        | "bought_elsewhere"
+        | "better_offer"
+        | "trade_value_disagreement"
+        | "ghosted"
+        | "postponed"
+        | "changed_mind"
+        | "vehicle_sold"
+        | "slow_response"
+        | "other"
+      next_action_type:
+        | "call"
+        | "send_proposal"
+        | "send_message"
+        | "collect_docs"
+        | "follow_up"
+        | "schedule_visit"
+        | "submit_credit"
+        | "wait_client"
+        | "close_deal"
+        | "send_content"
+      objection_type:
+        | "price"
+        | "down_payment"
+        | "installment"
+        | "credit"
+        | "trust"
+        | "comparison"
+        | "trade_undervalued"
+        | "indecision"
+        | "timing"
+        | "none"
       opportunity_type:
         | "trade"
         | "refinance"
@@ -1357,6 +1478,11 @@ export type Database = {
         | "approved"
         | "rejected"
         | "reactivation"
+        | "first_contact"
+        | "qualification"
+        | "proposal"
+        | "negotiation"
+        | "closing"
       task_type: "opportunity" | "relationship" | "value" | "follow_up"
       timeline_event_type:
         | "message_sent"
@@ -1499,9 +1625,64 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
+      client_promise_status: ["pending", "overdue", "fulfilled", "broken"],
       client_status: ["lead", "active", "inactive", "lost"],
+      credit_status: [
+        "pending",
+        "submitted",
+        "approved",
+        "denied",
+        "renegotiating",
+      ],
+      deal_type: [
+        "cash",
+        "financing_down",
+        "financing_full",
+        "trade_financing",
+        "trade_only",
+      ],
+      docs_status: ["incomplete", "collecting", "complete"],
       interaction_type: ["whatsapp", "call", "visit", "system", "email", "sms"],
       lead_temperature: ["hot", "warm", "cold", "frozen"],
+      loss_reason: [
+        "price_too_high",
+        "no_down_payment",
+        "installment_too_high",
+        "credit_denied",
+        "bought_elsewhere",
+        "better_offer",
+        "trade_value_disagreement",
+        "ghosted",
+        "postponed",
+        "changed_mind",
+        "vehicle_sold",
+        "slow_response",
+        "other",
+      ],
+      next_action_type: [
+        "call",
+        "send_proposal",
+        "send_message",
+        "collect_docs",
+        "follow_up",
+        "schedule_visit",
+        "submit_credit",
+        "wait_client",
+        "close_deal",
+        "send_content",
+      ],
+      objection_type: [
+        "price",
+        "down_payment",
+        "installment",
+        "credit",
+        "trust",
+        "comparison",
+        "trade_undervalued",
+        "indecision",
+        "timing",
+        "none",
+      ],
       opportunity_type: [
         "trade",
         "refinance",
@@ -1526,6 +1707,11 @@ export const Constants = {
         "approved",
         "rejected",
         "reactivation",
+        "first_contact",
+        "qualification",
+        "proposal",
+        "negotiation",
+        "closing",
       ],
       task_type: ["opportunity", "relationship", "value", "follow_up"],
       timeline_event_type: [
