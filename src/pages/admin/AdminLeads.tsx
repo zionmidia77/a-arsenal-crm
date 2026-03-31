@@ -7,6 +7,8 @@ import { MessageCircle, Copy, Check, Search, Eye, SortAsc, SortDesc, Filter, Cal
 import { useClients, useTags, useMessageTemplates } from "@/hooks/useSupabase";
 import { useNavigate } from "react-router-dom";
 import { LeadCardSkeleton } from "@/components/admin/SkeletonLoaders";
+import PageTour from "@/components/admin/PageTour";
+import { Users as UsersIcon, Search as SearchIcon, Filter as FilterIcon, FileDown as FileDownIcon, LayoutGrid as LayoutGridIcon } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
