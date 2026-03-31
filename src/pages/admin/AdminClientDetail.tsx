@@ -129,6 +129,29 @@ const AdminClientDetail = () => {
     { label: "Reativação", msg: `Fala ${firstName}! Faz um tempo que a gente conversou. Surgiu algo novo que pode te interessar 🔥` },
   ];
 
+  // Mensagens específicas por status de financiamento
+  const financingMessages: { label: string; msg: string }[] = [];
+  
+  if (client.financing_status === "approved") {
+    financingMessages.push(
+      { label: "✅ Aprovado!", msg: `${firstName}, ótima notícia! 🎉 Seu financiamento foi APROVADO pelo banco! Quando você pode passar aqui pra gente finalizar a documentação e você sair com sua moto?` },
+      { label: "✅ Detalhes", msg: `Fala ${firstName}! Seu crédito foi liberado! 🔥 Agora é só assinar os documentos. Posso reservar um horário pra você amanhã?` },
+      { label: "✅ Urgência", msg: `${firstName}, seu financiamento tá aprovado e a moto tá reservada pra você! ⚡ Quanto antes fecharmos, melhor — porque temos outros interessados. Bora?` },
+    );
+  } else if (client.financing_status === "pre_approved") {
+    financingMessages.push(
+      { label: "🟡 Pré-Aprovado", msg: `${firstName}, boas notícias! Seu financiamento foi pré-aprovado! 🟡 Falta só confirmar alguns dados pra liberar de vez. Pode me enviar [documento]?` },
+      { label: "🟡 Pendência", msg: `Fala ${firstName}! O banco sinalizou que seu financiamento tá quase aprovado. Pra finalizar, eles precisam de [documento/informação]. Consegue me mandar hoje?` },
+      { label: "🟡 Incentivo", msg: `${firstName}, tá quase lá! 💪 O banco pré-aprovou seu crédito. Assim que eu receber a documentação pendente, a gente fecha. O que falta do seu lado?` },
+    );
+  } else if (client.financing_status === "rejected") {
+    financingMessages.push(
+      { label: "❌ Alternativas", msg: `${firstName}, infelizmente o banco não liberou dessa vez 😔 Mas calma, temos outras opções! Posso tentar em outro banco, ou a gente pode ajustar a entrada. Bora conversar?` },
+      { label: "❌ Outro banco", msg: `Fala ${firstName}! Sobre o financiamento, o primeiro banco não aprovou, mas isso é normal. Já enviei pra outro parceiro. Te aviso assim que tiver retorno! 💪` },
+      { label: "❌ Consórcio", msg: `${firstName}, o financiamento tradicional não saiu, mas tenho uma alternativa boa: consórcio com carta contemplada! Parcelas menores e sem juros. Quer que eu simule?` },
+    );
+  }
+
   const sendWhatsApp = (msg: string) => {
     if (!client.phone) { toast.error("Cliente sem telefone"); return; }
     const phone = client.phone.replace(/\D/g, "");
@@ -290,6 +313,42 @@ const AdminClientDetail = () => {
             </div>
           ))}
         </div>
+
+        {/* Financing-specific messages */}
+        {financingMessages.length > 0 && (
+          <>
+            <div className="flex items-center gap-2 mt-4 mb-3">
+              <div className="h-px flex-1 bg-border/50" />
+              <p className="text-[10px] font-medium text-primary uppercase tracking-wider">
+                {client.financing_status === "approved" ? "✅ Financiamento Aprovado" :
+                 client.financing_status === "pre_approved" ? "🟡 Pré-Aprovado" :
+                 "❌ Financiamento Recusado"}
+              </p>
+              <div className="h-px flex-1 bg-border/50" />
+            </div>
+            <div className="grid grid-cols-1 gap-2">
+              {financingMessages.map((qm, i) => (
+                <div key={`fin-${i}`} className={cn(
+                  "rounded-xl p-3 space-y-2 border",
+                  client.financing_status === "approved" ? "bg-green-500/5 border-green-500/20" :
+                  client.financing_status === "pre_approved" ? "bg-amber-500/5 border-amber-500/20" :
+                  "bg-destructive/5 border-destructive/20"
+                )}>
+                  <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">{qm.label}</p>
+                  <p className="text-xs text-foreground/70">{qm.msg}</p>
+                  <div className="flex gap-1.5">
+                    <Button size="sm" className="h-7 rounded-full text-[10px] gap-1 flex-1" onClick={() => sendWhatsApp(qm.msg)}>
+                      <MessageCircle className="w-2.5 h-2.5" /> Enviar
+                    </Button>
+                    <Button size="sm" variant="outline" className="h-7 rounded-full text-[10px] gap-1" onClick={() => copyMsg(qm.msg)}>
+                      <Copy className="w-2.5 h-2.5" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </motion.div>
 
       {/* Schedule Follow-up */}
