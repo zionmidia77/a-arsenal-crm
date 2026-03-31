@@ -33,6 +33,7 @@ const navItems = [
   { to: "/admin/simulations", icon: Calculator, label: "Simulações" },
   { to: "/admin/catalog", icon: Package, label: "Catálogo" },
   { to: "/admin/sms", icon: Smartphone, label: "SMS Marketing" },
+  { to: "/admin/bots", icon: Bot, label: "Painel de Bots" },
 ];
 
 const AdminLayout = () => {

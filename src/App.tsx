@@ -91,6 +91,7 @@ const App = () => (
                   <Route path="sms" element={<AdminSMS />} />
                   <Route path="queue" element={<AdminSmartQueue />} />
                   <Route path="briefing" element={<AdminDailyBriefing />} />
+                  <Route path="bots" element={<AdminBotPanel />} />
                   <Route path="client/:id" element={<AdminClientDetail />} />
                 </Route>
                 <Route
