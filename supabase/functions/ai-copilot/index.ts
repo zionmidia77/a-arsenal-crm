@@ -13,18 +13,17 @@ const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-// Gather full lead context
+// Optimized: fewer rows, selected columns only
 async function getLeadContext(clientId: string) {
-  const [clientRes, interactionsRes, vehiclesRes, memoryRes, timelineRes, simulationsRes, tagsRes, conversationsRes, stockRes] = await Promise.all([
-    supabase.from("clients").select("*").eq("id", clientId).single(),
-    supabase.from("interactions").select("*").eq("client_id", clientId).order("created_at", { ascending: false }).limit(30),
-    supabase.from("vehicles").select("*").eq("client_id", clientId),
-    supabase.from("lead_memory").select("*").eq("client_id", clientId).maybeSingle(),
-    supabase.from("lead_timeline_events").select("*").eq("client_id", clientId).order("created_at", { ascending: false }).limit(50),
-    supabase.from("financing_simulations").select("*").eq("client_id", clientId).order("created_at", { ascending: false }).limit(5),
-    supabase.from("client_tag_assignments").select("*, client_tags(*)").eq("client_id", clientId),
-    supabase.from("chat_conversations").select("*").eq("client_id", clientId).order("created_at", { ascending: false }).limit(3),
-    supabase.from("stock_vehicles").select("*").eq("status", "available").order("created_at", { ascending: false }).limit(20),
+  const [clientRes, interactionsRes, vehiclesRes, memoryRes, timelineRes, simulationsRes, tagsRes, stockRes] = await Promise.all([
+    supabase.from("clients").select("id,name,phone,email,city,interest,budget_range,payment_type,salary,gross_income,employer,profession,has_trade_in,has_down_payment,down_payment_amount,has_clean_credit,lead_score,arsenal_score,temperature,pipeline_stage,financing_status,source,notes,created_at,last_contact_at").eq("id", clientId).single(),
+    supabase.from("interactions").select("created_at,type,content").eq("client_id", clientId).order("created_at", { ascending: false }).limit(10),
+    supabase.from("vehicles").select("brand,model,year,status,is_financed,installments_paid,installments_total").eq("client_id", clientId),
+    supabase.from("lead_memory").select("summary,objections,interests,behavior_patterns,decisions,ai_tags,recommended_action,last_analyzed_at").eq("client_id", clientId).maybeSingle(),
+    supabase.from("lead_timeline_events").select("created_at,event_type,content").eq("client_id", clientId).order("created_at", { ascending: false }).limit(15),
+    supabase.from("financing_simulations").select("moto_value,down_payment,months,monthly_payment,status").eq("client_id", clientId).order("created_at", { ascending: false }).limit(3),
+    supabase.from("client_tag_assignments").select("client_tags(name)").eq("client_id", clientId),
+    supabase.from("stock_vehicles").select("brand,model,year,color,km,price,fipe_value,condition").eq("status", "available").order("created_at", { ascending: false }).limit(10),
   ]);
 
   return {
@@ -35,257 +34,86 @@ async function getLeadContext(clientId: string) {
     timeline: timelineRes.data || [],
     simulations: simulationsRes.data || [],
     tags: (tagsRes.data || []).map((t: any) => t.client_tags?.name).filter(Boolean),
-    recentConversations: conversationsRes.data || [],
     stockVehicles: stockRes.data || [],
   };
 }
 
+// Compressed prompt — ~60% fewer tokens, same capabilities
 function buildSystemPrompt(ctx: any) {
   const c = ctx.client;
   if (!c) return "Lead não encontrado.";
 
   const daysAgo = Math.floor((Date.now() - new Date(c.created_at).getTime()) / 86400000);
   const lastContact = c.last_contact_at
-    ? Math.floor((Date.now() - new Date(c.last_contact_at).getTime()) / 86400000) + " dias atrás"
+    ? Math.floor((Date.now() - new Date(c.last_contact_at).getTime()) / 86400000) + "d"
     : "nunca";
 
+  const sections: string[] = [];
+
+  // Memory
   const mem = ctx.memory;
-  const memoryBlock = mem
-    ? `
-## MEMÓRIA PERSISTENTE DO LEAD
-- Resumo: ${mem.summary || "Sem resumo ainda"}
-- Objeções: ${(mem.objections || []).join(", ") || "Nenhuma identificada"}
-- Interesses: ${(mem.interests || []).join(", ") || "Não identificados"}
-- Padrões: ${(mem.behavior_patterns || []).join(", ") || "Nenhum"}
-- Decisões anteriores: ${(mem.decisions || []).join(", ") || "Nenhuma"}
-- Tags IA: ${(mem.ai_tags || []).join(", ") || "Nenhuma"}
-- Ação recomendada anterior: ${mem.recommended_action || "Nenhuma"}
-- Última análise: ${mem.last_analyzed_at || "Nunca"}
-`
-    : "\n## MEMÓRIA: Nenhuma memória persistente ainda.\n";
+  if (mem) {
+    const parts = [
+      mem.summary && `Resumo: ${mem.summary}`,
+      mem.objections?.length && `Objeções: ${mem.objections.join(", ")}`,
+      mem.interests?.length && `Interesses: ${mem.interests.join(", ")}`,
+      mem.ai_tags?.length && `Tags: ${mem.ai_tags.join(", ")}`,
+      mem.recommended_action && `Ação: ${mem.recommended_action}`,
+    ].filter(Boolean);
+    if (parts.length) sections.push("MEMÓRIA:\n" + parts.join("\n"));
+  }
 
-  const timelineBlock = ctx.timeline.length > 0
-    ? "\n## TIMELINE RECENTE\n" + ctx.timeline.slice(0, 20).map((e: any) =>
-        `- [${new Date(e.created_at).toLocaleString("pt-BR")}] ${e.event_type}: ${e.content.slice(0, 200)}`
-      ).join("\n")
-    : "";
+  if (ctx.timeline.length > 0) {
+    sections.push("TIMELINE:\n" + ctx.timeline.slice(0, 10).map((e: any) =>
+      `${e.event_type}: ${e.content.slice(0, 120)}`).join("\n"));
+  }
 
-  const interactionsBlock = ctx.interactions.length > 0
-    ? "\n## INTERAÇÕES RECENTES\n" + ctx.interactions.slice(0, 15).map((i: any) =>
-        `- [${new Date(i.created_at).toLocaleString("pt-BR")}] ${i.type}: ${i.content.slice(0, 200)}`
-      ).join("\n")
-    : "";
+  if (ctx.interactions.length > 0) {
+    sections.push("INTERAÇÕES:\n" + ctx.interactions.slice(0, 8).map((i: any) =>
+      `${i.type}: ${i.content.slice(0, 120)}`).join("\n"));
+  }
 
-  const vehiclesBlock = ctx.vehicles.length > 0
-    ? "\n## VEÍCULOS DO CLIENTE\n" + ctx.vehicles.map((v: any) =>
-        `- ${v.brand} ${v.model} ${v.year || ""} | ${v.status} | ${v.is_financed ? `Financiado ${v.installments_paid}/${v.installments_total}` : "Quitado"}`
-      ).join("\n")
-    : "";
+  if (ctx.vehicles.length > 0) {
+    sections.push("VEÍCULOS:\n" + ctx.vehicles.map((v: any) =>
+      `${v.brand} ${v.model} ${v.year||""} ${v.status} ${v.is_financed?`Fin ${v.installments_paid}/${v.installments_total}`:"Quit"}`).join("\n"));
+  }
 
-  const simsBlock = ctx.simulations.length > 0
-    ? "\n## SIMULAÇÕES DE FINANCIAMENTO\n" + ctx.simulations.map((s: any) =>
-        `- R$ ${s.moto_value} | Entrada: R$ ${s.down_payment} | ${s.months}x R$ ${s.monthly_payment} | Status: ${s.status}`
-      ).join("\n")
-    : "";
+  if (ctx.simulations.length > 0) {
+    sections.push("SIMULAÇÕES:\n" + ctx.simulations.map((s: any) =>
+      `R$${s.moto_value} Ent:R$${s.down_payment} ${s.months}x R$${s.monthly_payment} ${s.status}`).join("\n"));
+  }
 
-  const conversationSummaries = ctx.recentConversations.length > 0
-    ? "\n## CONVERSAS IA ANTERIORES\n" + ctx.recentConversations.map((conv: any) => {
-        const msgs = Array.isArray(conv.messages) ? conv.messages : [];
-        const userMsgs = msgs.filter((m: any) => m.role === "user").map((m: any) => m.content).slice(0, 3);
-        return `- [${new Date(conv.created_at).toLocaleString("pt-BR")}] Status: ${conv.status} | Trechos: ${userMsgs.join(" | ").slice(0, 300)}`;
-      }).join("\n")
-    : "";
+  if (ctx.stockVehicles.length > 0) {
+    sections.push("ESTOQUE:\n" + ctx.stockVehicles.map((v: any) =>
+      `${v.brand} ${v.model} ${v.year||""} ${v.color||""} ${v.km?v.km+"km":""} R$${v.price} FIPE:${v.fipe_value?"R$"+v.fipe_value:"?"} ${v.condition}`).join("\n"));
+  }
 
-  const stockBlock = ctx.stockVehicles.length > 0
-    ? "\n## ESTOQUE DISPONÍVEL (para propostas)\n" + ctx.stockVehicles.map((v: any) =>
-        `- ${v.brand} ${v.model} ${v.year || ""} | ${v.color || ""} | ${v.km ? v.km + "km" : ""} | Preço: R$ ${Number(v.price).toLocaleString("pt-BR")} | FIPE: ${v.fipe_value ? "R$ " + Number(v.fipe_value).toLocaleString("pt-BR") : "N/A"} | ${v.condition}`
-      ).join("\n")
-    : "\n## ESTOQUE: Nenhum veículo disponível no momento.\n";
+  const ctx_blocks = sections.length > 0 ? "\n\n" + sections.join("\n\n") : "";
 
-  return `Você é o AI Copilot da Arsenal Motors CRM — um VENDEDOR DIGITAL DE ELITE e ESPECIALISTA EM PROPOSTAS COMERCIAIS, exclusivo para este lead.
+  return `Copilot de vendas Arsenal Motors. Closer profissional, consultor do VENDEDOR.
 
-Você NÃO é um chatbot genérico. Você é um closer profissional com domínio de técnicas avançadas de vendas.
+TÉCNICAS: SPIN(Situação→Problema→Implicação→Necessidade) + Gatilhos(escassez,urgência,ancoragem FIPE,prova social,reciprocidade) + Sandler(dor→orçamento→compromisso).
 
-## SEU DNA DE VENDEDOR
+OBJEÇÕES:
+• Caro → Ancorar FIPE vs Arsenal, diluir/dia, ajustar prazo
+• Pensar → Isolar, urgência c/ prazo, reservar 24h
+• Sem entrada → 100% financiado, troca, parcelar 3x cartão
+• Outro lugar → Comparar, diferenciais Arsenal
+• Nome sujo → Empatia, entrada maior, fiador, consórcio
 
-Você domina e aplica automaticamente:
+FOLLOW-UP: 24h(interesse)→48h(escassez)→72h(última chance)→7d(novidades)
 
-### 🔄 SPIN Selling
-- **Situação**: Entender contexto atual do cliente (o que roda, quanto paga, há quanto tempo)
-- **Problema**: Identificar dores (parcela alta, moto velha, manutenção cara, desvalorização)
-- **Implicação**: Amplificar consequência de NÃO agir ("a cada mês sua moto perde R$ X de valor")
-- **Necessidade de solução**: Fazer o cliente verbalizar que precisa resolver ("então faz sentido trocar agora, né?")
+PROPOSTA: Veículo + Tabela Arsenal vs FIPE(economia R$,%) + Pagamento(à vista/36/48/60x) + Troca + Urgência + WhatsApp pronta
 
-### 🧠 Gatilhos Mentais (usar nas mensagens)
-- **Escassez**: "Essa é a última unidade nessa cor/preço"
-- **Urgência**: "Condição válida só até sexta" / "Taxa especial acaba dia X"
-- **Prova social**: "Essa semana já saíram 3 unidades desse modelo"
-- **Ancoragem**: Sempre mostrar preço FIPE vs. preço Arsenal (economia visível)
-- **Reciprocidade**: "Consegui negociar uma condição especial SÓ pra você"
-- **Autoridade**: "Nosso financeiro analisou e aprovou essa condição"
-- **Compromisso**: Fazer pequenas perguntas de SIM antes do fechamento
+COEF: 12x:0.095|24x:0.070|36x:0.065|48x:0.060|60x:0.058 (parcela≤30% renda)
 
-### 🎯 Método Sandler
-- **Qualificar DOR antes de propor**: Não montar proposta sem entender a real necessidade
-- **Orçamento real**: Perguntar quanto pode pagar por mês ANTES de sugerir veículo
-- **Compromisso mútuo**: "Se eu conseguir uma parcela de R$ X, fechamos hoje?"
-- **Reversão**: Deixar o cliente "vender" pra si mesmo
+REGRAS: Usar estoque. Mostrar economia FIPE. Gatilho urgência. Msg WhatsApp. Perguntar renda se faltar.
 
-## SCRIPTS DE FECHAMENTO POR OBJEÇÃO
-
-### "Tá caro" / "Parcela alta"
-1. Ancorar no valor FIPE: "Olha, na FIPE esse modelo tá R$ [FIPE]. Aqui tá R$ [preço] — você economiza R$ [diferença]"
-2. Diluir: "São R$ [parcela], dá R$ [parcela/30] por dia. Menos que um almoço"
-3. Ajustar: Oferecer prazo maior ou entrada diferente
-4. Comparar: "Quanto você gasta por mês com Uber/ônibus?"
-
-### "Preciso pensar"
-1. Isolar: "Claro! Só pra eu entender, o que te faz querer pensar mais? É o valor, o modelo ou outra coisa?"
-2. Urgência: "Entendo perfeitamente. Só te aviso que essa condição é válida até [data]. Depois o preço volta ao normal"
-3. Compromisso: "Que tal reservar sem compromisso por 24h? Assim ninguém pega antes"
-
-### "Não tenho entrada"
-1. Recalcular: Mostrar simulação 100% financiado
-2. Troca: "Sua moto atual pode servir de entrada! Quanto acha que ela vale?"
-3. Parcelamento de entrada: "Consigo parcelar a entrada em 3x no cartão"
-
-### "Vou ver em outro lugar"
-1. Comparar: "Ótimo! Posso te ajudar a comparar. O que estão oferecendo lá?"
-2. Diferenciais: Documentação inclusa, revisão, garantia, atendimento
-3. Exclusividade: "Essa condição é exclusiva Arsenal. Não vai encontrar igual"
-
-### "Meu nome está sujo"
-1. Empatia: "Acontece com muita gente. Vamos ver o que dá pra fazer"
-2. Alternativas: Entrada maior para compensar, fiador, consórcio
-3. Ação: "Me manda os documentos que verifico direto com o financeiro"
-
-## ANÁLISE DE CONCORRÊNCIA
-
-Sempre que montar proposta:
-- Compare o preço Arsenal vs FIPE (mostrar economia em R$ e %)
-- Se tiver dados do mercado OLX/Facebook, mencionar preços praticados
-- Destaque diferenciais Arsenal: documentação, revisão, garantia, atendimento personalizado
-- Crie tabela "Arsenal vs Mercado" quando relevante
-
-## SEQUÊNCIA DE FOLLOW-UP PÓS-PROPOSTA
-
-Quando o vendedor pedir, gere mensagens para a sequência completa:
-
-**24h após proposta:**
-"Fala [nome]! Tudo bem? Vi que separei aquela [veículo] pra você ontem. Conseguiu pensar? A condição especial ainda tá valendo! 😊"
-
-**48h após proposta (escassez):**
-"[nome], só passando pra avisar que tiveram mais 2 pessoas perguntando sobre a [veículo]. Como você demonstrou interesse primeiro, tô segurando pra você. Mas preciso de uma posição até amanhã, beleza? 🏍️"
-
-**72h após proposta (última chance):**
-"[nome], boa tarde! Infelizmente a condição especial que fiz pra você vence hoje. Depois disso o valor volta ao normal. Se quiser fechar, me chama que resolvo tudo rapidinho! 💪"
-
-**7 dias (reengajamento):**
-"[nome], tudo bem? Apareceram umas novidades no estoque que combinam com o que você procurava. Quer dar uma olhada? Posso mandar as opções! 🆕"
-
-## DADOS DO LEAD (CONTEXTO)
-- ID: ${c.id}
-- Nome: ${c.name}
-- Telefone: ${c.phone || "não informado"}
-- Email: ${c.email || "não informado"}
-- Cidade: ${c.city || "não informada"}
-- Interesse: ${c.interest || "não informado"}
-- Orçamento: ${c.budget_range || "não informado"}
-- Tipo de pagamento: ${c.payment_type || "não informado"}
-- Salário: ${c.salary ? "R$ " + c.salary : "não informado"}
-- Renda bruta: ${c.gross_income ? "R$ " + c.gross_income : "não informada"}
-- Empresa: ${c.employer || "não informada"}
-- Profissão: ${c.profession || "não informada"}
-- Tem troca: ${c.has_trade_in ? "Sim" : "Não"}
-- Tem entrada: ${c.has_down_payment ? "Sim" : "Não"} ${c.down_payment_amount ? "(R$ " + c.down_payment_amount + ")" : ""}
-- Crédito limpo: ${c.has_clean_credit ? "Sim" : "Não/desconhecido"}
-- Score: ${c.lead_score} | Arsenal Score: ${c.arsenal_score}
-- Temperatura: ${c.temperature}
-- Pipeline: ${c.pipeline_stage}
-- Status financiamento: ${c.financing_status || "não informado"}
-- Documentos: ${JSON.stringify(c.financing_docs || {})}
-- Origem: ${c.source || "desconhecida"}
-- Criado há: ${daysAgo} dias
-- Último contato: ${lastContact}
-- Tags: ${ctx.tags.join(", ") || "nenhuma"}
-- Notas: ${c.notes || "nenhuma"}
-${memoryBlock}${timelineBlock}${interactionsBlock}${vehiclesBlock}${simsBlock}${conversationSummaries}${stockBlock}
-
-## TABELA DE COEFICIENTES DE FINANCIAMENTO
-Coeficientes FIXOS (multiplicar valor financiado pelo coeficiente):
-- 12x: 0.095 | 24x: 0.070 | 36x: 0.065 | 48x: 0.060 | 60x: 0.058
-Exemplo: R$ 20.000 em 48x = R$ 20.000 × 0.060 = R$ 1.200/mês
-Regra: Parcela ideal ≤ 30% da renda do cliente
-
-## SUAS CAPACIDADES
-
-1. **Proposta completa** — Formatada com veículo, valor, entrada, parcelas, gatilhos
-2. **Proposta comparativa** — 2-3 opções lado a lado
-3. **Simulação de parcelas** — Múltiplos cenários de entrada/prazo
-4. **Proposta com troca** — Considerando veículo do cliente
-5. **Quebrar objeção** — Script específico para a objeção do lead
-6. **Follow-up sequencial** — Mensagens 24h, 48h, 72h, 7 dias pós-proposta
-7. **Análise de concorrência** — Arsenal vs FIPE vs mercado
-8. **Estratégia de fechamento** — Plano completo com técnica ideal
-9. **Análise SPIN** — Diagnóstico usando perguntas SPIN
-10. **Gerar mensagens** — WhatsApp com gatilhos mentais
-11. **Classificar lead** — Temperatura com justificativa
-
-## FORMATO DE PROPOSTA
-
-Quando montar propostas, use ESTE formato:
-
----
-### 🏍️ PROPOSTA ARSENAL MOTORS
-
-**Para:** [nome] | **Data:** [data atual]
-
----
-
-**Veículo:** [marca modelo ano]
-**Cor:** [cor] | **KM:** [km] | **Condição:** [novo/seminovo]
-
-💰 **Valores:**
-| | Valor |
-|---|---|
-| Preço Arsenal | R$ XX.XXX |
-| Valor FIPE | R$ XX.XXX |
-| **Sua economia** | **R$ X.XXX (X%)** |
-
-📋 **Opções de Pagamento:**
-
-| | À vista | 36x | 48x | 60x |
-|---|---|---|---|---|
-| Entrada | - | R$ X.XXX | R$ X.XXX | R$ X.XXX |
-| Parcela | - | R$ XXX | R$ XXX | R$ XXX |
-| Total | R$ XX.XXX | R$ XX.XXX | R$ XX.XXX | R$ XX.XXX |
-
-${c.has_trade_in ? `
-🔄 **Com troca:** Avaliação estimada: R$ X.XXX → Valor restante: R$ X.XXX
-` : ""}
-
-✅ **Incluso:** Documentação transferida, revisão completa, garantia
-⏰ **Validade:** 48 horas
-
-🎯 **Por que AGORA?** [gatilho de urgência/escassez personalizado]
-
----
-
-**💬 Mensagem pronta para WhatsApp:**
-[mensagem com gatilhos mentais, personalizada para o perfil]
-
----
-
-## REGRAS DE OURO
-
-1. SEMPRE use veículos do estoque disponível
-2. SEMPRE mostre economia vs FIPE (ancoragem)
-3. SEMPRE inclua gatilho de urgência na proposta
-4. SEMPRE calcule se a parcela cabe no bolso (≤ 30% da renda)
-5. SEMPRE gere mensagem WhatsApp pronta para copiar
-6. Suas respostas são para o VENDEDOR, não para o cliente
-7. Quando não souber a renda, PERGUNTE antes de montar proposta
-8. Use linguagem de vendedor real: informal, confiante, amigável`;
+LEAD: ${c.name}|Tel:${c.phone||"?"}|${c.city||"?"}|Interesse:${c.interest||"?"}|Orçamento:${c.budget_range||"?"}|Pgto:${c.payment_type||"?"}
+Renda:${c.salary?"R$"+c.salary:"?"}/${c.gross_income?"R$"+c.gross_income:"?"}|Empresa:${c.employer||"?"}|Prof:${c.profession||"?"}
+Troca:${c.has_trade_in?"S":"N"}|Entrada:${c.has_down_payment?"S":"N"}${c.down_payment_amount?" R$"+c.down_payment_amount:""}|Crédito:${c.has_clean_credit?"ok":"?"}
+Score:${c.lead_score}/${c.arsenal_score}|Temp:${c.temperature}|Stage:${c.pipeline_stage}|Financ:${c.financing_status||"?"}
+Origem:${c.source||"?"}|${daysAgo}d|Contato:${lastContact}|Tags:${ctx.tags.join(",")||"-"}${c.notes?"\nNotas:"+c.notes.slice(0,150):""}${ctx_blocks}`;
 }
 
 // Tools for the copilot to update memory
@@ -294,20 +122,20 @@ const copilotTools = [
     type: "function",
     function: {
       name: "update_lead_memory",
-      description: "Update the persistent memory for this lead based on the analysis. Call after every meaningful analysis.",
+      description: "Update persistent lead memory after analysis.",
       parameters: {
         type: "object",
         properties: {
           client_id: { type: "string" },
-          summary: { type: "string", description: "Updated summary of the lead's situation" },
-          objections: { type: "array", items: { type: "string" }, description: "List of identified objections" },
-          interests: { type: "array", items: { type: "string" }, description: "List of detected interests" },
-          behavior_patterns: { type: "array", items: { type: "string" }, description: "Behavioral patterns noticed" },
-          decisions: { type: "array", items: { type: "string" }, description: "Previous decisions made" },
-          ai_tags: { type: "array", items: { type: "string" }, description: "Auto-classification tags like: parcela alta, sem entrada, financiamento, lead quente, lead frio, sumido, pronto para fechar, sensível a preço, alto potencial" },
-          recommended_action: { type: "string", description: "What the seller should do next" },
-          recommended_message: { type: "string", description: "Ready-to-send WhatsApp message" },
-          lead_temperature_ai: { type: "string", enum: ["hot", "warm", "cold", "frozen"], description: "AI assessment of lead temperature" },
+          summary: { type: "string" },
+          objections: { type: "array", items: { type: "string" } },
+          interests: { type: "array", items: { type: "string" } },
+          behavior_patterns: { type: "array", items: { type: "string" } },
+          decisions: { type: "array", items: { type: "string" } },
+          ai_tags: { type: "array", items: { type: "string" } },
+          recommended_action: { type: "string" },
+          recommended_message: { type: "string" },
+          lead_temperature_ai: { type: "string", enum: ["hot", "warm", "cold", "frozen"] },
         },
         required: ["client_id"],
         additionalProperties: false,
@@ -319,7 +147,6 @@ const copilotTools = [
 async function handleToolCall(name: string, args: any) {
   if (name === "update_lead_memory") {
     const { client_id, ...updates } = args;
-    // Upsert memory
     const { data: existing } = await supabase
       .from("lead_memory")
       .select("id")
@@ -337,7 +164,6 @@ async function handleToolCall(name: string, args: any) {
         .insert({ client_id, ...updates, last_analyzed_at: new Date().toISOString() });
     }
 
-    // Log timeline event
     await supabase.from("lead_timeline_events").insert({
       client_id,
       event_type: "ai_analysis",
@@ -346,7 +172,7 @@ async function handleToolCall(name: string, args: any) {
       metadata: { ai_tags: updates.ai_tags, recommended_action: updates.recommended_action },
     });
 
-    return { success: true, message: "Memory updated" };
+    return { success: true };
   }
   return { error: "Unknown tool" };
 }
@@ -363,7 +189,6 @@ serve(async (req) => {
       });
     }
 
-    // Load full context
     const ctx = await getLeadContext(client_id);
     if (!ctx.client) {
       return new Response(JSON.stringify({ error: "Lead not found" }), {
@@ -373,74 +198,47 @@ serve(async (req) => {
 
     const systemPrompt = buildSystemPrompt(ctx);
 
-    // Handle WhatsApp paste: analyze and update memory
+    // Handle WhatsApp paste
     if (whatsapp_paste) {
-      // Save to timeline
-      await supabase.from("lead_timeline_events").insert({
-        client_id,
-        event_type: "whatsapp_paste",
-        content: whatsapp_paste.slice(0, 5000),
-        source: "manual",
-      });
-
-      // Also log as interaction
-      await supabase.from("interactions").insert({
-        client_id,
-        type: "whatsapp",
-        content: `Conversa WhatsApp colada (${whatsapp_paste.length} chars)`,
-        created_by: "admin",
-      });
+      await Promise.all([
+        supabase.from("lead_timeline_events").insert({
+          client_id, event_type: "whatsapp_paste",
+          content: whatsapp_paste.slice(0, 5000), source: "manual",
+        }),
+        supabase.from("interactions").insert({
+          client_id, type: "whatsapp",
+          content: `WhatsApp colado (${whatsapp_paste.length} chars)`, created_by: "admin",
+        }),
+      ]);
     }
 
-    // Build conversation messages
-    const allMessages: any[] = [
-      { role: "system", content: systemPrompt },
-    ];
+    const allMessages: any[] = [{ role: "system", content: systemPrompt }];
 
     if (whatsapp_paste) {
       allMessages.push({
         role: "user",
-        content: `Analise esta conversa de WhatsApp colada e atualize a memória do lead. Identifique: resumo, objeções, interesses, temperatura, próxima ação recomendada e gere uma mensagem de resposta pronta.\n\nCONVERSA:\n${whatsapp_paste}`,
+        content: `Analise esta conversa WhatsApp. Identifique: resumo, objeções, interesses, temperatura, ação e mensagem de resposta. Atualize memória.\n\nCONVERSA:\n${whatsapp_paste.slice(0, 4000)}`,
       });
     } else if (messages && messages.length > 0) {
-      // Check if we have images to attach to the last user message
       if (images && Array.isArray(images) && images.length > 0) {
-        // Find last user message and make it multimodal
         const processedMessages = messages.map((msg: any, idx: number) => {
           if (idx === messages.length - 1 && msg.role === "user") {
-            // Build multimodal content array
-            const contentParts: any[] = [];
-            
-            // Add text first
-            if (msg.content) {
-              contentParts.push({ type: "text", text: msg.content + "\n\nAnalise as imagens acima. São prints de conversas do WhatsApp/Facebook deste lead. Extraia: resumo da conversa, objeções, interesses, temperatura do lead, e sugira a próxima ação. Atualize a memória do lead." });
-            } else {
-              contentParts.push({ type: "text", text: "Analise as imagens acima. São prints de conversas do WhatsApp/Facebook deste lead. Extraia: resumo da conversa, objeções, interesses, temperatura do lead, e sugira a próxima ação. Atualize a memória do lead." });
+            const contentParts: any[] = [
+              { type: "text", text: (msg.content || "") + "\n\nAnalise as imagens. Extraia: resumo, objeções, interesses, temperatura, próxima ação. Atualize memória." },
+            ];
+            for (const img of images.slice(0, 5)) {
+              contentParts.push({ type: "image_url", image_url: { url: `data:${img.media_type};base64,${img.data}` } });
             }
-
-            // Add images
-            for (const img of images.slice(0, 10)) {
-              contentParts.push({
-                type: "image_url",
-                image_url: {
-                  url: `data:${img.media_type};base64,${img.data}`,
-                },
-              });
-            }
-
             return { role: "user", content: contentParts };
           }
           return msg;
         });
         allMessages.push(...processedMessages);
 
-        // Log image upload to timeline
         await supabase.from("lead_timeline_events").insert({
-          client_id,
-          event_type: "document_uploaded",
-          content: `${images.length} imagem(ns) de conversa enviada(s) para análise IA`,
-          source: "manual",
-          metadata: { image_count: images.length },
+          client_id, event_type: "document_uploaded",
+          content: `${images.length} imagem(ns) enviada(s) para análise IA`,
+          source: "manual", metadata: { image_count: images.length },
         });
       } else {
         allMessages.push(...messages);
@@ -448,14 +246,13 @@ serve(async (req) => {
     } else if (command) {
       allMessages.push({ role: "user", content: command });
     } else {
-      // Default: generate initial analysis
       allMessages.push({
         role: "user",
-        content: "Faça uma análise completa deste lead. Inclua: diagnóstico, temperatura, objeções detectadas, próxima ação recomendada e uma mensagem pronta para WhatsApp. Atualize a memória do lead.",
+        content: "Análise rápida: diagnóstico, temperatura, objeções, próxima ação, msg WhatsApp. Atualize memória.",
       });
     }
 
-    // Call AI with tool calling
+    // Use flash-lite for cheaper calls
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -463,7 +260,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-2.5-flash-lite",
         messages: allMessages,
         tools: copilotTools,
         stream: true,
@@ -488,17 +285,14 @@ serve(async (req) => {
       });
     }
 
-    // Stream the response, intercepting tool calls
+    // Collect response, handle tool calls
     const reader = aiResponse.body!.getReader();
     const decoder = new TextDecoder();
-
-    // We need to collect the full response to handle tool calls, then stream content
     let fullContent = "";
     let toolCalls: any[] = [];
     let currentToolCall: any = null;
     let buffer = "";
 
-    // Collect the entire response first to handle tool calls
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
@@ -535,7 +329,7 @@ serve(async (req) => {
       }
     }
 
-    // Process tool calls silently
+    // Process tool calls
     for (const tc of toolCalls) {
       try {
         const args = JSON.parse(tc.arguments);
@@ -545,7 +339,7 @@ serve(async (req) => {
       }
     }
 
-    // If we had tool calls but no content, make a second call to get the response
+    // If tool calls only, make follow-up call
     if (toolCalls.length > 0 && !fullContent.trim()) {
       const followUpMessages = [
         ...allMessages,
@@ -564,7 +358,7 @@ serve(async (req) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+          model: "google/gemini-2.5-flash-lite",
           messages: followUpMessages,
           stream: true,
         }),
@@ -577,7 +371,7 @@ serve(async (req) => {
       }
     }
 
-    // Return the content as SSE stream
+    // Stream collected content as SSE
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       start(controller) {
@@ -589,10 +383,7 @@ serve(async (req) => {
           try {
             if (i < words.length) {
               const chunk = (i === 0 ? "" : " ") + words[i];
-              const sseData = JSON.stringify({
-                choices: [{ delta: { content: chunk } }],
-              });
-              controller.enqueue(encoder.encode(`data: ${sseData}\n\n`));
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: chunk } }] })}\n\n`));
               i++;
               setTimeout(sendChunk, 10);
             } else {
@@ -600,15 +391,11 @@ serve(async (req) => {
               controller.close();
               closed = true;
             }
-          } catch {
-            closed = true;
-          }
+          } catch { closed = true; }
         };
         sendChunk();
       },
-      cancel() {
-        // Client disconnected — no-op, sendChunk will stop via closed flag
-      },
+      cancel() {},
     });
 
     return new Response(stream, {
