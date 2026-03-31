@@ -5,7 +5,7 @@ import { ChevronLeft } from "lucide-react";
 import {
   Users, Flame, AlertTriangle, TrendingUp, CalendarCheck,
   MessageCircle, Eye, ChevronRight, BarChart3, Target, Trophy, Activity,
-  Cake, X, Gift, FileDown, Loader2, Kanban
+  Cake, X, Gift, FileDown, Loader2, Kanban, Zap
 } from "lucide-react";
 import { fetchMonthlyData, generateMonthlyPDF } from "@/lib/generateMonthlyReport";
 import { toast } from "sonner";
@@ -25,6 +25,7 @@ import AIUsageDashboard from "@/components/admin/AIUsageDashboard";
 import SpeedToLeadCard from "@/components/admin/SpeedToLeadCard";
 import InactivityAlerts from "@/components/admin/InactivityAlerts";
 import LossReasonsChart from "@/components/admin/LossReasonsChart";
+import { useOverdueLeads } from "@/hooks/useOverdueLeads";
 
 const tempEmoji: Record<string, string> = { hot: "🔥", warm: "🟡", cold: "🔵", frozen: "⚪" };
 const tempBg: Record<string, string> = { hot: "bg-primary/10", warm: "bg-warning/10", cold: "bg-info/10", frozen: "bg-muted" };
@@ -75,10 +76,21 @@ const AdminDashboard = () => {
   const { data: overdueTasks } = useOverdueTasks();
   const { data: pendingTasks } = useAllPendingTasks();
   const { data: chartData } = useLeadsChartData();
+  const overdueLeadCount = useOverdueLeads();
   const [dismissedBirthday, setDismissedBirthday] = useState(false);
+  const [dismissedUrgent, setDismissedUrgent] = useState(false);
   const [generatingPDF, setGeneratingPDF] = useState(false);
   const [reportMonth, setReportMonth] = useState(new Date().getMonth() + 1);
   const [reportYear, setReportYear] = useState(new Date().getFullYear());
+
+  // Auto-redirect to queue if there are overdue leads (first visit only)
+  const [hasRedirected, setHasRedirected] = useState(false);
+  useEffect(() => {
+    if (!hasRedirected && overdueLeadCount >= 3) {
+      setHasRedirected(true);
+      navigate("/admin/queue");
+    }
+  }, [overdueLeadCount, hasRedirected, navigate]);
   const [showMonthPicker, setShowMonthPicker] = useState(false);
 
   const MONTH_NAMES_SHORT = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
@@ -280,6 +292,38 @@ const AdminDashboard = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* 🚨 Urgent Queue Banner */}
+      {overdueLeadCount > 0 && !dismissedUrgent && (
+        <motion.div
+          variants={fadeUp}
+          className="relative rounded-2xl border-2 border-destructive/40 bg-destructive/10 p-4"
+          animate={{ boxShadow: ["0 0 0 0 hsl(var(--destructive) / 0)", "0 0 16px 2px hsl(var(--destructive) / 0.2)", "0 0 0 0 hsl(var(--destructive) / 0)"] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        >
+          <button onClick={() => setDismissedUrgent(true)} className="absolute top-2 right-2 p-1 rounded-full hover:bg-background/20">
+            <X className="w-3.5 h-3.5 text-muted-foreground" />
+          </button>
+          <div className="flex items-center gap-3">
+            <motion.div
+              className="w-10 h-10 rounded-xl bg-destructive/20 flex items-center justify-center shrink-0"
+              animate={{ scale: [1, 1.1, 1] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+            >
+              <Zap className="w-5 h-5 text-destructive" />
+            </motion.div>
+            <div className="flex-1">
+              <p className="text-sm font-display font-bold text-destructive">
+                Você tem {overdueLeadCount} leads aguardando ação — resolver agora
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">Leads com ações atrasadas perdem interesse rápido</p>
+            </div>
+          </div>
+          <Button className="w-full mt-3 gap-2" size="sm" onClick={() => navigate("/admin/queue")}>
+            <Zap className="w-4 h-4" /> Iniciar Fila Inteligente
+          </Button>
+        </motion.div>
+      )}
 
       {/* 📱 Quick Actions - Mobile Only */}
       <motion.div variants={fadeUp} className="grid grid-cols-4 gap-2 md:hidden">
