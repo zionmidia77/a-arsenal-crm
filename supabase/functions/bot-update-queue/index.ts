@@ -67,7 +67,25 @@ Deno.serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify({ success: true, item: data }), {
+    // If the item failed, automatically fetch the next pending item
+    let nextItem = null;
+    if (status === "error") {
+      const { data: next, error: nextError } = await supabase
+        .from("bot_posting_queue")
+        .select("id, vehicle_id, local_bot_id, scheduled_for")
+        .eq("status", "pending")
+        .lte("scheduled_for", new Date().toISOString())
+        .order("scheduled_for", { ascending: true })
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+
+      if (!nextError && next) {
+        nextItem = next;
+      }
+    }
+
+    return new Response(JSON.stringify({ success: true, item: data, next_item: nextItem }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
