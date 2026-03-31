@@ -124,6 +124,8 @@ const AdminClientDetail = () => {
 
   const firstName = client.name.split(" ")[0];
 
+  const proposalLink = `${window.location.origin}/proposta/${client.id}`;
+
   // Mensagens por etapa do funil
   const stageMessages: Record<string, { label: string; msg: string }[]> = {
     new: [
