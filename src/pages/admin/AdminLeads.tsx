@@ -7,6 +7,8 @@ import { MessageCircle, Copy, Check, Search, Eye, SortAsc, SortDesc, Filter, Cal
 import { useClients, useTags, useMessageTemplates } from "@/hooks/useSupabase";
 import { useNavigate } from "react-router-dom";
 import { LeadCardSkeleton } from "@/components/admin/SkeletonLoaders";
+import PageTour from "@/components/admin/PageTour";
+import { Users as UsersIcon, Search as SearchIcon, Filter as FilterIcon, FileDown as FileDownIcon, LayoutGrid as LayoutGridIcon } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
@@ -198,15 +200,23 @@ const AdminLeads = () => {
       return sortAsc ? cmp : -cmp;
     });
 
+  const leadsTourSteps = [
+    { target: '[data-tour="leads-search"]', title: "Buscar leads", description: "Pesquise por nome, telefone ou interesse para encontrar leads rapidamente.", icon: SearchIcon, position: "bottom" as const },
+    { target: '[data-tour="leads-filters"]', title: "Filtros avançados", description: "Filtre por temperatura, etapa, fonte, tags e data para segmentar seus leads.", icon: FilterIcon, position: "bottom" as const },
+    { target: '[data-tour="leads-export"]', title: "Exportar dados", description: "Exporte a lista filtrada de leads em formato CSV para análise externa.", icon: FileDownIcon, position: "bottom" as const },
+    { target: '[data-tour="leads-view-mode"]', title: "Modo de visualização", description: "Alterne entre visualização expandida (cards detalhados) ou compacta (lista).", icon: LayoutGridIcon, position: "bottom" as const },
+  ];
+
   return (
     <motion.div variants={stagger} initial="initial" animate="animate" className="p-4 md:p-6 space-y-4 md:space-y-5 max-w-5xl xl:max-w-6xl">
+      <PageTour tourKey="leads" steps={leadsTourSteps} />
       <motion.div variants={fadeUp} className="flex items-start justify-between gap-2 flex-wrap">
         <div>
           <h1 className="text-2xl font-display font-bold">Leads</h1>
           <p className="text-sm text-muted-foreground">{clients?.length || 0} leads capturados</p>
         </div>
         <div className="flex gap-2">
-          <div className="flex rounded-full border border-border/50 overflow-hidden">
+          <div data-tour="leads-view-mode" className="flex rounded-full border border-border/50 overflow-hidden">
             <button
               onClick={() => setViewMode("expanded")}
               className={`p-2 transition-colors ${viewMode === "expanded" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-muted"}`}
@@ -227,6 +237,7 @@ const AdminLeads = () => {
             size="sm"
             className="rounded-full text-xs gap-1.5 h-9"
             onClick={exportCSV}
+            data-tour="leads-export"
           >
             <FileDown className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Exportar</span>
@@ -264,7 +275,7 @@ const AdminLeads = () => {
         </motion.div>
       )}
 
-      <motion.div variants={fadeUp} className="relative">
+      <motion.div variants={fadeUp} className="relative" data-tour="leads-search">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <Input placeholder="Buscar por nome, telefone ou interesse..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 rounded-xl bg-secondary border-border/50 h-11 md:h-10 text-base md:text-sm" />
       </motion.div>

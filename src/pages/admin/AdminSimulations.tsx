@@ -12,6 +12,8 @@ import { SimulationCardSkeleton } from "@/components/admin/SkeletonLoaders";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
+import PageTour from "@/components/admin/PageTour";
+import { Calculator as CalcIcon, Filter as FilterIcon2, DollarSign as Dollar2 } from "lucide-react";
 
 const statusMap: Record<string, { label: string; color: string; icon: typeof CheckCircle2 }> = {
   pending: { label: "Pendente", color: "bg-warning/10 text-warning border-warning/20", icon: Clock },
@@ -60,8 +62,14 @@ const AdminSimulations = () => {
     : 0;
   const pendingCount = simulations?.filter(s => s.status === "pending").length || 0;
 
+  const simTourSteps = [
+    { target: '[data-tour="sim-stats"]', title: "Indicadores", description: "Veja total de simulações, pendentes, valor financiado e parcela média.", icon: CalcIcon, position: "bottom" as const },
+    { target: '[data-tour="sim-filter"]', title: "Filtrar por status", description: "Filtre simulações por status: pendente, aprovada, rejeitada ou em análise.", icon: FilterIcon2, position: "bottom" as const },
+  ];
+
   return (
     <div className="p-4 md:p-6 space-y-6">
+      <PageTour tourKey="simulations" steps={simTourSteps} />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-display font-bold">Simulações de Financiamento</h1>
@@ -70,7 +78,7 @@ const AdminSimulations = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3" data-tour="sim-stats">
         {[
           { label: "Total", value: totalSimulations, icon: Calculator, color: "text-primary" },
           { label: "Pendentes", value: pendingCount, icon: Clock, color: "text-warning" },
@@ -90,7 +98,7 @@ const AdminSimulations = () => {
       </div>
 
       {/* Filter */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2" data-tour="sim-filter">
         <Filter className="w-4 h-4 text-muted-foreground" />
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-40">

@@ -6,6 +6,8 @@ import { Check, Gift, TrendingUp, Heart, MessageCircle, Calendar, AlertTriangle,
 import { useTasks, useUpdateTask, useOverdueTasks, useAllPendingTasks } from "@/hooks/useSupabase";
 import { useNavigate } from "react-router-dom";
 import { TaskCardSkeleton } from "@/components/admin/SkeletonLoaders";
+import PageTour from "@/components/admin/PageTour";
+import { ListChecks, CalendarDays, AlertTriangle as AlertIcon, Filter as FilterIcon } from "lucide-react";
 
 const typeIcon: Record<string, any> = { opportunity: TrendingUp, relationship: Heart, value: Gift, follow_up: TrendingUp };
 const typeColor: Record<string, string> = { opportunity: "text-primary", relationship: "text-pink-400", value: "text-success", follow_up: "text-info" };
@@ -58,8 +60,15 @@ const AdminTasks = () => {
   const doneCount = activeTasks.filter((t) => t.status === "done").length;
   const progress = activeTasks.length > 0 ? (doneCount / activeTasks.length) * 100 : 0;
 
+  const tasksTourSteps = [
+    { target: '[data-tour="tasks-tabs"]', title: "Abas de tarefas", description: "Alterne entre tarefas do dia, atrasadas e próximas para priorizar seu trabalho.", icon: ListChecks, position: "bottom" as const },
+    { target: '[data-tour="tasks-date-nav"]', title: "Navegação por data", description: "Use as setas para ver tarefas de outros dias. Clique em 'Hoje' para voltar.", icon: CalendarDays, position: "bottom" as const },
+    { target: '[data-tour="tasks-filter"]', title: "Filtrar por tipo", description: "Filtre entre oportunidades, relacionamento, valor e follow-ups.", icon: FilterIcon, position: "bottom" as const },
+  ];
+
   return (
     <motion.div variants={stagger} initial="initial" animate="animate" className="p-5 md:p-6 space-y-5 max-w-4xl">
+      <PageTour tourKey="tasks" steps={tasksTourSteps} />
       <motion.div variants={fadeUp}>
         <h1 className="text-2xl font-display font-bold">Tarefas</h1>
         <p className="text-sm text-muted-foreground">
@@ -71,7 +80,7 @@ const AdminTasks = () => {
       </motion.div>
 
       {/* Tab: Day / Overdue / Upcoming */}
-      <motion.div variants={fadeUp} className="flex gap-2">
+      <motion.div variants={fadeUp} className="flex gap-2" data-tour="tasks-tabs">
         <Button
           variant={activeTab === "day" ? "default" : "outline"}
           size="sm"

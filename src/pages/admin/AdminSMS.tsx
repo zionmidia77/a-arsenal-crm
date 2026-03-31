@@ -21,6 +21,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, LineChart, Line
 } from "recharts";
+import PageTour from "@/components/admin/PageTour";
 
 // ============ Hooks ============
 const useSMSStats = () => {
@@ -320,8 +321,15 @@ const AdminSMS = () => {
     { name: "Pós-venda", value: logs.filter(l => l.trigger_type === "post_sale").length },
   ].filter(d => d.value > 0) : [];
 
+  const smsTourSteps = [
+    { target: '[data-tour="sms-stats"]', title: "Estatísticas de SMS", description: "Veja enviados hoje, taxa de sucesso, envios na semana e mês.", icon: Send, position: "bottom" as const },
+    { target: '[data-tour="sms-tabs"]', title: "Seções do SMS", description: "Dashboard com gráficos, automações configuráveis, envio manual e histórico.", icon: MessageSquare, position: "bottom" as const },
+    { target: '[data-tour="sms-run"]', title: "Executar automações", description: "Dispare todas as automações ativas de uma vez para recuperar leads inativos.", icon: Zap, position: "bottom" as const },
+  ];
+
   return (
     <div className="p-4 md:p-6 space-y-6">
+      <PageTour tourKey="sms" steps={smsTourSteps} />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -330,21 +338,21 @@ const AdminSMS = () => {
           </h1>
           <p className="text-sm text-muted-foreground">Automação de recuperação de leads via SMSdev</p>
         </div>
-        <Button onClick={() => runAutomation.mutate()} disabled={runAutomation.isPending} size="sm" className="gap-1">
+        <Button onClick={() => runAutomation.mutate()} disabled={runAutomation.isPending} size="sm" className="gap-1" data-tour="sms-run">
           {runAutomation.isPending ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
           Executar Automações
         </Button>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3" data-tour="sms-stats">
         <StatCard icon={Send} label="Enviados Hoje" value={stats?.today || 0} color="bg-primary/10 text-primary" />
         <StatCard icon={CheckCircle2} label="Taxa de Sucesso" value={`${stats?.successRate || 0}%`} color="bg-green-500/10 text-green-500" />
         <StatCard icon={TrendingUp} label="Semana" value={stats?.week || 0} color="bg-blue-500/10 text-blue-500" />
         <StatCard icon={BarChart3} label="Mês" value={stats?.month || 0} color="bg-amber-500/10 text-amber-500" />
       </div>
 
-      <Tabs defaultValue="dashboard">
+      <Tabs defaultValue="dashboard" data-tour="sms-tabs">
         <TabsList className="w-full justify-start">
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="automations">Automações</TabsTrigger>

@@ -19,6 +19,8 @@ import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import ChatConversionDashboard from "@/components/admin/ChatConversionDashboard";
+import PageTour from "@/components/admin/PageTour";
+import { MessageSquare as MsgIcon2, Filter as FilterIcon3, Link2 as LinkIcon } from "lucide-react";
 
 const PIPELINE_STAGES = [
   { key: "new", label: "Novo", emoji: "🆕" },
@@ -250,10 +252,17 @@ const AdminChatHistory = () => {
     }
   };
 
+  const chatTourSteps = [
+    { target: '[data-tour="chat-dashboard"]', title: "Dashboard de conversão", description: "Métricas de conversão do chat IA: quantas conversas foram convertidas em leads.", icon: MsgIcon2, position: "bottom" as const },
+    { target: '[data-tour="chat-filters"]', title: "Filtros de conversas", description: "Filtre por status, data e pesquise por nome ou telefone.", icon: FilterIcon3, position: "bottom" as const },
+    { target: '[data-tour="chat-list"]', title: "Lista de conversas", description: "Clique em uma conversa para ver o histórico completo e vincular a um lead.", icon: LinkIcon, position: "bottom" as const },
+  ];
+
   return (
     <div className="space-y-6">
+      <PageTour tourKey="chat-history" steps={chatTourSteps} />
       {/* Conversion Dashboard */}
-      <ChatConversionDashboard />
+      <div data-tour="chat-dashboard"><ChatConversionDashboard /></div>
 
       <div className="flex items-center justify-between">
         <div>
@@ -267,7 +276,7 @@ const AdminChatHistory = () => {
       </div>
 
       {/* Filters */}
-      <Card>
+      <Card data-tour="chat-filters">
         <CardContent className="p-3">
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative flex-1 min-w-[180px]">

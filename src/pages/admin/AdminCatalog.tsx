@@ -22,6 +22,8 @@ import VehicleDocOCR from "@/components/catalog/VehicleDocOCR";
 import StockFinancialDashboard from "@/components/catalog/StockFinancialDashboard";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import PageTour from "@/components/admin/PageTour";
+import { Package as PackageIcon, Camera as CameraIcon, DollarSign as DollarIcon, Search as SearchIcon2 } from "lucide-react";
 
 const AdminCatalog = () => {
   const [activeTab, setActiveTab] = useState("catalog");
@@ -73,15 +75,22 @@ const AdminCatalog = () => {
     return Math.floor((Date.now() - new Date(purchaseDate).getTime()) / (1000 * 60 * 60 * 24));
   };
 
+  const catalogTourSteps = [
+    { target: '[data-tour="catalog-tabs"]', title: "Abas do catálogo", description: "Alterne entre visualizar o estoque de veículos e o dashboard financeiro.", icon: PackageIcon, position: "bottom" as const },
+    { target: '[data-tour="catalog-add"]', title: "Cadastrar veículo", description: "Adicione veículos manualmente ou via foto do documento com reconhecimento automático (OCR).", icon: CameraIcon, position: "bottom" as const },
+    { target: '[data-tour="catalog-stats"]', title: "Resumo do estoque", description: "Veja total de veículos, disponíveis, valor investido e valor de venda.", icon: DollarIcon, position: "bottom" as const },
+  ];
+
   return (
     <div className="space-y-6">
+      <PageTour tourKey="catalog" steps={catalogTourSteps} />
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground">🏍️ Catálogo de Estoque</h1>
           <p className="text-muted-foreground">Gerencie seu estoque com fotos, custos e FIPE</p>
         </div>
-        <div className="flex gap-2">
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <div className="flex gap-2" data-tour="catalog-add">
+          <Tabs value={activeTab} onValueChange={setActiveTab} data-tour="catalog-tabs">
             <TabsList>
               <TabsTrigger value="catalog">📋 Estoque</TabsTrigger>
               <TabsTrigger value="dashboard">📊 Financeiro</TabsTrigger>

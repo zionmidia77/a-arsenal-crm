@@ -13,6 +13,7 @@ import { format } from "date-fns";
 import { getObjectionMessages } from "@/lib/objectionMessages";
 import NextActionModal from "@/components/admin/NextActionModal";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import PageTour from "@/components/admin/PageTour";
 
 const tempBadge: Record<string, string> = {
   hot: "bg-primary/15 text-primary",
@@ -132,6 +133,12 @@ const AdminSmartQueue = () => {
 
   return (
     <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-4">
+      <PageTour tourKey="queue" steps={[
+        { target: '[data-tour="queue-progress"]', title: "Progresso da fila", description: "Acompanhe quantos leads você já atendeu e quantos faltam.", icon: Zap, position: "bottom" as const },
+        { target: '[data-tour="queue-card"]', title: "Card do lead", description: "Informações completas do lead: nome, temperatura, score, valor e próxima ação a executar.", icon: Target, position: "bottom" as const },
+        { target: '[data-tour="queue-actions"]', title: "Ações rápidas", description: "Envie WhatsApp com mensagem pronta, marque como atendido ou ligue — tudo em 1 clique.", icon: MessageCircle, position: "bottom" as const },
+        { target: '[data-tour="queue-messages"]', title: "Mensagens sugeridas", description: "Mensagens personalizadas baseadas na objeção do lead, prontas para envio.", icon: Flame, position: "bottom" as const },
+      ]} />
       {/* Header */}
       <div className="flex items-center justify-between">
         <Button variant="ghost" size="sm" onClick={() => navigate("/admin")} className="gap-1">
@@ -149,7 +156,7 @@ const AdminSmartQueue = () => {
       </div>
 
       {/* Progress bar */}
-      <div className="space-y-1">
+      <div className="space-y-1" data-tour="queue-progress">
         <div className="flex justify-between text-xs text-muted-foreground">
           <span>Lead {currentIndex + 1} de {total}</span>
           <span>Faltam {total - currentIndex - 1}</span>
@@ -280,7 +287,7 @@ const AdminSmartQueue = () => {
           </div>
 
           {/* Action buttons - WhatsApp now sends best message directly */}
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-2" data-tour="queue-actions">
             {client.phone && (
               <Button className="h-14 rounded-xl flex flex-col gap-1 text-xs" onClick={() => sendWhatsApp(bestMessage)}>
                 <MessageCircle className="w-5 h-5" />
@@ -301,7 +308,7 @@ const AdminSmartQueue = () => {
 
           {/* Smart messages based on objection */}
           {objMessages.length > 0 && (
-            <div className="glass-card p-4 space-y-2">
+            <div className="glass-card p-4 space-y-2" data-tour="queue-messages">
               <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
                 <Flame className="w-3.5 h-3.5 text-primary" />
                 Mensagens sugeridas (baseadas na objeção)

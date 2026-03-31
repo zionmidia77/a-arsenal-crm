@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { StatCardSkeleton, MetricsChartSkeleton } from "@/components/admin/SkeletonLoaders";
 import { useMemo, useState } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import PageTour from "@/components/admin/PageTour";
 
 const stagger = { animate: { transition: { staggerChildren: 0.05 } } };
 const fadeUp = { initial: { opacity: 0, y: 12 }, animate: { opacity: 1, y: 0, transition: { duration: 0.35 } } };
@@ -170,8 +171,15 @@ const AdminMetrics = () => {
     { label: "Score médio", value: metrics.avgScore, icon: Award, color: "text-primary", bg: "bg-primary/10" },
   ];
 
+  const metricsTourSteps = [
+    { target: '[data-tour="metrics-period"]', title: "Período de análise", description: "Escolha entre 7, 14 ou 30 dias para ajustar o período de análise.", icon: CalendarDays, position: "bottom" as const },
+    { target: '[data-tour="metrics-export"]', title: "Exportar relatório", description: "Gere um PDF completo com todas as métricas e gráficos para compartilhar.", icon: FileDown, position: "bottom" as const },
+    { target: '[data-tour="metrics-stats"]', title: "Indicadores principais", description: "Veja total de leads, taxas de conversão e perda, e score médio de um relance.", icon: TrendingUp, position: "bottom" as const },
+  ];
+
   return (
     <motion.div variants={stagger} initial="initial" animate="animate" className="p-5 md:p-6 space-y-5 max-w-5xl">
+      <PageTour tourKey="metrics" steps={metricsTourSteps} />
       {/* Header */}
       <motion.div variants={fadeUp} className="flex items-end justify-between">
         <div>
@@ -184,10 +192,11 @@ const AdminMetrics = () => {
             variant="outline"
             className="h-8 rounded-xl text-xs gap-1.5"
             onClick={() => generatePDFReport(metrics)}
+            data-tour="metrics-export"
           >
             <FileDown className="w-3.5 h-3.5" /> Exportar PDF
           </Button>
-          <Tabs value={period} onValueChange={v => setPeriod(v as any)}>
+          <Tabs value={period} onValueChange={v => setPeriod(v as any)} data-tour="metrics-period">
             <TabsList className="h-8">
               <TabsTrigger value="7" className="text-xs h-6 px-2">7d</TabsTrigger>
               <TabsTrigger value="14" className="text-xs h-6 px-2">14d</TabsTrigger>
