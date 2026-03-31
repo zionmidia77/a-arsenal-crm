@@ -35,6 +35,111 @@ export type Database = {
         }
         Relationships: []
       }
+      bot_configs: {
+        Row: {
+          created_at: string
+          delay_seconds: number
+          dry_mode: boolean
+          facebook_account: string | null
+          id: string
+          is_active: boolean
+          last_reset_at: string | null
+          leads_captured_today: number
+          max_per_cycle: number
+          platform: string
+          seller_email: string | null
+          seller_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          delay_seconds?: number
+          dry_mode?: boolean
+          facebook_account?: string | null
+          id?: string
+          is_active?: boolean
+          last_reset_at?: string | null
+          leads_captured_today?: number
+          max_per_cycle?: number
+          platform?: string
+          seller_email?: string | null
+          seller_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          delay_seconds?: number
+          dry_mode?: boolean
+          facebook_account?: string | null
+          id?: string
+          is_active?: boolean
+          last_reset_at?: string | null
+          leads_captured_today?: number
+          max_per_cycle?: number
+          platform?: string
+          seller_email?: string | null
+          seller_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      bot_logs: {
+        Row: {
+          bot_config_id: string
+          client_id: string | null
+          contact_name: string | null
+          created_at: string
+          error: string | null
+          event_type: string
+          id: string
+          lead_created: boolean
+          message_in: string | null
+          message_out: string | null
+          platform: string
+        }
+        Insert: {
+          bot_config_id: string
+          client_id?: string | null
+          contact_name?: string | null
+          created_at?: string
+          error?: string | null
+          event_type?: string
+          id?: string
+          lead_created?: boolean
+          message_in?: string | null
+          message_out?: string | null
+          platform?: string
+        }
+        Update: {
+          bot_config_id?: string
+          client_id?: string | null
+          contact_name?: string | null
+          created_at?: string
+          error?: string | null
+          event_type?: string
+          id?: string
+          lead_created?: boolean
+          message_in?: string | null
+          message_out?: string | null
+          platform?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bot_logs_bot_config_id_fkey"
+            columns: ["bot_config_id"]
+            isOneToOne: false
+            referencedRelation: "bot_configs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bot_logs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_conversations: {
         Row: {
           client_id: string | null
