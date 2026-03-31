@@ -71,7 +71,7 @@ const AdminLeads = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [mergeOpen, setMergeOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"expanded" | "compact">("expanded");
-  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
