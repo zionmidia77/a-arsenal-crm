@@ -313,6 +313,42 @@ const AdminClientDetail = () => {
             </div>
           ))}
         </div>
+
+        {/* Financing-specific messages */}
+        {financingMessages.length > 0 && (
+          <>
+            <div className="flex items-center gap-2 mt-4 mb-3">
+              <div className="h-px flex-1 bg-border/50" />
+              <p className="text-[10px] font-medium text-primary uppercase tracking-wider">
+                {client.financing_status === "approved" ? "✅ Financiamento Aprovado" :
+                 client.financing_status === "pre_approved" ? "🟡 Pré-Aprovado" :
+                 "❌ Financiamento Recusado"}
+              </p>
+              <div className="h-px flex-1 bg-border/50" />
+            </div>
+            <div className="grid grid-cols-1 gap-2">
+              {financingMessages.map((qm, i) => (
+                <div key={`fin-${i}`} className={cn(
+                  "rounded-xl p-3 space-y-2 border",
+                  client.financing_status === "approved" ? "bg-green-500/5 border-green-500/20" :
+                  client.financing_status === "pre_approved" ? "bg-amber-500/5 border-amber-500/20" :
+                  "bg-destructive/5 border-destructive/20"
+                )}>
+                  <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">{qm.label}</p>
+                  <p className="text-xs text-foreground/70">{qm.msg}</p>
+                  <div className="flex gap-1.5">
+                    <Button size="sm" className="h-7 rounded-full text-[10px] gap-1 flex-1" onClick={() => sendWhatsApp(qm.msg)}>
+                      <MessageCircle className="w-2.5 h-2.5" /> Enviar
+                    </Button>
+                    <Button size="sm" variant="outline" className="h-7 rounded-full text-[10px] gap-1" onClick={() => copyMsg(qm.msg)}>
+                      <Copy className="w-2.5 h-2.5" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </motion.div>
 
       {/* Schedule Follow-up */}
