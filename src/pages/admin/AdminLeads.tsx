@@ -216,7 +216,7 @@ const AdminLeads = () => {
           <p className="text-sm text-muted-foreground">{clients?.length || 0} leads capturados</p>
         </div>
         <div className="flex gap-2">
-          <div className="flex rounded-full border border-border/50 overflow-hidden">
+          <div data-tour="leads-view-mode" className="flex rounded-full border border-border/50 overflow-hidden">
             <button
               onClick={() => setViewMode("expanded")}
               className={`p-2 transition-colors ${viewMode === "expanded" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-muted"}`}
