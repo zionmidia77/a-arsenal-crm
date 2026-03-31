@@ -64,8 +64,14 @@ const AdminCalendar = () => {
   for (let i = 0; i < firstDay; i++) calendarCells.push(null);
   for (let d = 1; d <= daysInMonth; d++) calendarCells.push(d);
 
+  const calendarTourSteps = [
+    { target: '[data-tour="calendar-grid"]', title: "Calendário visual", description: "Veja suas tarefas distribuídas no mês. Dias com bolinhas coloridas possuem tarefas agendadas.", icon: CalendarDays, position: "bottom" as const },
+    { target: '[data-tour="calendar-tasks"]', title: "Tarefas do dia", description: "Clique em um dia para ver e gerenciar as tarefas daquela data.", icon: ListChecks, position: "bottom" as const },
+  ];
+
   return (
     <motion.div variants={stagger} initial="initial" animate="animate" className="p-5 md:p-6 space-y-5 max-w-4xl">
+      <PageTour tourKey="calendar" steps={calendarTourSteps} />
       <motion.div variants={fadeUp}>
         <h1 className="text-2xl font-display font-bold">Agenda</h1>
         <p className="text-sm text-muted-foreground">Calendário de follow-ups e tarefas</p>
