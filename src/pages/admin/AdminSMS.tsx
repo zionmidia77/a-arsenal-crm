@@ -320,8 +320,15 @@ const AdminSMS = () => {
     { name: "Pós-venda", value: logs.filter(l => l.trigger_type === "post_sale").length },
   ].filter(d => d.value > 0) : [];
 
+  const smsTourSteps = [
+    { target: '[data-tour="sms-stats"]', title: "Estatísticas de SMS", description: "Veja enviados hoje, taxa de sucesso, envios na semana e mês.", icon: Send, position: "bottom" as const },
+    { target: '[data-tour="sms-tabs"]', title: "Seções do SMS", description: "Dashboard com gráficos, automações configuráveis, envio manual e histórico.", icon: MessageSquare, position: "bottom" as const },
+    { target: '[data-tour="sms-run"]', title: "Executar automações", description: "Dispare todas as automações ativas de uma vez para recuperar leads inativos.", icon: Zap, position: "bottom" as const },
+  ];
+
   return (
     <div className="p-4 md:p-6 space-y-6">
+      <PageTour tourKey="sms" steps={smsTourSteps} />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
