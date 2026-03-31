@@ -19,6 +19,8 @@ import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import ChatConversionDashboard from "@/components/admin/ChatConversionDashboard";
+import PageTour from "@/components/admin/PageTour";
+import { MessageSquare as MsgIcon2, Filter as FilterIcon3, Link2 as LinkIcon } from "lucide-react";
 
 const PIPELINE_STAGES = [
   { key: "new", label: "Novo", emoji: "🆕" },
