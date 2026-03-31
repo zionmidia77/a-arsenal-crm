@@ -304,6 +304,40 @@ const AdminClientDetail = () => {
   const daysAgo = Math.floor((Date.now() - new Date(client.created_at).getTime()) / 86400000);
   const lastContactDays = client.last_contact_at ? Math.floor((Date.now() - new Date(client.last_contact_at).getTime()) / 86400000) : null;
 
+  // Next action helpers
+  const nextActionIcons: Record<string, React.ReactNode> = {
+    call: <Phone className="w-5 h-5" />,
+    send_proposal: <Send className="w-5 h-5" />,
+    send_message: <MessageCircle className="w-5 h-5" />,
+    collect_docs: <FileCheck className="w-5 h-5" />,
+    follow_up: <Clock className="w-5 h-5" />,
+    schedule_visit: <MapPin className="w-5 h-5" />,
+    submit_credit: <TrendingUp className="w-5 h-5" />,
+    wait_client: <Clock className="w-5 h-5" />,
+    close_deal: <Check className="w-5 h-5" />,
+    send_content: <Send className="w-5 h-5" />,
+  };
+  const nextActionLabels: Record<string, string> = {
+    call: "Ligar agora",
+    send_proposal: "Enviar proposta",
+    send_message: "Enviar mensagem",
+    collect_docs: "Coletar documentos",
+    follow_up: "Fazer follow-up",
+    schedule_visit: "Agendar visita",
+    submit_credit: "Submeter crédito",
+    wait_client: "Aguardar cliente",
+    close_deal: "Fechar negócio",
+    send_content: "Enviar conteúdo",
+  };
+  const nextActionDueOverdue = client.next_action_due ? new Date(client.next_action_due) < new Date() : false;
+
+  const objectionLabels: Record<string, string> = {
+    price: "💰 Preço", down_payment: "💵 Entrada", installment: "📊 Parcela alta",
+    credit: "🏦 Crédito", trust: "🤝 Confiança", comparison: "⚖️ Comparação",
+    trade_undervalued: "🔄 Troca desvalorizada", indecision: "🤔 Indecisão",
+    timing: "⏰ Timing", none: "✅ Nenhuma",
+  };
+
   const leadContent = (
     <motion.div variants={stagger} initial="initial" animate="animate" className="p-5 md:p-6 space-y-5">
       {/* Header */}
@@ -330,13 +364,7 @@ const AdminClientDetail = () => {
         </div>
         <div className="flex items-center gap-2">
           {!isMobile && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="rounded-full"
-              onClick={() => setCopilotOpen(!copilotOpen)}
-              title={copilotOpen ? "Fechar Copilot" : "Abrir Copilot"}
-            >
+            <Button variant="ghost" size="icon" className="rounded-full" onClick={() => setCopilotOpen(!copilotOpen)} title={copilotOpen ? "Fechar Copilot" : "Abrir Copilot"}>
               {copilotOpen ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
             </Button>
           )}
@@ -347,7 +375,69 @@ const AdminClientDetail = () => {
         </div>
       </motion.div>
 
-      {/* 🤖 AI Copilot - Only on mobile (desktop uses split-view) */}
+      {/* ═══ SUMMARY CARD (Zona 2) ═══ */}
+      <motion.div variants={fadeUp} className={cn(
+        "rounded-2xl border-2 p-5 space-y-3",
+        nextActionDueOverdue ? "border-destructive bg-destructive/5" : "border-primary/30 bg-primary/5"
+      )}>
+        {/* Top row: Resumo + Objeção + Promessa */}
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+          {client.interest && <span>📝 {client.interest}</span>}
+          {client.objection_type && <span>⚖️ {objectionLabels[client.objection_type] || client.objection_type}</span>}
+          {client.client_promise && (
+            <span className={cn(client.client_promise_status === "overdue" && "text-destructive font-medium")}>
+              ⏰ {client.client_promise}
+              {client.client_promise_due && ` · ${format(new Date(client.client_promise_due), "dd/MM HH:mm")}`}
+            </span>
+          )}
+        </div>
+
+        {/* Separator */}
+        <div className="h-px bg-border/50" />
+
+        {/* NEXT ACTION — Central & Prominent */}
+        <div className="text-center space-y-2">
+          <div className="flex items-center justify-center gap-2">
+            <span className={cn(
+              "inline-flex items-center gap-1.5 text-base font-display font-bold",
+              nextActionDueOverdue ? "text-destructive" : "text-primary"
+            )}>
+              {client.next_action_type && nextActionIcons[client.next_action_type]}
+              {client.next_action || "Nenhuma ação definida"}
+            </span>
+            {nextActionDueOverdue && (
+              <span className="text-[10px] bg-destructive text-destructive-foreground px-2 py-0.5 rounded-full font-medium animate-pulse">
+                ⏰ Atrasada
+              </span>
+            )}
+          </div>
+          {client.next_action_due && (
+            <p className="text-xs text-muted-foreground">
+              Próxima ação · {format(new Date(client.next_action_due), "dd/MM 'às' HH:mm")}
+            </p>
+          )}
+          {/* Direct execution button */}
+          {client.next_action_type && (
+            <Button
+              className={cn("rounded-full px-6 h-10 gap-2 font-medium", nextActionDueOverdue && "bg-destructive hover:bg-destructive/90")}
+              onClick={() => {
+                if (client.next_action_type === "call" && client.phone) window.open(`tel:${client.phone}`);
+                else if (client.next_action_type === "send_message" && client.phone) sendWhatsApp(quickMessages[0]?.msg || "");
+                else if (client.next_action_type === "send_proposal") {
+                  navigator.clipboard.writeText(proposalLink);
+                  toast.success("Link da proposta copiado!");
+                }
+                else toast.info("Ação registrada");
+              }}
+            >
+              {nextActionIcons[client.next_action_type]}
+              {nextActionLabels[client.next_action_type] || "Executar"}
+            </Button>
+          )}
+        </div>
+      </motion.div>
+
+      {/* 🤖 AI Copilot - Only on mobile */}
       {isMobile && (
         <motion.div variants={fadeUp}>
           <LeadCopilotPanel clientId={client.id} clientName={client.name} clientPhone={client.phone || undefined} clientInterest={client.interest || undefined} clientBudget={client.budget_range || undefined} />
@@ -394,65 +484,6 @@ const AdminClientDetail = () => {
         )}
       </motion.div>
 
-      {/* Quick Messages */}
-      <motion.div variants={fadeUp} className="glass-card p-4">
-        <p className="text-sm font-medium mb-3 flex items-center gap-2">
-          <Send className="w-4 h-4 text-primary" /> Mensagens rápidas
-        </p>
-        <div className="grid grid-cols-2 gap-2">
-          {quickMessages.map((qm, i) => (
-            <div key={i} className="bg-secondary/50 rounded-xl p-3 space-y-2">
-              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">{qm.label}</p>
-              <p className="text-xs text-foreground/70 line-clamp-2">{qm.msg}</p>
-              <div className="flex gap-1.5">
-                <Button size="sm" className="h-7 rounded-full text-[10px] gap-1 flex-1" onClick={() => sendWhatsApp(qm.msg)}>
-                  <MessageCircle className="w-2.5 h-2.5" /> Enviar
-                </Button>
-                <Button size="sm" variant="outline" className="h-7 rounded-full text-[10px] gap-1" onClick={() => copyMsg(qm.msg)}>
-                  <Copy className="w-2.5 h-2.5" />
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Financing-specific messages */}
-        {financingMessages.length > 0 && (
-          <>
-            <div className="flex items-center gap-2 mt-4 mb-3">
-              <div className="h-px flex-1 bg-border/50" />
-              <p className="text-[10px] font-medium text-primary uppercase tracking-wider">
-                {client.financing_status === "approved" ? "✅ Financiamento Aprovado" :
-                 client.financing_status === "pre_approved" ? "🟡 Pré-Aprovado" :
-                 "❌ Financiamento Recusado"}
-              </p>
-              <div className="h-px flex-1 bg-border/50" />
-            </div>
-            <div className="grid grid-cols-1 gap-2">
-              {financingMessages.map((qm, i) => (
-                <div key={`fin-${i}`} className={cn(
-                  "rounded-xl p-3 space-y-2 border",
-                  client.financing_status === "approved" ? "bg-green-500/5 border-green-500/20" :
-                  client.financing_status === "pre_approved" ? "bg-amber-500/5 border-amber-500/20" :
-                  "bg-destructive/5 border-destructive/20"
-                )}>
-                  <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">{qm.label}</p>
-                  <p className="text-xs text-foreground/70">{qm.msg}</p>
-                  <div className="flex gap-1.5">
-                    <Button size="sm" className="h-7 rounded-full text-[10px] gap-1 flex-1" onClick={() => sendWhatsApp(qm.msg)}>
-                      <MessageCircle className="w-2.5 h-2.5" /> Enviar
-                    </Button>
-                    <Button size="sm" variant="outline" className="h-7 rounded-full text-[10px] gap-1" onClick={() => copyMsg(qm.msg)}>
-                      <Copy className="w-2.5 h-2.5" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </>
-        )}
-      </motion.div>
-
       {/* Schedule Follow-up */}
       {showSchedule && (
         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="glass-card p-4 space-y-3">
@@ -470,94 +501,288 @@ const AdminClientDetail = () => {
         </motion.div>
       )}
 
-      {/* Contact Info */}
-      <motion.div variants={fadeUp} className="glass-card p-4 space-y-3">
-        {client.phone && (
-          <div className="flex items-center gap-3">
-            <Phone className="w-4 h-4 text-muted-foreground" />
-            <span className="text-sm">{client.phone}</span>
-          </div>
-        )}
-        {client.email && (
-          <div className="flex items-center gap-3">
-            <Mail className="w-4 h-4 text-muted-foreground" />
-            <span className="text-sm">{client.email}</span>
-          </div>
-        )}
-        {client.city && (
-          <div className="flex items-center gap-3">
-            <MapPin className="w-4 h-4 text-muted-foreground" />
-            <span className="text-sm">{client.city}</span>
-          </div>
-        )}
-        {client.interest && (
-          <div className="flex items-center gap-3">
-            <Star className="w-3.5 h-3.5 text-muted-foreground" />
-            <span className="text-sm">{client.interest}</span>
-          </div>
-        )}
-        {client.budget_range && (
-          <div className="flex items-center gap-3">
-            <TrendingUp className="w-4 h-4 text-muted-foreground" />
-            <span className="text-sm">Orçamento: {client.budget_range}</span>
-          </div>
-        )}
-        {client.source && (
-          <div className="flex items-center gap-3">
-            <Calendar className="w-4 h-4 text-muted-foreground" />
-            <span className="text-sm">Origem: {client.source}</span>
-          </div>
-        )}
-        <div className="flex items-center gap-3">
-          <Cake className="w-4 h-4 text-muted-foreground" />
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="ghost" className={cn("h-auto p-0 text-sm font-normal hover:bg-transparent hover:underline", !client.birthdate && "text-muted-foreground")}>
-                {client.birthdate ? `🎂 ${format(new Date(client.birthdate + "T12:00:00"), "dd/MM/yyyy")}` : "Adicionar data de nascimento"}
-                <Edit2 className="w-3 h-3 ml-1.5 text-muted-foreground" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <CalendarComponent
-                mode="single"
-                selected={client.birthdate ? new Date(client.birthdate + "T12:00:00") : undefined}
-                onSelect={(date) => {
-                  if (date) {
-                    updateClient.mutate({ id: client.id, birthdate: format(date, "yyyy-MM-dd") } as any);
-                    toast.success("Data de nascimento atualizada!");
-                  }
-                }}
-                disabled={(date) => date > new Date() || date < new Date("1920-01-01")}
-                initialFocus
-                className={cn("p-3 pointer-events-auto")}
-              />
-            </PopoverContent>
-          </Popover>
-        </div>
-      </motion.div>
+      {/* ═══ ACCORDION SECTIONS ═══ */}
+      <Accordion type="multiple" defaultValue={["messages", "contact"]} className="space-y-2">
 
-      {/* Temperature */}
+        {/* 📨 Mensagens Rápidas */}
+        <AccordionItem value="messages" className="glass-card rounded-xl border-none overflow-hidden">
+          <AccordionTrigger className="px-4 py-3 hover:no-underline text-sm font-medium gap-2">
+            <span className="flex items-center gap-2"><Send className="w-4 h-4 text-primary" /> Mensagens rápidas</span>
+          </AccordionTrigger>
+          <AccordionContent className="px-4 pb-4">
+            <div className="grid grid-cols-2 gap-2">
+              {quickMessages.map((qm, i) => (
+                <div key={i} className="bg-secondary/50 rounded-xl p-3 space-y-2">
+                  <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">{qm.label}</p>
+                  <p className="text-xs text-foreground/70 line-clamp-2">{qm.msg}</p>
+                  <div className="flex gap-1.5">
+                    <Button size="sm" className="h-7 rounded-full text-[10px] gap-1 flex-1" onClick={() => sendWhatsApp(qm.msg)}>
+                      <MessageCircle className="w-2.5 h-2.5" /> Enviar
+                    </Button>
+                    <Button size="sm" variant="outline" className="h-7 rounded-full text-[10px] gap-1" onClick={() => copyMsg(qm.msg)}>
+                      <Copy className="w-2.5 h-2.5" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {financingMessages.length > 0 && (
+              <>
+                <div className="flex items-center gap-2 mt-4 mb-3">
+                  <div className="h-px flex-1 bg-border/50" />
+                  <p className="text-[10px] font-medium text-primary uppercase tracking-wider">
+                    {client.financing_status === "approved" ? "✅ Financiamento Aprovado" :
+                     client.financing_status === "pre_approved" ? "🟡 Pré-Aprovado" :
+                     "❌ Financiamento Recusado"}
+                  </p>
+                  <div className="h-px flex-1 bg-border/50" />
+                </div>
+                <div className="grid grid-cols-1 gap-2">
+                  {financingMessages.map((qm, i) => (
+                    <div key={`fin-${i}`} className={cn(
+                      "rounded-xl p-3 space-y-2 border",
+                      client.financing_status === "approved" ? "bg-green-500/5 border-green-500/20" :
+                      client.financing_status === "pre_approved" ? "bg-amber-500/5 border-amber-500/20" :
+                      "bg-destructive/5 border-destructive/20"
+                    )}>
+                      <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">{qm.label}</p>
+                      <p className="text-xs text-foreground/70">{qm.msg}</p>
+                      <div className="flex gap-1.5">
+                        <Button size="sm" className="h-7 rounded-full text-[10px] gap-1 flex-1" onClick={() => sendWhatsApp(qm.msg)}>
+                          <MessageCircle className="w-2.5 h-2.5" /> Enviar
+                        </Button>
+                        <Button size="sm" variant="outline" className="h-7 rounded-full text-[10px] gap-1" onClick={() => copyMsg(qm.msg)}>
+                          <Copy className="w-2.5 h-2.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* 📇 Informações de Contato */}
+        <AccordionItem value="contact" className="glass-card rounded-xl border-none overflow-hidden">
+          <AccordionTrigger className="px-4 py-3 hover:no-underline text-sm font-medium gap-2">
+            <span className="flex items-center gap-2"><Phone className="w-4 h-4 text-primary" /> Contato & dados pessoais</span>
+          </AccordionTrigger>
+          <AccordionContent className="px-4 pb-4 space-y-3">
+            {client.phone && (
+              <div className="flex items-center gap-3">
+                <Phone className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm">{client.phone}</span>
+              </div>
+            )}
+            {client.email && (
+              <div className="flex items-center gap-3">
+                <Mail className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm">{client.email}</span>
+              </div>
+            )}
+            {client.city && (
+              <div className="flex items-center gap-3">
+                <MapPin className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm">{client.city}</span>
+              </div>
+            )}
+            {client.interest && (
+              <div className="flex items-center gap-3">
+                <Star className="w-3.5 h-3.5 text-muted-foreground" />
+                <span className="text-sm">{client.interest}</span>
+              </div>
+            )}
+            {client.budget_range && (
+              <div className="flex items-center gap-3">
+                <TrendingUp className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm">Orçamento: {client.budget_range}</span>
+              </div>
+            )}
+            {client.source && (
+              <div className="flex items-center gap-3">
+                <Calendar className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm">Origem: {client.source}</span>
+              </div>
+            )}
+            <div className="flex items-center gap-3">
+              <Cake className="w-4 h-4 text-muted-foreground" />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" className={cn("h-auto p-0 text-sm font-normal hover:bg-transparent hover:underline", !client.birthdate && "text-muted-foreground")}>
+                    {client.birthdate ? `🎂 ${format(new Date(client.birthdate + "T12:00:00"), "dd/MM/yyyy")}` : "Adicionar data de nascimento"}
+                    <Edit2 className="w-3 h-3 ml-1.5 text-muted-foreground" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarComponent
+                    mode="single"
+                    selected={client.birthdate ? new Date(client.birthdate + "T12:00:00") : undefined}
+                    onSelect={(date) => {
+                      if (date) {
+                        updateClient.mutate({ id: client.id, birthdate: format(date, "yyyy-MM-dd") } as any);
+                        toast.success("Data de nascimento atualizada!");
+                      }
+                    }}
+                    disabled={(date) => date > new Date() || date < new Date("1920-01-01")}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* 🌡️ Temperatura & Pipeline */}
+        <AccordionItem value="pipeline" className="glass-card rounded-xl border-none overflow-hidden">
+          <AccordionTrigger className="px-4 py-3 hover:no-underline text-sm font-medium gap-2">
+            <span className="flex items-center gap-2"><Columns3 className="w-4 h-4 text-primary" /> Temperatura & Pipeline</span>
+          </AccordionTrigger>
+          <AccordionContent className="px-4 pb-4 space-y-4">
+            <div>
+              <p className="text-xs font-medium mb-2 text-muted-foreground">Temperatura</p>
+              <div className="flex gap-2">
+                {(["hot", "warm", "cold", "frozen"] as const).map(temp => (
+                  <Button key={temp} size="sm" variant={client.temperature === temp ? "default" : "outline"} className="rounded-full text-xs flex-1 h-9" onClick={() => changeTemperature(temp)}>
+                    {tempLabel[temp]}
+                  </Button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="text-xs font-medium mb-2 text-muted-foreground">Pipeline</p>
+              <div className="flex gap-1.5 overflow-x-auto">
+                {STAGES.map((stage) => (
+                  <Button key={stage.key} size="sm" variant={client.pipeline_stage === stage.key ? "default" : "outline"} className="rounded-full text-[10px] shrink-0 h-7" onClick={() => changeStage(stage.key)}>
+                    {stage.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* 🏦 Qualificação de Financiamento */}
+        <AccordionItem value="financing" className="glass-card rounded-xl border-none overflow-hidden">
+          <AccordionTrigger className="px-4 py-3 hover:no-underline text-sm font-medium gap-2">
+            <span className="flex items-center gap-2"><FileCheck className="w-4 h-4 text-primary" /> Qualificação para Financiamento</span>
+          </AccordionTrigger>
+          <AccordionContent className="px-4 pb-4">
+            <FinancingSection client={client} />
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* 📈 LTV & Oportunidades */}
+        <AccordionItem value="ltv" className="glass-card rounded-xl border-none overflow-hidden">
+          <AccordionTrigger className="px-4 py-3 hover:no-underline text-sm font-medium gap-2">
+            <span className="flex items-center gap-2"><TrendingUp className="w-4 h-4 text-primary" /> LTV & Oportunidades</span>
+          </AccordionTrigger>
+          <AccordionContent className="px-4 pb-4">
+            <LTVOpportunities clientId={client.id} clientName={client.name} clientPhone={client.phone} />
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* 🤝 Indicações */}
+        <AccordionItem value="referral" className="glass-card rounded-xl border-none overflow-hidden">
+          <AccordionTrigger className="px-4 py-3 hover:no-underline text-sm font-medium gap-2">
+            <span className="flex items-center gap-2"><Star className="w-4 h-4 text-primary" /> Indicações</span>
+          </AccordionTrigger>
+          <AccordionContent className="px-4 pb-4">
+            <ReferralSection client={client} />
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* ⭐ NPS */}
+        <AccordionItem value="nps" className="glass-card rounded-xl border-none overflow-hidden">
+          <AccordionTrigger className="px-4 py-3 hover:no-underline text-sm font-medium gap-2">
+            <span className="flex items-center gap-2">⭐ NPS</span>
+          </AccordionTrigger>
+          <AccordionContent className="px-4 pb-4">
+            <NPSSection client={client} />
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* 📊 Relatório */}
+        <AccordionItem value="report" className="glass-card rounded-xl border-none overflow-hidden">
+          <AccordionTrigger className="px-4 py-3 hover:no-underline text-sm font-medium gap-2">
+            <span className="flex items-center gap-2">📊 Relatório do cliente</span>
+          </AccordionTrigger>
+          <AccordionContent className="px-4 pb-4">
+            <ClientReportSection client={client} vehicles={vehicles} />
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* 🎁 Ofertas */}
+        <AccordionItem value="offers" className="glass-card rounded-xl border-none overflow-hidden">
+          <AccordionTrigger className="px-4 py-3 hover:no-underline text-sm font-medium gap-2">
+            <span className="flex items-center gap-2">🎁 Ofertas exclusivas</span>
+          </AccordionTrigger>
+          <AccordionContent className="px-4 pb-4">
+            <ExclusiveOffersSection client={client} />
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* 💬 Histórico do Chat */}
+        <AccordionItem value="chat" className="glass-card rounded-xl border-none overflow-hidden">
+          <AccordionTrigger className="px-4 py-3 hover:no-underline text-sm font-medium gap-2">
+            <span className="flex items-center gap-2"><MessageCircle className="w-4 h-4 text-primary" /> Histórico do Chat</span>
+          </AccordionTrigger>
+          <AccordionContent className="px-4 pb-4">
+            <ChatHistorySection clientId={client.id} />
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* 🏍️ Veículos */}
+        {vehicles && vehicles.length > 0 && (
+          <AccordionItem value="vehicles" className="glass-card rounded-xl border-none overflow-hidden">
+            <AccordionTrigger className="px-4 py-3 hover:no-underline text-sm font-medium gap-2">
+              <span className="flex items-center gap-2"><Bike className="w-4 h-4 text-primary" /> Veículos ({vehicles.length})</span>
+            </AccordionTrigger>
+            <AccordionContent className="px-4 pb-4 space-y-2">
+              {vehicles.map((v) => (
+                <div key={v.id} className="glass-card p-3 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium">{v.brand} {v.model} {v.year}</p>
+                    <p className="text-xs text-muted-foreground">{v.is_financed ? `${v.installments_paid}/${v.installments_total} parcelas` : "Quitada"}</p>
+                  </div>
+                  {v.estimated_value && <p className="text-sm font-display font-bold text-primary">R$ {v.estimated_value.toLocaleString("pt-BR")}</p>}
+                </div>
+              ))}
+            </AccordionContent>
+          </AccordionItem>
+        )}
+
+      </Accordion>
+
+      {/* Add Interaction - always visible */}
       <motion.div variants={fadeUp} className="glass-card p-4">
-        <p className="text-sm font-medium mb-3">Temperatura</p>
+        <p className="text-sm font-medium mb-3">Registrar interação</p>
+        <div className="flex gap-1.5 mb-3 overflow-x-auto">
+          {[
+            { key: "whatsapp", label: "💬 WhatsApp" },
+            { key: "call", label: "📞 Ligação" },
+            { key: "visit", label: "🏪 Visita" },
+            { key: "system", label: "📝 Nota" },
+          ].map(t => (
+            <Button key={t.key} size="sm" variant={noteType === t.key ? "default" : "outline"} className="rounded-full text-[10px] shrink-0 h-7" onClick={() => setNoteType(t.key)}>
+              {t.label}
+            </Button>
+          ))}
+        </div>
         <div className="flex gap-2">
-          {(["hot", "warm", "cold", "frozen"] as const).map(temp => (
-            <Button key={temp} size="sm" variant={client.temperature === temp ? "default" : "outline"} className="rounded-full text-xs flex-1 h-9" onClick={() => changeTemperature(temp)}>
-              {tempLabel[temp]}
-            </Button>
-          ))}
+          <Input value={note} onChange={(e) => setNote(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addNote()} placeholder="Ex: Cliente interessado em CB 500..." className="rounded-xl bg-secondary border-border/50 h-10" />
+          <Button size="icon" className="rounded-xl h-10 w-10 shrink-0" onClick={addNote}>
+            <Plus className="w-4 h-4" />
+          </Button>
         </div>
       </motion.div>
 
-      {/* Pipeline Stage */}
-      <motion.div variants={fadeUp} className="glass-card p-4">
-        <p className="text-sm font-medium mb-3">Pipeline</p>
-        <div className="flex gap-1.5 overflow-x-auto">
-          {STAGES.map((stage) => (
-            <Button key={stage.key} size="sm" variant={client.pipeline_stage === stage.key ? "default" : "outline"} className="rounded-full text-[10px] shrink-0 h-7" onClick={() => changeStage(stage.key)}>
-              {stage.label}
-            </Button>
-          ))}
-        </div>
+      {/* Unified Timeline - always visible */}
+      <motion.div variants={fadeUp}>
+        <h2 className="font-display font-semibold text-sm mb-3 flex items-center gap-2"><Clock className="w-4 h-4" /> Timeline Unificada</h2>
+        <LeadTimeline clientId={client.id} />
       </motion.div>
 
       {/* Loss Reason Dialog */}
@@ -588,91 +813,6 @@ const AdminClientDetail = () => {
           </div>
         </DialogContent>
       </Dialog>
-
-      {/* Financing */}
-      <motion.div variants={fadeUp}>
-        <h2 className="font-display font-semibold text-sm mb-3 flex items-center gap-2">
-          <FileCheck className="w-4 h-4 text-primary" /> Qualificação para Financiamento
-        </h2>
-        <FinancingSection client={client} />
-      </motion.div>
-
-      {/* LTV */}
-      <motion.div variants={fadeUp}>
-        <LTVOpportunities clientId={client.id} clientName={client.name} clientPhone={client.phone} />
-      </motion.div>
-
-      {/* Referral */}
-      <motion.div variants={fadeUp}>
-        <ReferralSection client={client} />
-      </motion.div>
-
-      {/* NPS */}
-      <motion.div variants={fadeUp}>
-        <NPSSection client={client} />
-      </motion.div>
-
-      {/* Report */}
-      <motion.div variants={fadeUp}>
-        <ClientReportSection client={client} vehicles={vehicles} />
-      </motion.div>
-
-      {/* Offers */}
-      <motion.div variants={fadeUp}>
-        <ExclusiveOffersSection client={client} />
-      </motion.div>
-
-      {/* Chat History */}
-      <motion.div variants={fadeUp}>
-        <ChatHistorySection clientId={client.id} />
-      </motion.div>
-
-      {/* Vehicles */}
-      {vehicles && vehicles.length > 0 && (
-        <motion.div variants={fadeUp}>
-          <h2 className="font-display font-semibold text-sm mb-2 flex items-center gap-2"><Bike className="w-4 h-4" /> Veículos</h2>
-          <div className="space-y-2">
-            {vehicles.map((v) => (
-              <div key={v.id} className="glass-card p-3 flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium">{v.brand} {v.model} {v.year}</p>
-                  <p className="text-xs text-muted-foreground">{v.is_financed ? `${v.installments_paid}/${v.installments_total} parcelas` : "Quitada"}</p>
-                </div>
-                {v.estimated_value && <p className="text-sm font-display font-bold text-primary">R$ {v.estimated_value.toLocaleString("pt-BR")}</p>}
-              </div>
-            ))}
-          </div>
-        </motion.div>
-      )}
-
-      {/* Add Interaction */}
-      <motion.div variants={fadeUp} className="glass-card p-4">
-        <p className="text-sm font-medium mb-3">Registrar interação</p>
-        <div className="flex gap-1.5 mb-3 overflow-x-auto">
-          {[
-            { key: "whatsapp", label: "💬 WhatsApp" },
-            { key: "call", label: "📞 Ligação" },
-            { key: "visit", label: "🏪 Visita" },
-            { key: "system", label: "📝 Nota" },
-          ].map(t => (
-            <Button key={t.key} size="sm" variant={noteType === t.key ? "default" : "outline"} className="rounded-full text-[10px] shrink-0 h-7" onClick={() => setNoteType(t.key)}>
-              {t.label}
-            </Button>
-          ))}
-        </div>
-        <div className="flex gap-2">
-          <Input value={note} onChange={(e) => setNote(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addNote()} placeholder="Ex: Cliente interessado em CB 500..." className="rounded-xl bg-secondary border-border/50 h-10" />
-          <Button size="icon" className="rounded-xl h-10 w-10 shrink-0" onClick={addNote}>
-            <Plus className="w-4 h-4" />
-          </Button>
-        </div>
-      </motion.div>
-
-      {/* Unified Timeline */}
-      <motion.div variants={fadeUp}>
-        <h2 className="font-display font-semibold text-sm mb-3 flex items-center gap-2"><Clock className="w-4 h-4" /> Timeline Unificada</h2>
-        <LeadTimeline clientId={client.id} />
-      </motion.div>
     </motion.div>
   );
 
