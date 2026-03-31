@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { useClient, useClientInteractions, useClientVehicles, useCreateInteraction, useUpdateClient, useCreateTask } from "@/hooks/useSupabase";
 import {
@@ -89,6 +90,8 @@ const AdminClientDetail = () => {
   const [scheduleDate, setScheduleDate] = useState(new Date().toISOString().split("T")[0]);
   const [scheduleReason, setScheduleReason] = useState("");
   const [copilotOpen, setCopilotOpen] = useState(true);
+  const [showLossDialog, setShowLossDialog] = useState(false);
+  const [lossReason, setLossReason] = useState("");
   const isMobile = useIsMobile();
 
   if (isLoading) {
@@ -123,12 +126,58 @@ const AdminClientDetail = () => {
   const firstName = client.name.split(" ")[0];
 
   const proposalLink = `${window.location.origin}/proposta/${client.id}`;
+
+  // Mensagens por etapa do funil
+  const stageMessages: Record<string, { label: string; msg: string }[]> = {
+    new: [
+      { label: "👋 Boas-vindas", msg: `Fala ${firstName}! Aqui é da Arsenal Motors 🏍️ Vi que você tem interesse em ${(client.interest || "motos").toLowerCase()}. Posso te ajudar?` },
+      { label: "📸 Catálogo", msg: `${firstName}, tenho umas opções incríveis pra te mostrar! Quer que eu mande fotos e condições?` },
+    ],
+    contacted: [
+      { label: "🔁 Follow-up", msg: `E aí ${firstName}! Passando pra ver se você teve tempo de pensar. Tem alguma dúvida?` },
+      { label: "📋 Proposta", msg: `${firstName}, preparei sua proposta com todas as condições! 👉 ${proposalLink}` },
+    ],
+    interested: [
+      { label: "🔥 Esquenta", msg: `${firstName}, essa moto tá saindo rápido! Quer que eu reserve pra você? 🏍️` },
+      { label: "💰 Simulação", msg: `${firstName}, fiz uma simulação de financiamento pra você. Parcelas a partir de valores bem acessíveis! Quer ver?` },
+    ],
+    attending: [
+      { label: "📍 Confirmação", msg: `${firstName}, tudo certo pra sua visita! Te espero aqui na Arsenal Motors. Qualquer coisa me avisa! 🏍️` },
+      { label: "📸 Prévia", msg: `${firstName}, separei a moto pra você ver pessoalmente. Tá impecável! Vem conferir 🔥` },
+    ],
+    thinking: [
+      { label: "⏳ Incentivo", msg: `${firstName}, entendo que precisa pensar! Mas essa condição é por tempo limitado. Posso segurar até quando?` },
+      { label: "🤝 Dúvidas", msg: `${firstName}, se tiver qualquer dúvida sobre a moto ou financiamento, pode mandar! Tô aqui pra ajudar 💪` },
+    ],
+    negotiating: [
+      { label: "⚡ Urgência", msg: `${firstName}, fechamos então? Tenho outros interessados nessa mesma moto. Quero garantir pra você! 🏍️` },
+      { label: "🎯 Condição", msg: `${firstName}, consegui uma condição especial pra fechar hoje! Posso te contar os detalhes?` },
+    ],
+    proposal_sent: [
+      { label: "📋 Proposta", msg: `${firstName}, preparei sua proposta completa! Dá uma olhada:\n\n👉 ${proposalLink}\n\nQualquer dúvida é só chamar!` },
+      { label: "⏰ Retorno", msg: `${firstName}, viu a proposta que te mandei? Conseguiu analisar? 😊` },
+    ],
+    financing_analysis: [
+      { label: "🏦 Andamento", msg: `${firstName}, seu financiamento está em análise no banco! Te aviso assim que tiver retorno 🤞` },
+      { label: "📄 Documentos", msg: `${firstName}, o banco precisa de mais um documento pra liberar. Consegue me mandar [documento]?` },
+    ],
+    approved: [
+      { label: "✅ Fechamento", msg: `${firstName}, APROVADO! 🎉 Quando você pode vir assinar e sair com a moto?` },
+      { label: "📋 Link", msg: `${firstName}, sua proposta aprovada tá aqui:\n\n👉 ${proposalLink}\n\nBora fechar? 🏍️` },
+    ],
+    reactivation: [
+      { label: "🔄 Reativação", msg: `Fala ${firstName}! Faz um tempo que a gente conversou. Surgiu algo novo que pode te interessar 🔥` },
+      { label: "🎁 Oferta", msg: `${firstName}, tenho uma condição exclusiva pra quem já é nosso cliente. Quer saber mais?` },
+    ],
+  };
+
+  const currentStageMessages = stageMessages[client.pipeline_stage] || stageMessages.new || [];
   
+
   const quickMessages = [
-    { label: "1° Contato", msg: `Fala ${firstName}! Aqui é da Arsenal Motors 🏍️ Vi que você tem interesse em ${(client.interest || "motos").toLowerCase()}. Posso te ajudar?` },
-    { label: "Follow-up", msg: `E aí ${firstName}! Passando pra ver se você teve tempo de pensar na nossa proposta. Tem alguma dúvida?` },
+    ...currentStageMessages,
     { label: "📋 Proposta", msg: `${firstName}, preparei sua proposta com todas as condições! Dá uma olhada aqui:\n\n👉 ${proposalLink}\n\nQualquer dúvida é só me chamar! 🏍️` },
-    { label: "Reativação", msg: `Fala ${firstName}! Faz um tempo que a gente conversou. Surgiu algo novo que pode te interessar 🔥` },
+    { label: "🔄 Reativação", msg: `Fala ${firstName}! Faz um tempo que a gente conversou. Surgiu algo novo que pode te interessar 🔥` },
   ];
 
   // Dados reais do banco (salvos em funnel_data)
@@ -197,9 +246,39 @@ const AdminClientDetail = () => {
   };
 
   const changeStage = (stage: string) => {
+    // If changing to closed_lost, show loss reason dialog
+    if (stage === "closed_lost") {
+      setShowLossDialog(true);
+      return;
+    }
     updateClient.mutate({ id: client.id, pipeline_stage: stage as any });
     createInteraction.mutate({ client_id: client.id, type: "system", content: `Pipeline alterado para: ${STAGES.find(s => s.key === stage)?.label}`, created_by: "admin" });
     toast.success(`Status atualizado para ${STAGES.find(s => s.key === stage)?.label}`);
+  };
+
+  const LOSS_REASONS = [
+    { value: "price_high", label: "💰 Preço alto", emoji: "💰" },
+    { value: "financing_rejected", label: "🏦 Financiamento recusado", emoji: "🏦" },
+    { value: "bought_elsewhere", label: "🏪 Comprou em outro lugar", emoji: "🏪" },
+    { value: "no_response", label: "👻 Sumiu / sem resposta", emoji: "👻" },
+    { value: "no_budget", label: "💸 Sem orçamento agora", emoji: "💸" },
+    { value: "changed_mind", label: "🔄 Desistiu da compra", emoji: "🔄" },
+    { value: "other", label: "📝 Outro motivo", emoji: "📝" },
+  ];
+
+  const confirmLoss = () => {
+    if (!lossReason) { toast.error("Selecione o motivo da perda"); return; }
+    const reasonLabel = LOSS_REASONS.find(r => r.value === lossReason)?.label || lossReason;
+    const currentFunnelData = (client.funnel_data as any) || {};
+    updateClient.mutate({ 
+      id: client.id, 
+      pipeline_stage: "closed_lost" as any,
+      funnel_data: { ...currentFunnelData, loss_reason: lossReason }
+    } as any);
+    createInteraction.mutate({ client_id: client.id, type: "system", content: `Lead perdido. Motivo: ${reasonLabel}`, created_by: "admin" });
+    setShowLossDialog(false);
+    setLossReason("");
+    toast.success("Lead marcado como perdido");
   };
 
   const changeTemperature = (temp: string) => {
@@ -480,6 +559,35 @@ const AdminClientDetail = () => {
           ))}
         </div>
       </motion.div>
+
+      {/* Loss Reason Dialog */}
+      <Dialog open={showLossDialog} onOpenChange={setShowLossDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-center">❌ Por que perdeu esse lead?</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            {LOSS_REASONS.map(reason => (
+              <Button
+                key={reason.value}
+                variant={lossReason === reason.value ? "default" : "outline"}
+                className="w-full justify-start rounded-xl h-11 text-sm gap-2"
+                onClick={() => setLossReason(reason.value)}
+              >
+                {reason.label}
+              </Button>
+            ))}
+          </div>
+          <div className="flex gap-2 pt-2">
+            <Button variant="outline" className="flex-1 rounded-xl" onClick={() => { setShowLossDialog(false); setLossReason(""); }}>
+              Cancelar
+            </Button>
+            <Button className="flex-1 rounded-xl" onClick={confirmLoss} disabled={!lossReason}>
+              Confirmar perda
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Financing */}
       <motion.div variants={fadeUp}>
