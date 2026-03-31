@@ -1357,6 +1357,11 @@ export type Database = {
         | "approved"
         | "rejected"
         | "reactivation"
+        | "first_contact"
+        | "qualification"
+        | "proposal"
+        | "negotiation"
+        | "closing"
       task_type: "opportunity" | "relationship" | "value" | "follow_up"
       timeline_event_type:
         | "message_sent"
@@ -1526,6 +1531,11 @@ export const Constants = {
         "approved",
         "rejected",
         "reactivation",
+        "first_contact",
+        "qualification",
+        "proposal",
+        "negotiation",
+        "closing",
       ],
       task_type: ["opportunity", "relationship", "value", "follow_up"],
       timeline_event_type: [
