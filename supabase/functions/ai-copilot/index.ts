@@ -252,6 +252,9 @@ serve(async (req) => {
       });
     }
 
+    // Log AI usage
+    supabase.from("ai_usage_logs").insert({ function_name: "ai-copilot" }).then(() => {});
+
     // Use flash-lite for cheaper calls
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

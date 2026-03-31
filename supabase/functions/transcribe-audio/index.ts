@@ -25,6 +25,11 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY not configured");
     }
 
+    // Log AI usage
+    const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2.100.1");
+    const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    sb.from("ai_usage_logs").insert({ function_name: "transcribe-audio" }).then(() => {});
+
     // Strip the data URI prefix if present, keep raw base64
     const rawBase64 = audio_base64.replace(/^data:audio\/[^;]+;base64,/, "");
     
