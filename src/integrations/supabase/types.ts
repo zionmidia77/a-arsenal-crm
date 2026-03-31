@@ -1374,7 +1374,15 @@ export type Database = {
       auto_escalate_stale_leads: { Args: never; Returns: undefined }
       auto_revision_reminders: { Args: never; Returns: undefined }
       auto_upgrade_alerts: { Args: never; Returns: undefined }
+      calculate_churn_risk: {
+        Args: { client_id_param: string }
+        Returns: number
+      }
       calculate_lead_score: {
+        Args: { client_id_param: string }
+        Returns: number
+      }
+      calculate_priority_score: {
         Args: { client_id_param: string }
         Returns: number
       }
