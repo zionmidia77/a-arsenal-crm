@@ -63,6 +63,12 @@ const AdminDailyBriefing = () => {
   const urgencyColor = urgencyScore > 60 ? "text-destructive" : urgencyScore > 30 ? "text-warning" : "text-primary";
   const urgencyLabel = urgencyScore > 60 ? "🔴 Dia crítico" : urgencyScore > 30 ? "🟡 Atenção necessária" : "🟢 Tudo sob controle";
 
+  const briefingTourSteps = [
+    { target: '[data-tour="briefing-urgency"]', title: "Indicador de urgência", description: "Mostra o quão crítico é o seu dia baseado em ações atrasadas, promessas vencidas e risco de perda.", icon: ZapIcon, position: "bottom" as const },
+    { target: '[data-tour="briefing-stats"]', title: "Resumo rápido", description: "Veja de relance: leads ativos, quentes, tarefas de hoje e atrasadas.", icon: BarChart3, position: "bottom" as const },
+    { target: '[data-tour="briefing-actions"]', title: "Ações prioritárias", description: "Lista dos leads que precisam de ação imediata, com acesso rápido à fila inteligente.", icon: Sun, position: "bottom" as const },
+  ];
+
   return (
     <motion.div
       initial="initial"
@@ -70,6 +76,7 @@ const AdminDailyBriefing = () => {
       transition={{ staggerChildren: 0.06 }}
       className="p-5 md:p-6 max-w-2xl mx-auto space-y-5"
     >
+      <PageTour tourKey="briefing" steps={briefingTourSteps} />
       {/* Greeting */}
       <motion.div variants={fadeUp} className="space-y-1">
         <h1 className="text-2xl font-display font-bold">
