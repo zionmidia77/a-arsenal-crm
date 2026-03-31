@@ -13,6 +13,7 @@ import { format } from "date-fns";
 import { getObjectionMessages } from "@/lib/objectionMessages";
 import NextActionModal from "@/components/admin/NextActionModal";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import PageTour from "@/components/admin/PageTour";
 
 const tempBadge: Record<string, string> = {
   hot: "bg-primary/15 text-primary",
