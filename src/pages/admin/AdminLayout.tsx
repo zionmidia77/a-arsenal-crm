@@ -14,6 +14,7 @@ import PhotoLeadCapture from "@/components/admin/PhotoLeadCapture";
 import AdminBreadcrumb from "@/components/admin/AdminBreadcrumb";
 import KeyboardShortcuts from "@/components/admin/KeyboardShortcuts";
 import OnboardingTour from "@/components/admin/OnboardingTour";
+import { useOverdueLeads } from "@/hooks/useOverdueLeads";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
