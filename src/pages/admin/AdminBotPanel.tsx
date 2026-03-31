@@ -114,7 +114,7 @@ const AdminBotPanel = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Realtime subscription for bot_configs AND bot_logs
+  // Realtime subscription for bot_configs, bot_logs AND bot_posting_queue
   useEffect(() => {
     const channel = supabase
       .channel("bot-panel-realtime")
@@ -124,6 +124,9 @@ const AdminBotPanel = () => {
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "bot_logs" }, () => {
         qc.invalidateQueries({ queryKey: ["bot-logs"] });
         qc.invalidateQueries({ queryKey: ["bot-configs"] });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "bot_posting_queue" }, () => {
+        qc.invalidateQueries({ queryKey: ["posting-queue"] });
       })
       .subscribe();
     return () => {
