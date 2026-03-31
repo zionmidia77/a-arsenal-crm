@@ -5,13 +5,27 @@ import { ChevronLeft } from "lucide-react";
 import {
   Users, Flame, AlertTriangle, TrendingUp, CalendarCheck,
   MessageCircle, Eye, ChevronRight, BarChart3, Target, Trophy, Activity,
-  Cake, X, Gift, FileDown, Loader2, Kanban
+  Cake, X, Gift, FileDown, Loader2, Kanban, Zap
 } from "lucide-react";
 import { fetchMonthlyData, generateMonthlyPDF } from "@/lib/generateMonthlyReport";
 import { toast } from "sonner";
 import { AreaChart, Area, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import { useDashboardStats, useClients, useOverdueTasks, useAllPendingTasks, useLeadsChartData } from "@/hooks/useSupabase";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import EmptyState from "@/components/EmptyState";
+import ActivityFeed from "@/components/admin/ActivityFeed";
+import LTVDashboard from "@/components/admin/LTVDashboard";
+import SmartAlerts from "@/components/admin/SmartAlerts";
+import AIUsageDashboard from "@/components/admin/AIUsageDashboard";
+import SpeedToLeadCard from "@/components/admin/SpeedToLeadCard";
+import InactivityAlerts from "@/components/admin/InactivityAlerts";
+import LossReasonsChart from "@/components/admin/LossReasonsChart";
+import { useOverdueLeads } from "@/hooks/useOverdueLeads";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
