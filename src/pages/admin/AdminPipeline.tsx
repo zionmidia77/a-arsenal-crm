@@ -12,6 +12,8 @@ import { toast } from "sonner";
 import { DragDropContext, type DropResult } from "@hello-pangea/dnd";
 import KanbanColumn from "@/components/pipeline/KanbanColumn";
 import type { Tables } from "@/integrations/supabase/types";
+import PageTour from "@/components/admin/PageTour";
+import { Kanban, Filter, LayoutList as LayoutListIcon, MousePointer } from "lucide-react";
 
 const STAGES = [
   { key: "new", label: "Novo Lead", emoji: "🆕", color: "border-t-blue-500" },
