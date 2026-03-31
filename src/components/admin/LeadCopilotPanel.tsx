@@ -34,7 +34,7 @@ const QUICK_COMMANDS = [
   { label: "🔄 Reativação", cmd: "Crie uma estratégia de reativação com 3 mensagens progressivas usando gatilhos de escassez, novidade e prova social." },
 ];
 
-const LeadCopilotPanel = ({ clientId, clientName, clientPhone, vehiclePhotos }: LeadCopilotPanelProps) => {
+const LeadCopilotPanel = ({ clientId, clientName, clientPhone, clientInterest, clientBudget, vehiclePhotos }: LeadCopilotPanelProps) => {
   const copilot = useLeadCopilot(clientId);
   const { data: memory } = useLeadMemory(clientId);
   const [isExporting, setIsExporting] = useState(false);
