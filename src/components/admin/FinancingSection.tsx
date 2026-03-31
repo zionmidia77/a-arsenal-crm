@@ -91,7 +91,7 @@ const FinancingSection = ({ client }: FinancingSectionProps) => {
     down_payment_amount: client.down_payment_amount || "",
   });
 
-  // Load uploaded document URLs
+  // Load uploaded document URLs (including bank proposal)
   useEffect(() => {
     const loadDocUrls = async () => {
       try {
@@ -111,12 +111,21 @@ const FinancingSection = ({ client }: FinancingSectionProps) => {
           }
         }
         setDocUrls(urls);
+
+        // Load bank proposal
+        const bankFile = files.find(f => f.name.startsWith("bank_proposal_"));
+        if (bankFile) {
+          const { data } = await supabase.storage
+            .from("financing-docs")
+            .createSignedUrl(`${client.id}/${bankFile.name}`, 3600);
+          if (data?.signedUrl) setBankProposalUrl(data.signedUrl);
+        }
       } catch (err) {
         console.error("Error loading doc URLs:", err);
       }
     };
     loadDocUrls();
-  }, [client.id, uploading]);
+  }, [client.id, uploading, uploadingBankProposal]);
 
   // Load verification history
   useEffect(() => {
