@@ -298,6 +298,9 @@ const AdminBotPanel = () => {
         <StatCard icon={AlertTriangle} label="Erros" value={errorLogs.toString()} color="text-destructive" />
       </div>
 
+      {/* Performance Dashboard */}
+      <BotPerformanceDashboard />
+
       {/* Bot Cards */}
       <div className="grid gap-4 md:grid-cols-2">
         {isLoading ? (
