@@ -200,8 +200,16 @@ const AdminLeads = () => {
       return sortAsc ? cmp : -cmp;
     });
 
+  const leadsTourSteps = [
+    { target: '[data-tour="leads-search"]', title: "Buscar leads", description: "Pesquise por nome, telefone ou interesse para encontrar leads rapidamente.", icon: SearchIcon, position: "bottom" as const },
+    { target: '[data-tour="leads-filters"]', title: "Filtros avançados", description: "Filtre por temperatura, etapa, fonte, tags e data para segmentar seus leads.", icon: FilterIcon, position: "bottom" as const },
+    { target: '[data-tour="leads-export"]', title: "Exportar dados", description: "Exporte a lista filtrada de leads em formato CSV para análise externa.", icon: FileDownIcon, position: "bottom" as const },
+    { target: '[data-tour="leads-view-mode"]', title: "Modo de visualização", description: "Alterne entre visualização expandida (cards detalhados) ou compacta (lista).", icon: LayoutGridIcon, position: "bottom" as const },
+  ];
+
   return (
     <motion.div variants={stagger} initial="initial" animate="animate" className="p-4 md:p-6 space-y-4 md:space-y-5 max-w-5xl xl:max-w-6xl">
+      <PageTour tourKey="leads" steps={leadsTourSteps} />
       <motion.div variants={fadeUp} className="flex items-start justify-between gap-2 flex-wrap">
         <div>
           <h1 className="text-2xl font-display font-bold">Leads</h1>
