@@ -560,6 +560,35 @@ const AdminClientDetail = () => {
         </div>
       </motion.div>
 
+      {/* Loss Reason Dialog */}
+      <Dialog open={showLossDialog} onOpenChange={setShowLossDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-center">❌ Por que perdeu esse lead?</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            {LOSS_REASONS.map(reason => (
+              <Button
+                key={reason.value}
+                variant={lossReason === reason.value ? "default" : "outline"}
+                className="w-full justify-start rounded-xl h-11 text-sm gap-2"
+                onClick={() => setLossReason(reason.value)}
+              >
+                {reason.label}
+              </Button>
+            ))}
+          </div>
+          <div className="flex gap-2 pt-2">
+            <Button variant="outline" className="flex-1 rounded-xl" onClick={() => { setShowLossDialog(false); setLossReason(""); }}>
+              Cancelar
+            </Button>
+            <Button className="flex-1 rounded-xl" onClick={confirmLoss} disabled={!lossReason}>
+              Confirmar perda
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Financing */}
       <motion.div variants={fadeUp}>
         <h2 className="font-display font-semibold text-sm mb-3 flex items-center gap-2">
