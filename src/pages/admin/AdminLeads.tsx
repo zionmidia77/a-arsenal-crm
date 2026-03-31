@@ -460,7 +460,13 @@ const AdminLeads = () => {
         /* ── EXPANDED VIEW ── */
         <div className="space-y-3">
           {filtered.map((client) => (
-            <motion.div key={client.id} variants={fadeUp} className={`glass-card-hover p-4 border-l-4 ${tempStyles[client.temperature]} ${selectedIds.has(client.id) ? "ring-1 ring-primary/50 bg-primary/5" : ""}`}>
+            <motion.div key={client.id} variants={fadeUp}>
+              <SwipeableLeadCard
+                onWhatsApp={client.phone ? () => window.open(`https://wa.me/55${client.phone?.replace(/\D/g, "")}`) : undefined}
+                onView={() => navigate(`/admin/client/${client.id}`)}
+                disabled={selectMode}
+              >
+              <div className={`glass-card-hover p-4 border-l-4 ${tempStyles[client.temperature]} ${selectedIds.has(client.id) ? "ring-1 ring-primary/50 bg-primary/5" : ""}`}>
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-3">
                   {selectMode && (
