@@ -80,6 +80,15 @@ const FinancingSection = ({ client }: FinancingSectionProps) => {
   const [previewDoc, setPreviewDoc] = useState<{ key: string; url: string; label: string } | null>(null);
   const [bankProposalUrl, setBankProposalUrl] = useState<string | null>(null);
   const [uploadingBankProposal, setUploadingBankProposal] = useState(false);
+  const [bankProposal, setBankProposal] = useState<{
+    approved_amount?: number;
+    installments?: Record<string, number>; // e.g. {"12": 850, "24": 500, ...}
+    bank_name?: string;
+    notes?: string;
+  }>(() => {
+    const fd = client.funnel_data as any;
+    return fd?.bank_proposal || {};
+  });
   const [editFields, setEditFields] = useState({
     phone: client.phone || "",
     employer: client.employer || "",
