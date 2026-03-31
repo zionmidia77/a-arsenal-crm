@@ -189,7 +189,24 @@ export const PostingQueueEnhanced = ({
                 </DialogHeader>
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label>Veículos *</Label>
+                    <div className="flex items-center justify-between">
+                      <Label>Veículos *</Label>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs h-7 gap-1"
+                        onClick={() => {
+                          if (selectedVehicles.length === (stockVehicles?.length || 0)) {
+                            setSelectedVehicles([]);
+                          } else {
+                            setSelectedVehicles(stockVehicles?.map((v) => v.id) || []);
+                          }
+                        }}
+                      >
+                        <CheckSquare className="w-3.5 h-3.5" />
+                        {selectedVehicles.length === (stockVehicles?.length || 0) ? "Desmarcar todos" : "Selecionar todos"}
+                      </Button>
+                    </div>
                     <ScrollArea className="h-[200px] rounded-md border p-2">
                       {stockVehicles?.map((v) => (
                         <div
@@ -202,7 +219,7 @@ export const PostingQueueEnhanced = ({
                         </div>
                       ))}
                     </ScrollArea>
-                    <p className="text-xs text-muted-foreground">{selectedVehicles.length} selecionados</p>
+                    <p className="text-xs text-muted-foreground">{selectedVehicles.length} de {stockVehicles?.length || 0} selecionados</p>
                   </div>
                   <div className="space-y-2">
                     <Label>Horário (opcional — vazio = agora)</Label>
