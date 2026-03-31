@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { MessageCircle } from "lucide-react";
+
 
 const FloatingChatButton = () => {
   const navigate = useNavigate();
