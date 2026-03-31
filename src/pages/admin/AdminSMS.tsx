@@ -337,7 +337,7 @@ const AdminSMS = () => {
           </h1>
           <p className="text-sm text-muted-foreground">Automação de recuperação de leads via SMSdev</p>
         </div>
-        <Button onClick={() => runAutomation.mutate()} disabled={runAutomation.isPending} size="sm" className="gap-1">
+        <Button onClick={() => runAutomation.mutate()} disabled={runAutomation.isPending} size="sm" className="gap-1" data-tour="sms-run">
           {runAutomation.isPending ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
           Executar Automações
         </Button>
