@@ -133,6 +133,12 @@ const AdminSmartQueue = () => {
 
   return (
     <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-4">
+      <PageTour tourKey="queue" steps={[
+        { target: '[data-tour="queue-progress"]', title: "Progresso da fila", description: "Acompanhe quantos leads você já atendeu e quantos faltam.", icon: Zap, position: "bottom" as const },
+        { target: '[data-tour="queue-card"]', title: "Card do lead", description: "Informações completas do lead: nome, temperatura, score, valor e próxima ação a executar.", icon: Target, position: "bottom" as const },
+        { target: '[data-tour="queue-actions"]', title: "Ações rápidas", description: "Envie WhatsApp com mensagem pronta, marque como atendido ou ligue — tudo em 1 clique.", icon: MessageCircle, position: "bottom" as const },
+        { target: '[data-tour="queue-messages"]', title: "Mensagens sugeridas", description: "Mensagens personalizadas baseadas na objeção do lead, prontas para envio.", icon: Flame, position: "bottom" as const },
+      ]} />
       {/* Header */}
       <div className="flex items-center justify-between">
         <Button variant="ghost" size="sm" onClick={() => navigate("/admin")} className="gap-1">
