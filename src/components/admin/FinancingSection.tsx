@@ -966,6 +966,127 @@ const FinancingSection = ({ client }: FinancingSectionProps) => {
         </div>
       </motion.div>
 
+      {/* Bank Proposal Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="glass-card p-4"
+      >
+        <p className="text-sm font-medium mb-3 flex items-center gap-2">
+          <FileCheck className="w-4 h-4 text-primary" /> Proposta do Banco
+        </p>
+
+        {/* Status buttons */}
+        <div className="flex gap-1.5 mb-3">
+          {[
+            { value: "approved", label: "✅ Aprovado", color: "bg-green-500/15 text-green-400 border-green-500/30" },
+            { value: "pre_approved", label: "🟡 Pré-Aprovado", color: "bg-amber-500/15 text-amber-400 border-amber-500/30" },
+            { value: "rejected", label: "❌ Recusado", color: "bg-destructive/15 text-destructive border-destructive/30" },
+          ].map((s) => (
+            <Button
+              key={s.value}
+              size="sm"
+              variant="outline"
+              className={cn(
+                "rounded-full text-[10px] h-7 flex-1 border transition-all",
+                client.financing_status === s.value
+                  ? s.color + " font-bold ring-1 ring-offset-1 ring-offset-background"
+                  : "border-border/50"
+              )}
+              onClick={() => {
+                updateClient.mutate({ id: client.id, financing_status: s.value } as any);
+                toast.success(`Status atualizado: ${s.label}`);
+              }}
+            >
+              {s.label}
+            </Button>
+          ))}
+        </div>
+
+        {/* Upload bank proposal */}
+        <div className="flex items-center gap-2">
+          {bankProposalUrl ? (
+            <div className="flex-1 flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="rounded-full text-[10px] h-7 gap-1 text-primary"
+                onClick={() => setPreviewDoc({ key: "bank_proposal", url: bankProposalUrl, label: "Proposta do Banco" })}
+              >
+                <Eye className="w-3 h-3" /> Ver proposta
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="rounded-full text-[10px] h-7 gap-1 text-destructive"
+                onClick={async () => {
+                  try {
+                    const { data: files } = await supabase.storage.from("financing-docs").list(client.id);
+                    const toDelete = (files || []).filter(f => f.name.startsWith("bank_proposal_"));
+                    if (toDelete.length > 0) {
+                      await supabase.storage.from("financing-docs").remove(toDelete.map(f => `${client.id}/${f.name}`));
+                    }
+                    setBankProposalUrl(null);
+                    toast.success("Proposta removida!");
+                  } catch { toast.error("Erro ao remover"); }
+                }}
+              >
+                <Trash2 className="w-3 h-3" /> Remover
+              </Button>
+            </div>
+          ) : (
+            <Button
+              size="sm"
+              variant="outline"
+              className="rounded-full text-[10px] h-7 gap-1 flex-1"
+              disabled={uploadingBankProposal}
+              onClick={() => {
+                const input = document.createElement("input");
+                input.type = "file";
+                input.accept = "image/*,.pdf";
+                input.onchange = async (e) => {
+                  const file = (e.target as HTMLInputElement).files?.[0];
+                  if (!file) return;
+                  setUploadingBankProposal(true);
+                  try {
+                    const ext = file.name.split(".").pop() || "jpg";
+                    const path = `${client.id}/bank_proposal_${Date.now()}.${ext}`;
+                    const { error } = await supabase.storage.from("financing-docs").upload(path, file);
+                    if (error) throw error;
+                    toast.success("Proposta do banco anexada!");
+                  } catch (err: any) {
+                    toast.error(err.message || "Erro ao enviar");
+                  } finally {
+                    setUploadingBankProposal(false);
+                  }
+                };
+                input.click();
+              }}
+            >
+              {uploadingBankProposal ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
+              Anexar proposta do banco
+            </Button>
+          )}
+        </div>
+
+        {/* Status-specific info */}
+        {client.financing_status === "approved" && (
+          <div className="mt-3 p-2 rounded-lg bg-green-500/10 border border-green-500/30 text-center">
+            <p className="text-xs text-green-400 font-medium">✅ Financiamento aprovado pelo banco!</p>
+          </div>
+        )}
+        {client.financing_status === "pre_approved" && (
+          <div className="mt-3 p-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-center">
+            <p className="text-xs text-amber-400 font-medium">🟡 Pré-aprovado — aguardando confirmação final</p>
+          </div>
+        )}
+        {client.financing_status === "rejected" && (
+          <div className="mt-3 p-2 rounded-lg bg-destructive/10 border border-destructive/30 text-center">
+            <p className="text-xs text-destructive font-medium">❌ Financiamento recusado pelo banco</p>
+          </div>
+        )}
+      </motion.div>
+
       {/* Send to WhatsApp */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
