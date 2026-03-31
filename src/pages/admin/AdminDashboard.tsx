@@ -133,7 +133,7 @@ const AdminDashboard = () => {
   ];
 
   return (
-    <motion.div variants={stagger} initial="initial" animate="animate" className="p-5 md:p-6 space-y-6 max-w-4xl">
+    <motion.div variants={stagger} initial="initial" animate="animate" className="p-4 md:p-6 space-y-5 md:space-y-6 max-w-4xl">
       {/* Greeting */}
       <motion.div variants={fadeUp} className="flex items-start justify-between">
         <div>
