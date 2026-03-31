@@ -6,6 +6,8 @@ import { Check, Gift, TrendingUp, Heart, MessageCircle, Calendar, AlertTriangle,
 import { useTasks, useUpdateTask, useOverdueTasks, useAllPendingTasks } from "@/hooks/useSupabase";
 import { useNavigate } from "react-router-dom";
 import { TaskCardSkeleton } from "@/components/admin/SkeletonLoaders";
+import PageTour from "@/components/admin/PageTour";
+import { ListChecks, CalendarDays, AlertTriangle as AlertIcon, Filter as FilterIcon } from "lucide-react";
 
 const typeIcon: Record<string, any> = { opportunity: TrendingUp, relationship: Heart, value: Gift, follow_up: TrendingUp };
 const typeColor: Record<string, string> = { opportunity: "text-primary", relationship: "text-pink-400", value: "text-success", follow_up: "text-info" };
