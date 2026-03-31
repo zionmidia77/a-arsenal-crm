@@ -78,7 +78,7 @@ const AdminSimulations = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3" data-tour="sim-stats">
         {[
           { label: "Total", value: totalSimulations, icon: Calculator, color: "text-primary" },
           { label: "Pendentes", value: pendingCount, icon: Clock, color: "text-warning" },
