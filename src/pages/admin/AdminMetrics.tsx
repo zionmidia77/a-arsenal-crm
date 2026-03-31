@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { StatCardSkeleton, MetricsChartSkeleton } from "@/components/admin/SkeletonLoaders";
 import { useMemo, useState } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import PageTour from "@/components/admin/PageTour";
 
 const stagger = { animate: { transition: { staggerChildren: 0.05 } } };
 const fadeUp = { initial: { opacity: 0, y: 12 }, animate: { opacity: 1, y: 0, transition: { duration: 0.35 } } };

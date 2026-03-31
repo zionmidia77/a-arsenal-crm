@@ -21,6 +21,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, LineChart, Line
 } from "recharts";
+import PageTour from "@/components/admin/PageTour";
 
 // ============ Hooks ============
 const useSMSStats = () => {
