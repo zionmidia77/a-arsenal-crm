@@ -448,6 +448,124 @@ const AdminBotPanel = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Posting Queue */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base flex items-center gap-2">
+              <ListOrdered className="w-4 h-4 text-primary" />
+              Fila de Postagem
+              <Badge variant="secondary" className="text-xs">
+                {queueItems?.filter((q) => q.status === "pending").length || 0} pendentes
+              </Badge>
+            </CardTitle>
+            <Dialog open={scheduleOpen} onOpenChange={setScheduleOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="gap-1">
+                  <CalendarPlus className="w-3.5 h-3.5" /> Agendar Postagem
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Agendar Postagem</DialogTitle>
+                  <DialogDescription>Selecione o veículo e horário para publicar no Marketplace</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Veículo *</Label>
+                    <Select value={scheduleVehicleId} onValueChange={setScheduleVehicleId}>
+                      <SelectTrigger><SelectValue placeholder="Selecione um veículo" /></SelectTrigger>
+                      <SelectContent>
+                        {stockVehicles?.map((v) => (
+                          <SelectItem key={v.id} value={v.id}>
+                            [{v.local_bot_id}] {v.brand} {v.model} {v.year}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Horário (opcional — vazio = agora)</Label>
+                    <Input
+                      type="datetime-local"
+                      value={scheduleTime}
+                      onChange={(e) => setScheduleTime(e.target.value)}
+                    />
+                  </div>
+                  <Button
+                    className="w-full"
+                    disabled={!scheduleVehicleId || schedulePosting.isPending}
+                    onClick={() => schedulePosting.mutate({
+                      vehicleId: scheduleVehicleId,
+                      scheduledFor: scheduleTime ? new Date(scheduleTime).toISOString() : null,
+                    })}
+                  >
+                    {schedulePosting.isPending ? "Agendando..." : "Agendar"}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <ScrollArea className="h-[250px]">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>ID Bot</TableHead>
+                  <TableHead>Veículo</TableHead>
+                  <TableHead>Agendado</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="w-[60px]"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {!queueItems?.length ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                      <ListOrdered className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                      Fila vazia
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  queueItems.map((item) => {
+                    const sv = item.stock_vehicles;
+                    return (
+                      <TableRow key={item.id} className={item.status === "error" ? "bg-destructive/5" : item.status === "posted" ? "bg-green-500/5" : ""}>
+                        <TableCell className="font-mono text-xs">{item.local_bot_id}</TableCell>
+                        <TableCell className="text-sm">
+                          {sv ? `${sv.brand} ${sv.model} ${sv.year}` : "—"}
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {format(new Date(item.scheduled_for), "dd/MM HH:mm", { locale: ptBR })}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={item.status === "posted" ? "default" : item.status === "error" ? "destructive" : "secondary"} className="text-xs capitalize">
+                            {item.status === "posted" ? "✓ Publicado" : item.status === "error" ? `❌ ${item.error_msg || "Erro"}` : "⏳ Pendente"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {item.status === "pending" && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-destructive"
+                              onClick={() => removeQueueItem.mutate(item.id)}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
+              </TableBody>
+            </Table>
+          </ScrollArea>
+        </CardContent>
+      </Card>
+
       {/* Logs Table */}
       <Card>
         <CardHeader className="pb-3">
