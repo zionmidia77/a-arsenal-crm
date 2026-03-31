@@ -199,9 +199,39 @@ const AdminClientDetail = () => {
   };
 
   const changeStage = (stage: string) => {
+    // If changing to closed_lost, show loss reason dialog
+    if (stage === "closed_lost") {
+      setShowLossDialog(true);
+      return;
+    }
     updateClient.mutate({ id: client.id, pipeline_stage: stage as any });
     createInteraction.mutate({ client_id: client.id, type: "system", content: `Pipeline alterado para: ${STAGES.find(s => s.key === stage)?.label}`, created_by: "admin" });
     toast.success(`Status atualizado para ${STAGES.find(s => s.key === stage)?.label}`);
+  };
+
+  const LOSS_REASONS = [
+    { value: "price_high", label: "💰 Preço alto", emoji: "💰" },
+    { value: "financing_rejected", label: "🏦 Financiamento recusado", emoji: "🏦" },
+    { value: "bought_elsewhere", label: "🏪 Comprou em outro lugar", emoji: "🏪" },
+    { value: "no_response", label: "👻 Sumiu / sem resposta", emoji: "👻" },
+    { value: "no_budget", label: "💸 Sem orçamento agora", emoji: "💸" },
+    { value: "changed_mind", label: "🔄 Desistiu da compra", emoji: "🔄" },
+    { value: "other", label: "📝 Outro motivo", emoji: "📝" },
+  ];
+
+  const confirmLoss = () => {
+    if (!lossReason) { toast.error("Selecione o motivo da perda"); return; }
+    const reasonLabel = LOSS_REASONS.find(r => r.value === lossReason)?.label || lossReason;
+    const currentFunnelData = (client.funnel_data as any) || {};
+    updateClient.mutate({ 
+      id: client.id, 
+      pipeline_stage: "closed_lost" as any,
+      funnel_data: { ...currentFunnelData, loss_reason: lossReason }
+    } as any);
+    createInteraction.mutate({ client_id: client.id, type: "system", content: `Lead perdido. Motivo: ${reasonLabel}`, created_by: "admin" });
+    setShowLossDialog(false);
+    setLossReason("");
+    toast.success("Lead marcado como perdido");
   };
 
   const changeTemperature = (temp: string) => {
