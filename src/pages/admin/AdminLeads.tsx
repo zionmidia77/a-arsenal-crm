@@ -167,14 +167,6 @@ const AdminLeads = () => {
     setSelectedIds(new Set());
   };
 
-  const handleDeleteLead = async () => {
-    if (!deleteTarget) return;
-    const { error } = await supabase.from("clients").delete().eq("id", deleteTarget.id);
-    if (error) { toast.error("Erro ao excluir lead"); return; }
-    toast.success(`Lead "${deleteTarget.name}" excluído!`);
-    setDeleteTarget(null);
-    queryClient.invalidateQueries({ queryKey: ["clients"] });
-  };
 
   const selectedLeads = (clients || []).filter((c) => selectedIds.has(c.id));
 
