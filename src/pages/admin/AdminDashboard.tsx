@@ -293,6 +293,38 @@ const AdminDashboard = () => {
         )}
       </AnimatePresence>
 
+      {/* 🚨 Urgent Queue Banner */}
+      {overdueLeadCount > 0 && !dismissedUrgent && (
+        <motion.div
+          variants={fadeUp}
+          className="relative rounded-2xl border-2 border-destructive/40 bg-destructive/10 p-4"
+          animate={{ boxShadow: ["0 0 0 0 hsl(var(--destructive) / 0)", "0 0 16px 2px hsl(var(--destructive) / 0.2)", "0 0 0 0 hsl(var(--destructive) / 0)"] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        >
+          <button onClick={() => setDismissedUrgent(true)} className="absolute top-2 right-2 p-1 rounded-full hover:bg-background/20">
+            <X className="w-3.5 h-3.5 text-muted-foreground" />
+          </button>
+          <div className="flex items-center gap-3">
+            <motion.div
+              className="w-10 h-10 rounded-xl bg-destructive/20 flex items-center justify-center shrink-0"
+              animate={{ scale: [1, 1.1, 1] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+            >
+              <Zap className="w-5 h-5 text-destructive" />
+            </motion.div>
+            <div className="flex-1">
+              <p className="text-sm font-display font-bold text-destructive">
+                Você tem {overdueLeadCount} leads aguardando ação — resolver agora
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">Leads com ações atrasadas perdem interesse rápido</p>
+            </div>
+          </div>
+          <Button className="w-full mt-3 gap-2" size="sm" onClick={() => navigate("/admin/queue")}>
+            <Zap className="w-4 h-4" /> Iniciar Fila Inteligente
+          </Button>
+        </motion.div>
+      )}
+
       {/* 📱 Quick Actions - Mobile Only */}
       <motion.div variants={fadeUp} className="grid grid-cols-4 gap-2 md:hidden">
         {[
