@@ -100,6 +100,21 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Lookup vehicle by local_bot_id if provided
+    let vehicleUuid: string | null = null;
+    if (local_vehicle_id && typeof local_vehicle_id === "string") {
+      const sanitizedVehicleId = local_vehicle_id.trim().slice(0, 20);
+      const { data: vehicle } = await supabase
+        .from("stock_vehicles")
+        .select("id")
+        .eq("local_bot_id", sanitizedVehicleId)
+        .limit(1)
+        .single();
+      if (vehicle) {
+        vehicleUuid = vehicle.id;
+      }
+    }
+
     // Create the lead
     const { data, error } = await supabase.from("clients").insert({
       name: name.trim().slice(0, 255),
@@ -113,6 +128,7 @@ Deno.serve(async (req) => {
       status: "lead",
       temperature: "warm",
       pipeline_stage: "new",
+      vehicle_id: vehicleUuid,
     }).select().single();
 
     if (error) {
