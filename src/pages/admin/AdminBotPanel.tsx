@@ -107,6 +107,69 @@ const AdminBotPanel = () => {
   const [editBot, setEditBot] = useState<BotConfig | null>(null);
   const [confirmDeactivate, setConfirmDeactivate] = useState<BotConfig | null>(null);
   const [, setTick] = useState(0);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [scheduleVehicleId, setScheduleVehicleId] = useState("");
+  const [scheduleTime, setScheduleTime] = useState("");
+
+  // Posting queue query
+  const { data: queueItems } = useQuery({
+    queryKey: ["posting-queue"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("bot_posting_queue" as any)
+        .select("*, stock_vehicles(brand, model, year, local_bot_id)")
+        .order("scheduled_for", { ascending: true })
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return data as any[];
+    },
+  });
+
+  // Stock vehicles for schedule modal
+  const { data: stockVehicles } = useQuery({
+    queryKey: ["stock-vehicles-queue"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("stock_vehicles")
+        .select("id, brand, model, year, local_bot_id")
+        .not("local_bot_id", "is", null)
+        .order("brand");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const schedulePosting = useMutation({
+    mutationFn: async ({ vehicleId, scheduledFor }: { vehicleId: string; scheduledFor: string | null }) => {
+      const vehicle = stockVehicles?.find((v) => v.id === vehicleId);
+      if (!vehicle?.local_bot_id) throw new Error("Veículo sem local_bot_id");
+      const { error } = await supabase.from("bot_posting_queue" as any).insert({
+        vehicle_id: vehicleId,
+        local_bot_id: vehicle.local_bot_id,
+        scheduled_for: scheduledFor || new Date().toISOString(),
+      } as any);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["posting-queue"] });
+      setScheduleOpen(false);
+      setScheduleVehicleId("");
+      setScheduleTime("");
+      toast.success("Postagem agendada!");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const removeQueueItem = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("bot_posting_queue" as any).delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["posting-queue"] });
+      toast.success("Removido da fila!");
+    },
+  });
 
   // Tick every 30s to update heartbeat labels
   useEffect(() => {
