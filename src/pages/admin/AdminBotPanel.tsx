@@ -12,7 +12,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Bot, Plus, Activity, Users, Zap, AlertTriangle, CheckCircle2, XCircle, MessageSquare, RefreshCw, Settings2, Clock, Radio, Send, Trash2, ListOrdered, CalendarPlus } from "lucide-react";
+import { Bot, Plus, Activity, Users, Zap, AlertTriangle, CheckCircle2, XCircle, MessageSquare, RefreshCw, Settings2, Clock, Radio, Send, Trash2, ListOrdered, CalendarPlus, BarChart3 } from "lucide-react";
+import BotPerformanceDashboard from "@/components/admin/BotPerformanceDashboard";
 import { toast } from "sonner";
 import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
