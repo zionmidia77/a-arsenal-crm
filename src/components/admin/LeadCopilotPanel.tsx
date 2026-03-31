@@ -457,6 +457,8 @@ const LeadCopilotPanel = ({ clientId, clientName, clientPhone, clientInterest, c
                 </Button>
               </div>
             </div>
+            </>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
