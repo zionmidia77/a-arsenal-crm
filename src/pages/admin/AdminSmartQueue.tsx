@@ -5,12 +5,14 @@ import { Button } from "@/components/ui/button";
 import { useClients, useUpdateClient, useCreateInteraction } from "@/hooks/useSupabase";
 import {
   ArrowLeft, ArrowRight, MessageCircle, Phone, Check, Copy,
-  AlertTriangle, Clock, Send, ChevronRight, Flame, Zap, Target
+  AlertTriangle, Clock, Send, ChevronRight, Flame, Zap, Target, Info
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { getObjectionMessages } from "@/lib/objectionMessages";
+import NextActionModal from "@/components/admin/NextActionModal";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const tempBadge: Record<string, string> = {
   hot: "bg-primary/15 text-primary",
@@ -35,6 +37,19 @@ const nextActionLabels: Record<string, string> = {
   send_content: "📤 Enviar conteúdo",
 };
 
+/** Generates priority reason tags for a client */
+function getPriorityReasons(client: any): { label: string; color: string }[] {
+  const tags: { label: string; color: string }[] = [];
+  if (client.temperature === "hot") tags.push({ label: "🔥 Lead quente", color: "bg-primary/15 text-primary" });
+  if (client.next_action_due && new Date(client.next_action_due) < new Date()) tags.push({ label: "⏰ Ação atrasada", color: "bg-destructive/15 text-destructive" });
+  if ((client.deal_value || 0) >= 30000) tags.push({ label: "💰 Alto valor", color: "bg-success/15 text-success" });
+  if ((client.churn_risk || 0) > 50) tags.push({ label: "⚠️ Risco alto", color: "bg-warning/15 text-warning" });
+  if (client.client_promise_status === "overdue") tags.push({ label: "🤝 Promessa vencida", color: "bg-destructive/15 text-destructive" });
+  if (client.has_down_payment) tags.push({ label: "💵 Tem entrada", color: "bg-success/15 text-success" });
+  if (client.docs_status === "complete") tags.push({ label: "📄 Docs completos", color: "bg-info/15 text-info" });
+  return tags.slice(0, 4);
+}
+
 const AdminSmartQueue = () => {
   const navigate = useNavigate();
   const { data: allClients, isLoading } = useClients();
@@ -42,8 +57,9 @@ const AdminSmartQueue = () => {
   const createInteraction = useCreateInteraction();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState(1);
+  const [nextActionModalOpen, setNextActionModalOpen] = useState(false);
+  const [attendedCount, setAttendedCount] = useState(0);
 
-  // Filter active leads, sort by priority_score descending
   const queue = useMemo(() => {
     if (!allClients) return [];
     return allClients
@@ -67,6 +83,10 @@ const AdminSmartQueue = () => {
     }
   };
 
+  // Get objection-based messages
+  const objMessages = client ? getObjectionMessages(client.name.split(" ")[0], client.pipeline_stage, client.objection_type || undefined) : [];
+  const bestMessage = objMessages[0]?.msg || (client ? `Olá ${client.name.split(" ")[0]}!` : "");
+
   const sendWhatsApp = (msg: string) => {
     if (!client?.phone) { toast.error("Sem telefone"); return; }
     const phone = client.phone.replace(/\D/g, "");
@@ -79,8 +99,9 @@ const AdminSmartQueue = () => {
     if (!client) return;
     updateClient.mutate({ id: client.id, pipeline_stage: "contacted" as any, last_contact_at: new Date().toISOString() } as any);
     createInteraction.mutate({ client_id: client.id, type: "system", content: "Marcado como atendido (fila inteligente)", created_by: "admin" });
-    toast.success("Atendido! Próximo lead...");
-    setTimeout(goNext, 500);
+    setAttendedCount(c => c + 1);
+    toast.success("Atendido!");
+    setNextActionModalOpen(true);
   };
 
   if (isLoading) {
@@ -107,9 +128,7 @@ const AdminSmartQueue = () => {
     : null;
 
   const nextActionOverdue = client.next_action_due ? new Date(client.next_action_due) < new Date() : false;
-
-  // Get objection-based messages
-  const objMessages = getObjectionMessages(client.name.split(" ")[0], client.pipeline_stage, client.objection_type || undefined);
+  const priorityReasons = getPriorityReasons(client);
 
   return (
     <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-4">
@@ -121,6 +140,11 @@ const AdminSmartQueue = () => {
         <div className="flex items-center gap-2">
           <Zap className="w-4 h-4 text-primary" />
           <span className="text-sm font-medium">Fila Inteligente</span>
+          {attendedCount > 0 && (
+            <span className="text-[10px] bg-success/15 text-success px-2 py-0.5 rounded-full font-medium">
+              ✅ {attendedCount} atendidos
+            </span>
+          )}
         </div>
       </div>
 
@@ -172,11 +196,38 @@ const AdminSmartQueue = () => {
                   )}
                 </div>
               </div>
-              <div className="text-right">
-                <p className="text-xs text-muted-foreground">Prioridade</p>
-                <p className="text-2xl font-display font-bold text-primary">{client.priority_score || 0}</p>
-              </div>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="text-right cursor-help">
+                      <p className="text-xs text-muted-foreground flex items-center gap-1 justify-end">Prioridade <Info className="w-3 h-3" /></p>
+                      <p className="text-2xl font-display font-bold text-primary">{client.priority_score || 0}</p>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="left" className="max-w-[220px]">
+                    <p className="text-xs font-medium mb-1">Por que este score?</p>
+                    {priorityReasons.length > 0 ? (
+                      <ul className="text-xs space-y-0.5">
+                        {priorityReasons.map((r, i) => <li key={i}>{r.label}</li>)}
+                      </ul>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">Score baseado em temperatura, engajamento e valor do negócio</p>
+                    )}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
+
+            {/* Priority reason tags */}
+            {priorityReasons.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {priorityReasons.map((r, i) => (
+                  <span key={i} className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${r.color}`}>
+                    {r.label}
+                  </span>
+                ))}
+              </div>
+            )}
 
             {/* Key info */}
             <div className="grid grid-cols-2 gap-2 text-xs">
@@ -184,8 +235,8 @@ const AdminSmartQueue = () => {
               {client.interest && <div className="flex items-center gap-1.5"><Target className="w-3 h-3 text-muted-foreground" /> {client.interest}</div>}
               {client.deal_value && <div className="flex items-center gap-1.5 text-primary font-medium">💰 R$ {Number(client.deal_value).toLocaleString("pt-BR")}</div>}
               {lastContactDays !== null && (
-                <div className={cn("flex items-center gap-1.5", lastContactDays > 2 && "text-destructive")}>
-                  <Clock className="w-3 h-3" /> {lastContactDays === 0 ? "Hoje" : `${lastContactDays}d atrás`}
+                <div className={cn("flex items-center gap-1.5", lastContactDays > 2 && "text-destructive font-medium")}>
+                  <Clock className="w-3 h-3" /> {lastContactDays === 0 ? "Hoje" : `⏰ ${lastContactDays}d atrás`}
                 </div>
               )}
             </div>
@@ -228,10 +279,10 @@ const AdminSmartQueue = () => {
             </div>
           </div>
 
-          {/* Action buttons */}
+          {/* Action buttons - WhatsApp now sends best message directly */}
           <div className="grid grid-cols-3 gap-2">
             {client.phone && (
-              <Button className="h-14 rounded-xl flex flex-col gap-1 text-xs" onClick={() => sendWhatsApp(objMessages[0]?.msg || `Olá ${client.name.split(" ")[0]}!`)}>
+              <Button className="h-14 rounded-xl flex flex-col gap-1 text-xs" onClick={() => sendWhatsApp(bestMessage)}>
                 <MessageCircle className="w-5 h-5" />
                 WhatsApp
               </Button>
@@ -290,6 +341,17 @@ const AdminSmartQueue = () => {
           Próximo <ArrowRight className="w-4 h-4" />
         </Button>
       </div>
+
+      {/* Next Action Modal */}
+      <NextActionModal
+        open={nextActionModalOpen}
+        onClose={() => {
+          setNextActionModalOpen(false);
+          setTimeout(goNext, 300);
+        }}
+        clientId={client.id}
+        clientName={client.name}
+      />
     </div>
   );
 };
