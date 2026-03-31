@@ -1,0 +1,297 @@
+import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { useClients, useUpdateClient, useCreateInteraction } from "@/hooks/useSupabase";
+import {
+  ArrowLeft, ArrowRight, MessageCircle, Phone, Check, Copy,
+  AlertTriangle, Clock, Send, ChevronRight, Flame, Zap, Target
+} from "lucide-react";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { getObjectionMessages } from "@/lib/objectionMessages";
+
+const tempBadge: Record<string, string> = {
+  hot: "bg-primary/15 text-primary",
+  warm: "bg-warning/15 text-warning",
+  cold: "bg-info/15 text-info",
+  frozen: "bg-muted/15 text-muted-foreground",
+};
+const tempLabel: Record<string, string> = { hot: "🔥 Quente", warm: "🟡 Morno", cold: "🔵 Frio", frozen: "⚪ Inativo" };
+
+const stageLabelMap: Record<string, string> = {
+  new: "Novo", contacted: "Contatado", interested: "Interessado", attending: "Em atendimento",
+  thinking: "Pensando", waiting_response: "Aguardando", scheduled: "Agendado",
+  negotiating: "Negociando", proposal_sent: "Proposta enviada", financing_analysis: "Financiamento",
+  approved: "Aprovado", rejected: "Reprovado", closed_won: "Fechado ✅", closed_lost: "Perdido ❌",
+  reactivation: "Reativação",
+};
+
+const nextActionLabels: Record<string, string> = {
+  call: "📞 Ligar", send_proposal: "📋 Enviar proposta", send_message: "💬 Enviar mensagem",
+  collect_docs: "📄 Coletar docs", follow_up: "🔁 Follow-up", schedule_visit: "📍 Agendar visita",
+  submit_credit: "🏦 Submeter crédito", wait_client: "⏳ Aguardar", close_deal: "🤝 Fechar",
+  send_content: "📤 Enviar conteúdo",
+};
+
+const AdminSmartQueue = () => {
+  const navigate = useNavigate();
+  const { data: allClients, isLoading } = useClients();
+  const updateClient = useUpdateClient();
+  const createInteraction = useCreateInteraction();
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [direction, setDirection] = useState(1);
+
+  // Filter active leads, sort by priority_score descending
+  const queue = useMemo(() => {
+    if (!allClients) return [];
+    return allClients
+      .filter(c => !["closed_won", "closed_lost"].includes(c.pipeline_stage))
+      .sort((a, b) => (b.priority_score || 0) - (a.priority_score || 0));
+  }, [allClients]);
+
+  const client = queue[currentIndex];
+  const total = queue.length;
+
+  const goNext = () => {
+    if (currentIndex < total - 1) {
+      setDirection(1);
+      setCurrentIndex(i => i + 1);
+    }
+  };
+  const goPrev = () => {
+    if (currentIndex > 0) {
+      setDirection(-1);
+      setCurrentIndex(i => i - 1);
+    }
+  };
+
+  const sendWhatsApp = (msg: string) => {
+    if (!client?.phone) { toast.error("Sem telefone"); return; }
+    const phone = client.phone.replace(/\D/g, "");
+    window.open(`https://wa.me/55${phone}?text=${encodeURIComponent(msg)}`);
+    createInteraction.mutate({ client_id: client.id, type: "whatsapp", content: `Mensagem via WhatsApp: "${msg.slice(0, 80)}..."`, created_by: "admin" });
+    updateClient.mutate({ id: client.id, last_contact_at: new Date().toISOString() } as any);
+  };
+
+  const markAttended = () => {
+    if (!client) return;
+    updateClient.mutate({ id: client.id, pipeline_stage: "contacted" as any, last_contact_at: new Date().toISOString() } as any);
+    createInteraction.mutate({ client_id: client.id, type: "system", content: "Marcado como atendido (fila inteligente)", created_by: "admin" });
+    toast.success("Atendido! Próximo lead...");
+    setTimeout(goNext, 500);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (total === 0) {
+    return (
+      <div className="p-6 text-center space-y-4">
+        <div className="text-4xl">🎉</div>
+        <h2 className="text-lg font-display font-bold">Fila zerada!</h2>
+        <p className="text-sm text-muted-foreground">Todos os leads foram atendidos.</p>
+        <Button onClick={() => navigate("/admin")} variant="outline">Voltar ao Dashboard</Button>
+      </div>
+    );
+  }
+
+  const lastContactDays = client.last_contact_at
+    ? Math.floor((Date.now() - new Date(client.last_contact_at).getTime()) / 86400000)
+    : null;
+
+  const nextActionOverdue = client.next_action_due ? new Date(client.next_action_due) < new Date() : false;
+
+  // Get objection-based messages
+  const objMessages = getObjectionMessages(client.name.split(" ")[0], client.pipeline_stage, client.objection_type || undefined);
+
+  return (
+    <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <Button variant="ghost" size="sm" onClick={() => navigate("/admin")} className="gap-1">
+          <ArrowLeft className="w-4 h-4" /> Sair da fila
+        </Button>
+        <div className="flex items-center gap-2">
+          <Zap className="w-4 h-4 text-primary" />
+          <span className="text-sm font-medium">Fila Inteligente</span>
+        </div>
+      </div>
+
+      {/* Progress bar */}
+      <div className="space-y-1">
+        <div className="flex justify-between text-xs text-muted-foreground">
+          <span>Lead {currentIndex + 1} de {total}</span>
+          <span>Faltam {total - currentIndex - 1}</span>
+        </div>
+        <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
+          <motion.div
+            className="h-full bg-primary rounded-full"
+            animate={{ width: `${((currentIndex + 1) / total) * 100}%` }}
+            transition={{ duration: 0.3 }}
+          />
+        </div>
+      </div>
+
+      {/* Lead Card */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={client.id}
+          initial={{ opacity: 0, x: direction * 60 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: direction * -60 }}
+          transition={{ duration: 0.25 }}
+          className="space-y-4"
+        >
+          {/* Main card */}
+          <div className={cn(
+            "rounded-2xl border-2 p-5 space-y-4",
+            nextActionOverdue ? "border-destructive bg-destructive/5" : "border-primary/30 bg-primary/5"
+          )}>
+            {/* Name & badges */}
+            <div className="flex items-start justify-between">
+              <div>
+                <h2 className="text-xl font-display font-bold">{client.name}</h2>
+                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                  <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${tempBadge[client.temperature]}`}>
+                    {tempLabel[client.temperature]}
+                  </span>
+                  <span className="text-[10px] bg-secondary px-2 py-0.5 rounded-full">
+                    {stageLabelMap[client.pipeline_stage] || client.pipeline_stage}
+                  </span>
+                  {client.objection_type && (
+                    <span className="text-[10px] bg-warning/15 text-warning px-2 py-0.5 rounded-full">
+                      ⚖️ {client.objection_type}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-muted-foreground">Prioridade</p>
+                <p className="text-2xl font-display font-bold text-primary">{client.priority_score || 0}</p>
+              </div>
+            </div>
+
+            {/* Key info */}
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              {client.phone && <div className="flex items-center gap-1.5"><Phone className="w-3 h-3 text-muted-foreground" /> {client.phone}</div>}
+              {client.interest && <div className="flex items-center gap-1.5"><Target className="w-3 h-3 text-muted-foreground" /> {client.interest}</div>}
+              {client.deal_value && <div className="flex items-center gap-1.5 text-primary font-medium">💰 R$ {Number(client.deal_value).toLocaleString("pt-BR")}</div>}
+              {lastContactDays !== null && (
+                <div className={cn("flex items-center gap-1.5", lastContactDays > 2 && "text-destructive")}>
+                  <Clock className="w-3 h-3" /> {lastContactDays === 0 ? "Hoje" : `${lastContactDays}d atrás`}
+                </div>
+              )}
+            </div>
+
+            {/* Churn risk bar */}
+            {(client.churn_risk || 0) > 30 && (
+              <div className="space-y-1">
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Risco de perda</span>
+                  <span className={cn("font-medium", (client.churn_risk || 0) > 60 ? "text-destructive" : "text-warning")}>{client.churn_risk}%</span>
+                </div>
+                <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
+                  <div className={cn("h-full rounded-full", (client.churn_risk || 0) > 60 ? "bg-destructive" : "bg-warning")} style={{ width: `${client.churn_risk}%` }} />
+                </div>
+              </div>
+            )}
+
+            {/* Promise */}
+            {client.client_promise && (
+              <div className={cn("text-xs p-2 rounded-lg border", client.client_promise_status === "overdue" ? "border-destructive/30 bg-destructive/5 text-destructive" : "border-border bg-secondary/50")}>
+                ⏰ Promessa: {client.client_promise}
+                {client.client_promise_due && ` · ${format(new Date(client.client_promise_due), "dd/MM HH:mm")}`}
+              </div>
+            )}
+
+            {/* Next action - prominent */}
+            <div className="h-px bg-border/50" />
+            <div className="text-center space-y-2">
+              <p className={cn("text-base font-display font-bold", nextActionOverdue ? "text-destructive" : "text-primary")}>
+                {client.next_action || "Sem ação definida"}
+              </p>
+              {client.next_action_type && (
+                <p className="text-xs text-muted-foreground">{nextActionLabels[client.next_action_type] || client.next_action_type}</p>
+              )}
+              {nextActionOverdue && (
+                <span className="text-[10px] bg-destructive text-destructive-foreground px-2 py-0.5 rounded-full font-medium animate-pulse inline-block">
+                  ⏰ Atrasada
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Action buttons */}
+          <div className="grid grid-cols-3 gap-2">
+            {client.phone && (
+              <Button className="h-14 rounded-xl flex flex-col gap-1 text-xs" onClick={() => sendWhatsApp(objMessages[0]?.msg || `Olá ${client.name.split(" ")[0]}!`)}>
+                <MessageCircle className="w-5 h-5" />
+                WhatsApp
+              </Button>
+            )}
+            <Button variant="outline" className="h-14 rounded-xl flex flex-col gap-1 text-xs border-primary/30" onClick={markAttended}>
+              <Check className="w-5 h-5" />
+              Atendido
+            </Button>
+            {client.phone && (
+              <Button variant="outline" className="h-14 rounded-xl flex flex-col gap-1 text-xs border-primary/30" onClick={() => window.open(`tel:${client.phone}`)}>
+                <Phone className="w-5 h-5" />
+                Ligar
+              </Button>
+            )}
+          </div>
+
+          {/* Smart messages based on objection */}
+          {objMessages.length > 0 && (
+            <div className="glass-card p-4 space-y-2">
+              <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                <Flame className="w-3.5 h-3.5 text-primary" />
+                Mensagens sugeridas (baseadas na objeção)
+              </p>
+              <div className="space-y-2">
+                {objMessages.slice(0, 3).map((m, i) => (
+                  <div key={i} className="bg-secondary/50 rounded-xl p-3 space-y-2">
+                    <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">{m.label}</p>
+                    <p className="text-xs text-foreground/70 line-clamp-2">{m.msg}</p>
+                    <div className="flex gap-1.5">
+                      <Button size="sm" className="h-7 rounded-full text-[10px] gap-1 flex-1" onClick={() => sendWhatsApp(m.msg)}>
+                        <Send className="w-2.5 h-2.5" /> Enviar
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-7 rounded-full text-[10px] gap-1" onClick={() => { navigator.clipboard.writeText(m.msg); toast.success("Copiado!"); }}>
+                        <Copy className="w-2.5 h-2.5" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* See full profile */}
+          <Button variant="ghost" className="w-full text-xs text-muted-foreground gap-1" onClick={() => navigate(`/admin/client/${client.id}`)}>
+            Ver ficha completa <ChevronRight className="w-3 h-3" />
+          </Button>
+        </motion.div>
+      </AnimatePresence>
+
+      {/* Navigation */}
+      <div className="flex gap-3 pt-2">
+        <Button variant="outline" className="flex-1 h-12 rounded-xl gap-2" onClick={goPrev} disabled={currentIndex === 0}>
+          <ArrowLeft className="w-4 h-4" /> Anterior
+        </Button>
+        <Button className="flex-1 h-12 rounded-xl gap-2" onClick={goNext} disabled={currentIndex >= total - 1}>
+          Próximo <ArrowRight className="w-4 h-4" />
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+export default AdminSmartQueue;
