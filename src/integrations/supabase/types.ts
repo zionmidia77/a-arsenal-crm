@@ -37,46 +37,58 @@ export type Database = {
       }
       bot_configs: {
         Row: {
+          bot_type: string | null
           created_at: string
           delay_seconds: number
           dry_mode: boolean
           facebook_account: string | null
           id: string
           is_active: boolean
+          last_heartbeat_at: string | null
           last_reset_at: string | null
+          last_run_at: string | null
           leads_captured_today: number
           max_per_cycle: number
           platform: string
+          schedule_time: string | null
           seller_email: string | null
           seller_name: string
           updated_at: string
         }
         Insert: {
+          bot_type?: string | null
           created_at?: string
           delay_seconds?: number
           dry_mode?: boolean
           facebook_account?: string | null
           id?: string
           is_active?: boolean
+          last_heartbeat_at?: string | null
           last_reset_at?: string | null
+          last_run_at?: string | null
           leads_captured_today?: number
           max_per_cycle?: number
           platform?: string
+          schedule_time?: string | null
           seller_email?: string | null
           seller_name: string
           updated_at?: string
         }
         Update: {
+          bot_type?: string | null
           created_at?: string
           delay_seconds?: number
           dry_mode?: boolean
           facebook_account?: string | null
           id?: string
           is_active?: boolean
+          last_heartbeat_at?: string | null
           last_reset_at?: string | null
+          last_run_at?: string | null
           leads_captured_today?: number
           max_per_cycle?: number
           platform?: string
+          schedule_time?: string | null
           seller_email?: string | null
           seller_name?: string
           updated_at?: string
