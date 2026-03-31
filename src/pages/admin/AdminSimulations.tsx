@@ -62,8 +62,14 @@ const AdminSimulations = () => {
     : 0;
   const pendingCount = simulations?.filter(s => s.status === "pending").length || 0;
 
+  const simTourSteps = [
+    { target: '[data-tour="sim-stats"]', title: "Indicadores", description: "Veja total de simulações, pendentes, valor financiado e parcela média.", icon: CalcIcon, position: "bottom" as const },
+    { target: '[data-tour="sim-filter"]', title: "Filtrar por status", description: "Filtre simulações por status: pendente, aprovada, rejeitada ou em análise.", icon: FilterIcon2, position: "bottom" as const },
+  ];
+
   return (
     <div className="p-4 md:p-6 space-y-6">
+      <PageTour tourKey="simulations" steps={simTourSteps} />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-display font-bold">Simulações de Financiamento</h1>
