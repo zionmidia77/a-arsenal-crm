@@ -16,6 +16,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
 import MergeLeadsDialog from "@/components/admin/MergeLeadsDialog";
+import SwipeableLeadCard from "@/components/admin/SwipeableLeadCard";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 
