@@ -337,6 +337,7 @@ export type Database = {
           status: Database["public"]["Enums"]["client_status"]
           temperature: Database["public"]["Enums"]["lead_temperature"]
           updated_at: string
+          vehicle_id: string | null
         }
         Insert: {
           address_cep?: string | null
@@ -424,6 +425,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["client_status"]
           temperature?: Database["public"]["Enums"]["lead_temperature"]
           updated_at?: string
+          vehicle_id?: string | null
         }
         Update: {
           address_cep?: string | null
@@ -511,6 +513,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["client_status"]
           temperature?: Database["public"]["Enums"]["lead_temperature"]
           updated_at?: string
+          vehicle_id?: string | null
         }
         Relationships: [
           {
@@ -518,6 +521,13 @@ export type Database = {
             columns: ["referred_by"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clients_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "stock_vehicles"
             referencedColumns: ["id"]
           },
         ]
@@ -1221,6 +1231,7 @@ export type Database = {
           id: string
           image_url: string | null
           km: number | null
+          local_bot_id: string | null
           model: string
           photos: string[] | null
           plate: string | null
@@ -1255,6 +1266,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           km?: number | null
+          local_bot_id?: string | null
           model: string
           photos?: string[] | null
           plate?: string | null
@@ -1289,6 +1301,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           km?: number | null
+          local_bot_id?: string | null
           model?: string
           photos?: string[] | null
           plate?: string | null
