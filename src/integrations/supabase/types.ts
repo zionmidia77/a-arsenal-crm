@@ -152,6 +152,47 @@ export type Database = {
           },
         ]
       }
+      bot_posting_queue: {
+        Row: {
+          created_at: string
+          error_msg: string | null
+          id: string
+          local_bot_id: string
+          posted_at: string | null
+          scheduled_for: string | null
+          status: string
+          vehicle_id: string
+        }
+        Insert: {
+          created_at?: string
+          error_msg?: string | null
+          id?: string
+          local_bot_id: string
+          posted_at?: string | null
+          scheduled_for?: string | null
+          status?: string
+          vehicle_id: string
+        }
+        Update: {
+          created_at?: string
+          error_msg?: string | null
+          id?: string
+          local_bot_id?: string
+          posted_at?: string | null
+          scheduled_for?: string | null
+          status?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bot_posting_queue_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "stock_vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_conversations: {
         Row: {
           client_id: string | null
