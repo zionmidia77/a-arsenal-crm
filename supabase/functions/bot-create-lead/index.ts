@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const { name, phone, email, interest, source, city, budget_range, notes, seller_name } = body;
+    const { name, phone, email, interest, source, city, budget_range, notes, seller_name, local_vehicle_id } = body;
 
     // Validate name
     if (!name || typeof name !== "string" || name.trim().length === 0) {
