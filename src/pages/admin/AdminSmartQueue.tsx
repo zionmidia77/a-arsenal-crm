@@ -287,7 +287,7 @@ const AdminSmartQueue = () => {
           </div>
 
           {/* Action buttons - WhatsApp now sends best message directly */}
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-2" data-tour="queue-actions">
             {client.phone && (
               <Button className="h-14 rounded-xl flex flex-col gap-1 text-xs" onClick={() => sendWhatsApp(bestMessage)}>
                 <MessageCircle className="w-5 h-5" />
