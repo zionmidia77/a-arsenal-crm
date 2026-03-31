@@ -171,7 +171,7 @@ const AdminClientDetail = () => {
   };
 
   const currentStageMessages = stageMessages[client.pipeline_stage] || stageMessages.new || [];
-  const proposalLink2 = proposalLink; // already defined above
+  
 
   const quickMessages = [
     ...currentStageMessages,
