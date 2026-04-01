@@ -166,12 +166,14 @@ export const useAllPendingTasks = () => {
       if (error) throw error;
       return data;
     },
+    enabled: !!user,
     staleTime: 30_000,
     refetchInterval: 60_000,
   });
 };
 
 export const useOverdueTasks = () => {
+  const { user } = useAuth();
   const today = new Date().toISOString().split("T")[0];
   return useQuery({
     queryKey: ["tasks-overdue"],
