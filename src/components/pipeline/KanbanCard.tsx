@@ -5,6 +5,7 @@ import type { Tables } from "@/integrations/supabase/types";
 import { Draggable } from "@hello-pangea/dnd";
 import TagManager from "@/components/admin/TagManager";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { computeStrategy } from "@/components/admin/BriefingCard";
 
 const tempBadge: Record<string, string> = {
   hot: "bg-primary/15 text-primary",

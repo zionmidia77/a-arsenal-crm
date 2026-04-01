@@ -33,7 +33,7 @@ interface WhyReason {
   text: string;
 }
 
-function computeStrategy(client: Tables<"clients">): Strategy {
+export function computeStrategy(client: Tables<"clients">): Strategy {
   const stage = client.pipeline_stage;
   const obj = client.objection_type;
   const temp = client.temperature;
