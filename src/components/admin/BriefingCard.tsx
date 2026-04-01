@@ -14,7 +14,7 @@ interface BriefingCardProps {
 export type StrategyLevel = "leve" | "médio" | "forte" | "direto";
 export type StrategyType = "pressionar" | "educar" | "fechar" | "recuperar" | "aguardar" | "qualificar";
 
-interface Strategy {
+export interface Strategy {
   type: StrategyType;
   level: StrategyLevel;
   label: string;
