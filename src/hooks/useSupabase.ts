@@ -50,7 +50,7 @@ export const useCreateClient = () => {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["clients"] }),
+    onSuccess: () => invalidateAllClients(qc),
   });
 };
 
@@ -63,7 +63,7 @@ export const useUpdateClient = () => {
       return data;
     },
     onSuccess: (_, vars) => {
-      qc.invalidateQueries({ queryKey: ["clients"] });
+      invalidateAllClients(qc);
       qc.invalidateQueries({ queryKey: ["client", vars.id] });
     },
   });
