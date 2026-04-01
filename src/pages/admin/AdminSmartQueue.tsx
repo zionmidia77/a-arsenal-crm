@@ -458,7 +458,6 @@ const AdminSmartQueue = () => {
         open={nextActionModalOpen}
         onClose={() => {
           setNextActionModalOpen(false);
-          setTimeout(goNext, 300);
         }}
         clientId={client.id}
         clientName={client.name}
