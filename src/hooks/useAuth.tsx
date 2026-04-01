@@ -19,32 +19,42 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'INITIAL_SESSION') {
-        setSession(session);
-        setUser(session?.user ?? null);
-      }
-      // Handle expired/invalid session
-      if (event === 'SIGNED_OUT' || !session) {
-        setSession(null);
-        setUser(null);
-      }
-      setLoading(false);
-    });
+    let initialSessionHandled = false;
 
+    // First, restore session from storage
     supabase.auth.getSession().then(({ data: { session }, error }) => {
-      if (error || !session) {
-        // Clear invalid session from storage
-        if (error) {
-          supabase.auth.signOut();
-        }
+      if (error) {
+        supabase.auth.signOut();
         setSession(null);
         setUser(null);
       } else {
         setSession(session);
-        setUser(session.user ?? null);
+        setUser(session?.user ?? null);
       }
+      initialSessionHandled = true;
       setLoading(false);
+    });
+
+    // Then listen for subsequent auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      // Skip INITIAL_SESSION if getSession already handled it
+      if (event === 'INITIAL_SESSION' && !initialSessionHandled) {
+        setSession(session);
+        setUser(session?.user ?? null);
+        initialSessionHandled = true;
+        setLoading(false);
+        return;
+      }
+
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        setSession(session);
+        setUser(session?.user ?? null);
+      }
+
+      if (event === 'SIGNED_OUT') {
+        setSession(null);
+        setUser(null);
+      }
     });
 
     return () => subscription.unsubscribe();
