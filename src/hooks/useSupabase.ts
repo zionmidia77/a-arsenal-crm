@@ -153,6 +153,7 @@ export const useTasks = (filters?: { status?: string; due_date?: string }) => {
 };
 
 export const useAllPendingTasks = () => {
+  const { user } = useAuth();
   return useQuery({
     queryKey: ["tasks-pending"],
     queryFn: async () => {
