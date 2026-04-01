@@ -32,6 +32,7 @@ const AdminSMS = lazy(() => import("./pages/admin/AdminSMS"));
 const AdminSmartQueue = lazy(() => import("./pages/admin/AdminSmartQueue"));
 const AdminDailyBriefing = lazy(() => import("./pages/admin/AdminDailyBriefing"));
 const AdminBotPanel = lazy(() => import("./pages/admin/AdminBotPanel"));
+const AdminCadenceMetrics = lazy(() => import("./pages/admin/AdminCadenceMetrics"));
 const MemberArea = lazy(() => import("./pages/MemberArea"));
 const PublicCatalog = lazy(() => import("./pages/PublicCatalog"));
 const ProposalPage = lazy(() => import("./pages/ProposalPage"));
