@@ -443,6 +443,7 @@ const AdminLeads = () => {
                 {STAGE_LABELS[client.pipeline_stage] || client.pipeline_stage}
               </span>
               <span className="text-[10px] text-muted-foreground font-mono shrink-0 w-8 text-right">{client.lead_score}</span>
+              <CadenceBadge info={cadenceBadges?.[client.id]} compact />
               <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full shrink-0 ${tempBadge[client.temperature]}`}>
                 {tempLabel[client.temperature]}
               </span>
