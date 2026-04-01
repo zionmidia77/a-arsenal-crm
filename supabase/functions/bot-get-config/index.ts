@@ -11,7 +11,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Validate bot token
     const botToken = req.headers.get("x-bot-token");
     const expectedToken = Deno.env.get("BOT_SECRET_TOKEN");
 
@@ -23,28 +22,32 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const { bot_type } = body;
-
-    if (!bot_type || !["messaging", "posting"].includes(bot_type)) {
-      return new Response(JSON.stringify({ error: "bot_type inválido. Use 'messaging' ou 'posting'" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    const { bot_type, bot_id } = body;
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-    const { data, error } = await supabase
+    // Priority: bot_id > bot_type (backward compatible)
+    let query = supabase
       .from("bot_configs")
-      .select("id, seller_name, platform, is_active, max_per_cycle, delay_seconds, dry_mode, bot_type, schedule_time, last_heartbeat_at, last_run_at, leads_captured_today")
-      .eq("bot_type", bot_type)
-      .limit(1)
-      .single();
+      .select("id, seller_name, platform, is_active, max_per_cycle, delay_seconds, dry_mode, bot_type, bot_id, schedule_time, last_heartbeat_at, last_run_at, leads_captured_today, facebook_account");
 
-    if (error) {
-      return new Response(JSON.stringify({ error: "Config não encontrada para bot_type: " + bot_type }), {
+    if (bot_id && typeof bot_id === "string") {
+      query = query.eq("bot_id", bot_id.trim().slice(0, 50));
+    } else if (bot_type && ["messaging", "posting"].includes(bot_type)) {
+      query = query.eq("bot_type", bot_type);
+    } else {
+      return new Response(JSON.stringify({ error: "bot_id ou bot_type é obrigatório" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { data, error } = await query.limit(1).single();
+
+    if (error || !data) {
+      return new Response(JSON.stringify({ error: "Config não encontrada" }), {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

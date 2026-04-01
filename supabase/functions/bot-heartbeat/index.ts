@@ -11,7 +11,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Validate bot token
     const botToken = req.headers.get("x-bot-token");
     const expectedToken = Deno.env.get("BOT_SECRET_TOKEN");
 
@@ -23,10 +22,10 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const { config_id, bot_type } = body;
+    const { config_id, bot_id } = body;
 
-    if (!config_id || typeof config_id !== "string") {
-      return new Response(JSON.stringify({ error: "config_id é obrigatório" }), {
+    if (!config_id && !bot_id) {
+      return new Response(JSON.stringify({ error: "config_id ou bot_id é obrigatório" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -38,15 +37,23 @@ Deno.serve(async (req) => {
 
     const now = new Date().toISOString();
 
-    const { data, error } = await supabase
+    let query = supabase
       .from("bot_configs")
       .update({
         last_heartbeat_at: now,
         last_run_at: now,
         updated_at: now,
-      })
-      .eq("id", config_id)
-      .select("id, seller_name, is_active, last_heartbeat_at, last_run_at")
+      });
+
+    // Priority: bot_id > config_id (backward compatible)
+    if (bot_id && typeof bot_id === "string") {
+      query = query.eq("bot_id", bot_id.trim().slice(0, 50));
+    } else {
+      query = query.eq("id", config_id);
+    }
+
+    const { data, error } = await query
+      .select("id, seller_name, bot_id, is_active, last_heartbeat_at, last_run_at")
       .single();
 
     if (error || !data) {
