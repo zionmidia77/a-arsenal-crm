@@ -41,6 +41,18 @@ const nextActionLabels: Record<string, string> = {
   send_content: "📤 Enviar conteúdo",
 };
 
+const SMART_QUEUE_ACTIVE_CLIENT_STORAGE_KEY = "admin-smart-queue:active-client-id";
+
+const getStoredQueueClientId = () => {
+  if (typeof window === "undefined") return null;
+
+  try {
+    return sessionStorage.getItem(SMART_QUEUE_ACTIVE_CLIENT_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+};
+
 /** Queue reason badge config */
 const queueReasonConfig: Record<string, { label: string; color: string }> = {
   promise_overdue: { label: "🤝 PROMESSA VENCIDA", color: "bg-destructive/15 text-destructive border border-destructive/30" },
@@ -74,7 +86,7 @@ const AdminSmartQueue = () => {
   const { data: allClients, isLoading } = useClients();
   const updateClient = useUpdateClient();
   const createInteraction = useCreateInteraction();
-  const [currentClientId, setCurrentClientId] = useState<string | null>(null);
+  const [currentClientId, setCurrentClientId] = useState<string | null>(() => getStoredQueueClientId());
   const [direction, setDirection] = useState(1);
   const [nextActionModalOpen, setNextActionModalOpen] = useState(false);
   const [attendedCount, setAttendedCount] = useState(0);
@@ -162,6 +174,8 @@ const AdminSmartQueue = () => {
   const total = queue.length;
 
   useEffect(() => {
+    if (isLoading) return;
+
     if (queue.length === 0) {
       if (currentClientId !== null) {
         setCurrentClientId(null);
@@ -172,7 +186,20 @@ const AdminSmartQueue = () => {
     if (!currentClientId || !queue.some(item => item.id === currentClientId)) {
       setCurrentClientId(queue[0].id);
     }
-  }, [queue, currentClientId]);
+  }, [queue, currentClientId, isLoading]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    try {
+      if (currentClientId) {
+        sessionStorage.setItem(SMART_QUEUE_ACTIVE_CLIENT_STORAGE_KEY, currentClientId);
+        return;
+      }
+
+      sessionStorage.removeItem(SMART_QUEUE_ACTIVE_CLIENT_STORAGE_KEY);
+    } catch {}
+  }, [currentClientId]);
 
   // Cadence badges for visible clients
   const { data: cadenceBadges } = useCadenceBadges(client ? [client.id] : []);
