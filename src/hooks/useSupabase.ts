@@ -74,6 +74,7 @@ export const useUpdateClient = () => {
       invalidateAllClients(qc);
       qc.invalidateQueries({ queryKey: ["client", vars.id] });
     },
+    onError: (e: any) => toast.error("Erro ao atualizar lead", { description: e.message }),
   });
 };
 
