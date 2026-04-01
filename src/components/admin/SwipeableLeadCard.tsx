@@ -43,17 +43,17 @@ const SwipeableLeadCard = ({
   };
 
   return (
-    <div className="relative overflow-hidden rounded-2xl md:hidden">
-      {/* Left action (revealed on right swipe) */}
-      <div className="absolute inset-y-0 left-0 w-24 flex items-center justify-center bg-green-500/20 rounded-l-2xl">
+    <div className="relative overflow-hidden rounded-2xl">
+      {/* Left action (revealed on right swipe) - mobile only */}
+      <div className="absolute inset-y-0 left-0 w-24 flex items-center justify-center bg-green-500/20 rounded-l-2xl md:hidden">
         <div className="flex flex-col items-center gap-0.5">
           <MessageCircle className="w-5 h-5 text-green-500" />
           <span className="text-[9px] text-green-500 font-medium">WhatsApp</span>
         </div>
       </div>
 
-      {/* Right action (revealed on left swipe) */}
-      <div className="absolute inset-y-0 right-0 w-24 flex items-center justify-center bg-primary/20 rounded-r-2xl">
+      {/* Right action (revealed on left swipe) - mobile only */}
+      <div className="absolute inset-y-0 right-0 w-24 flex items-center justify-center bg-primary/20 rounded-r-2xl md:hidden">
         <div className="flex flex-col items-center gap-0.5">
           <Eye className="w-5 h-5 text-primary" />
           <span className="text-[9px] text-primary font-medium">Ver ficha</span>
@@ -67,7 +67,7 @@ const SwipeableLeadCard = ({
         dragElastic={0.2}
         onDragEnd={handleDragEnd}
         style={{ x }}
-        className="relative z-10 bg-card"
+        className="relative z-10 bg-card md:!transform-none"
       >
         {children}
       </motion.div>
