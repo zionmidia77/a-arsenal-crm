@@ -142,6 +142,9 @@ const AdminSmartQueue = () => {
   const client = queue[currentIndex];
   const total = queue.length;
 
+  // Cadence badges for visible clients
+  const { data: cadenceBadges } = useCadenceBadges(client ? [client.id] : []);
+
   const goNext = () => {
     if (currentIndex < total - 1) {
       setDirection(1);
