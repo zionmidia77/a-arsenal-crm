@@ -37,6 +37,7 @@ type BotConfig = {
   created_at: string;
   updated_at: string;
   bot_type: string | null;
+  bot_id: string | null;
   schedule_time: string | null;
   last_heartbeat_at: string | null;
   last_run_at: string | null;
