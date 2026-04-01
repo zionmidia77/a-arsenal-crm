@@ -384,6 +384,11 @@ const AdminClientDetail = () => {
         <BriefingCard client={client} onSendWhatsApp={sendWhatsApp} />
       </motion.div>
 
+      {/* ═══ WHATSAPP ANALYZER ═══ */}
+      <motion.div variants={fadeUp}>
+        <WhatsAppAnalyzer client={client} onSendWhatsApp={sendWhatsApp} />
+      </motion.div>
+
       {/* ═══ SUMMARY CARD (Zona 2) ═══ */}
       <motion.div variants={fadeUp} className={cn(
         "rounded-2xl border-2 p-5 space-y-3",
