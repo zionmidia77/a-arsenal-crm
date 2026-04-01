@@ -43,7 +43,7 @@ const SwipeableLeadCard = ({
   };
 
   return (
-    <div className="relative overflow-hidden rounded-2xl md:hidden">
+    <div className="relative overflow-hidden rounded-2xl">
       {/* Left action (revealed on right swipe) */}
       <div className="absolute inset-y-0 left-0 w-24 flex items-center justify-center bg-green-500/20 rounded-l-2xl">
         <div className="flex flex-col items-center gap-0.5">
