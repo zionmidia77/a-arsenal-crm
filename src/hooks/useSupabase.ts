@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
+import { useAuth } from "@/hooks/useAuth";
 
 // Helper to invalidate all client-related queries
 const invalidateAllClients = (qc: ReturnType<typeof useQueryClient>) => {
@@ -14,6 +15,7 @@ const invalidateAllClients = (qc: ReturnType<typeof useQueryClient>) => {
 
 // ============ CLIENTS ============
 export const useClients = (filters?: { status?: string; temperature?: string; pipeline_stage?: string }) => {
+  const { user } = useAuth();
   return useQuery({
     queryKey: ["clients", filters],
     queryFn: async () => {
@@ -25,6 +27,7 @@ export const useClients = (filters?: { status?: string; temperature?: string; pi
       if (error) throw error;
       return data;
     },
+    enabled: !!user,
     staleTime: 30_000,
     refetchInterval: 60_000,
   });
@@ -71,6 +74,7 @@ export const useUpdateClient = () => {
 
 // ============ ALL CLIENTS FOR KANBAN ============
 export const useAllClients = () => {
+  const { user } = useAuth();
   return useQuery({
     queryKey: ["clients-all"],
     queryFn: async () => {
@@ -81,6 +85,7 @@ export const useAllClients = () => {
       if (error) throw error;
       return data;
     },
+    enabled: !!user,
     staleTime: 30_000,
     refetchInterval: 60_000,
   });
@@ -130,6 +135,7 @@ export const useCreateInteraction = () => {
 
 // ============ TASKS ============
 export const useTasks = (filters?: { status?: string; due_date?: string }) => {
+  const { user } = useAuth();
   return useQuery({
     queryKey: ["tasks", filters],
     queryFn: async () => {
@@ -140,12 +146,14 @@ export const useTasks = (filters?: { status?: string; due_date?: string }) => {
       if (error) throw error;
       return data;
     },
+    enabled: !!user,
     staleTime: 30_000,
     refetchInterval: 60_000,
   });
 };
 
 export const useAllPendingTasks = () => {
+  const { user } = useAuth();
   return useQuery({
     queryKey: ["tasks-pending"],
     queryFn: async () => {
@@ -158,12 +166,14 @@ export const useAllPendingTasks = () => {
       if (error) throw error;
       return data;
     },
+    enabled: !!user,
     staleTime: 30_000,
     refetchInterval: 60_000,
   });
 };
 
 export const useOverdueTasks = () => {
+  const { user } = useAuth();
   const today = new Date().toISOString().split("T")[0];
   return useQuery({
     queryKey: ["tasks-overdue"],
@@ -177,6 +187,7 @@ export const useOverdueTasks = () => {
       if (error) throw error;
       return data;
     },
+    enabled: !!user,
     staleTime: 30_000,
     refetchInterval: 60_000,
   });
@@ -267,6 +278,7 @@ export const useDeleteMessageTemplate = () => {
 
 // ============ STATS ============
 export const useDashboardStats = () => {
+  const { user } = useAuth();
   return useQuery({
     queryKey: ["dashboard-stats"],
     queryFn: async () => {
@@ -296,6 +308,7 @@ export const useDashboardStats = () => {
         conversionRate: total > 0 ? Math.round((won / total) * 100) : 0,
       };
     },
+    enabled: !!user,
     staleTime: 30_000,
     refetchInterval: 60_000,
   });
