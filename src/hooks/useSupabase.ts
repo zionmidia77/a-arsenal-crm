@@ -146,6 +146,7 @@ export const useTasks = (filters?: { status?: string; due_date?: string }) => {
       if (error) throw error;
       return data;
     },
+    enabled: !!user,
     staleTime: 30_000,
     refetchInterval: 60_000,
   });
