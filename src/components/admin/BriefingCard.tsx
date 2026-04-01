@@ -11,7 +11,7 @@ interface BriefingCardProps {
 }
 
 // ── Strategy Engine ──────────────────────────────────────────
-type StrategyLevel = "leve" | "médio" | "forte" | "direto";
+export type StrategyLevel = "leve" | "médio" | "forte" | "direto";
 type StrategyType = "pressionar" | "educar" | "fechar" | "recuperar" | "aguardar" | "qualificar";
 
 interface Strategy {
