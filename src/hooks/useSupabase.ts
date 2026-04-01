@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
+import { useAuth } from "@/hooks/useAuth";
 
 // Helper to invalidate all client-related queries
 const invalidateAllClients = (qc: ReturnType<typeof useQueryClient>) => {
@@ -14,6 +15,7 @@ const invalidateAllClients = (qc: ReturnType<typeof useQueryClient>) => {
 
 // ============ CLIENTS ============
 export const useClients = (filters?: { status?: string; temperature?: string; pipeline_stage?: string }) => {
+  const { user } = useAuth();
   return useQuery({
     queryKey: ["clients", filters],
     queryFn: async () => {
@@ -25,6 +27,7 @@ export const useClients = (filters?: { status?: string; temperature?: string; pi
       if (error) throw error;
       return data;
     },
+    enabled: !!user,
     staleTime: 30_000,
     refetchInterval: 60_000,
   });
