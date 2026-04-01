@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { ChevronDown, ChevronUp, Zap, Copy, MessageCircle, RefreshCw, Check, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -73,6 +73,34 @@ const WhatsAppAnalyzer = ({ client, onSendWhatsApp }: WhatsAppAnalyzerProps) => 
 
   const qc = useQueryClient();
   const updateClient = useUpdateClient();
+
+  // Restore last analysis from lead_timeline_events on mount
+  useEffect(() => {
+    const restoreLastAnalysis = async () => {
+      try {
+        const { data } = await supabase
+          .from("lead_timeline_events")
+          .select("metadata, created_at")
+          .eq("client_id", client.id)
+          .eq("source", "whatsapp_analyzer")
+          .eq("event_type", "message_received")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (data?.metadata && typeof data.metadata === "object" && "analysis_result" in data.metadata) {
+          const savedAnalysis = (data.metadata as any).analysis_result as AnalysisResult;
+          if (savedAnalysis?.suggested_message) {
+            setAnalysis(savedAnalysis);
+            setEditableMessage(savedAnalysis.suggested_message);
+          }
+        }
+      } catch (e) {
+        console.error("Error restoring analysis:", e);
+      }
+    };
+    restoreLastAnalysis();
+  }, [client.id]);
 
   const analyze = useCallback(async () => {
     if (!message.trim()) {
@@ -187,9 +215,16 @@ const WhatsAppAnalyzer = ({ client, onSendWhatsApp }: WhatsAppAnalyzerProps) => 
       }
 
       if (result.trim()) {
-        setEditableMessage(result.trim());
+        const newMsg = result.trim();
+        setEditableMessage(newMsg);
         setRegenCount(prev => prev + 1);
         toast.success(`Mensagem reescrita (tom ${tone})`);
+
+        // Persist regenerated message to lead_memory
+        await supabase
+          .from("lead_memory")
+          .update({ recommended_message: newMsg, updated_at: new Date().toISOString() })
+          .eq("client_id", client.id);
       }
     } catch (e) {
       toast.error("Erro ao regenerar mensagem");

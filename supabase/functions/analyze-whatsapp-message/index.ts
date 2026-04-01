@@ -229,6 +229,28 @@ Analise e retorne a avaliação estruturada usando a tool.`;
       metadata: { analysis_result: analysis },
     });
 
+    // Persist recommended_message and analysis to lead_memory
+    const { data: existingMemory } = await supabase
+      .from("lead_memory")
+      .select("id")
+      .eq("client_id", client_id)
+      .maybeSingle();
+
+    const memoryUpdate = {
+      recommended_message: analysis.suggested_message,
+      recommended_action: analysis.next_action,
+      lead_temperature_ai: analysis.detected_temperature,
+      last_analyzed_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      summary: `[WhatsApp] ${analysis.situation}. Estratégia: ${analysis.strategy}. Objeção: ${analysis.detected_objection}. Prioridade: ${analysis.priority}.`,
+    };
+
+    if (existingMemory) {
+      await supabase.from("lead_memory").update(memoryUpdate).eq("client_id", client_id);
+    } else {
+      await supabase.from("lead_memory").insert({ client_id, ...memoryUpdate });
+    }
+
     return new Response(JSON.stringify({ analysis, current: { objection_type: client.objection_type, temperature: client.temperature, pipeline_stage: client.pipeline_stage } }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
