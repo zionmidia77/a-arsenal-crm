@@ -422,7 +422,12 @@ const BotForm = ({ initial, onSubmit, loading }: { initial?: BotConfig; onSubmit
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
         <Label>Nome do Bot / Vendedor *</Label>
-        <Input value={form.seller_name} onChange={(e) => setForm({ ...form, seller_name: e.target.value })} placeholder="Ex: Bot Messenger" />
+        <Input value={form.seller_name} onChange={(e) => setForm({ ...form, seller_name: e.target.value })} placeholder="Ex: Facebook 1" />
+      </div>
+      <div className="space-y-2">
+        <Label>Bot ID (identificador único usado pelo bot externo) *</Label>
+        <Input value={form.bot_id} onChange={(e) => setForm({ ...form, bot_id: e.target.value })} placeholder="Ex: facebook1, facebook2" className="font-mono" />
+        <p className="text-[11px] text-muted-foreground">Deve ser o mesmo valor configurado no BOT_ID do .env do bot</p>
       </div>
       <div className="space-y-2">
         <Label>Tipo do Bot</Label>
