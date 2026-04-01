@@ -830,30 +830,9 @@ const AdminClientDetail = () => {
   }
 
   return (
-    <ResizablePanelGroup direction="horizontal" className="min-h-[calc(100vh-4rem)]">
-      <ResizablePanel defaultSize={copilotOpen ? 60 : 100} minSize={40}>
-        <div className="overflow-y-auto h-full max-w-4xl">
-          {leadContent}
-        </div>
-      </ResizablePanel>
-      {copilotOpen && (
-        <>
-          <ResizableHandle withHandle />
-          <ResizablePanel defaultSize={40} minSize={28} maxSize={55}>
-            <div className="h-full overflow-y-auto border-l border-border/50 bg-card/30">
-              <div className="p-4 sticky top-0 bg-card/80 backdrop-blur-xl z-10 border-b border-border/50">
-                <h2 className="font-display font-semibold text-sm flex items-center gap-2">
-                  🤖 AI Copilot — {client.name.split(" ")[0]}
-                </h2>
-              </div>
-              <div className="p-4">
-                <LeadCopilotPanel clientId={client.id} clientName={client.name} clientPhone={client.phone || undefined} clientInterest={client.interest || undefined} clientBudget={client.budget_range || undefined} />
-              </div>
-            </div>
-          </ResizablePanel>
-        </>
-      )}
-    </ResizablePanelGroup>
+    <div className="overflow-y-auto h-full max-w-4xl min-h-[calc(100vh-4rem)]">
+      {leadContent}
+    </div>
   );
 };
 
