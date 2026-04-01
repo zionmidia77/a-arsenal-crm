@@ -203,6 +203,10 @@ const AdminLeads = () => {
       return sortAsc ? cmp : -cmp;
     });
 
+  // Cadence badges for filtered clients
+  const filteredIds = filtered.map(c => c.id);
+  const { data: cadenceBadges } = useCadenceBadges(filteredIds);
+
   const leadsTourSteps = [
     { target: '[data-tour="leads-search"]', title: "Buscar leads", description: "Pesquise por nome, telefone ou interesse para encontrar leads rapidamente.", icon: SearchIcon, position: "bottom" as const },
     { target: '[data-tour="leads-filters"]', title: "Filtros avançados", description: "Filtre por temperatura, etapa, fonte, tags e data para segmentar seus leads.", icon: FilterIcon, position: "bottom" as const },
