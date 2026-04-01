@@ -81,6 +81,7 @@ const KanbanCard = ({ client, index, highlight, chatCount = 0, hasActiveChat = f
   const isActionOverdue = nextActionDue ? new Date(nextActionDue) < new Date() : false;
   const isPromiseBroken = clientPromiseStatus === 'broken' || clientPromiseStatus === 'overdue';
   const qrBadge = queueReason && queueReason !== 'standard' ? queueReasonBadge[queueReason] : null;
+  const strategy = computeStrategy(client);
 
   const substatusLabels: Record<string, string> = {
     scheduled: "📅 Agendado",
