@@ -7,7 +7,7 @@ const corsHeaders = {
 
 // In-memory rate limiting (resets on cold start, good enough for edge)
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-const RATE_LIMIT_MAX = 100; // max requests per window
+const RATE_LIMIT_MAX = 100;
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 
 function checkRateLimit(token: string): boolean {
@@ -26,6 +26,64 @@ function checkRateLimit(token: string): boolean {
   entry.count++;
   return true;
 }
+
+// ===== PHONE VALIDATION =====
+
+// Known placeholder/fake phone patterns
+const BLOCKED_PHONES = [
+  "99999999999",
+  "11999999999",
+  "5511999999999",
+  "00000000000",
+  "12345678901",
+  "98765432100",
+  "11111111111",
+  "22222222222",
+  "33333333333",
+  "44444444444",
+  "55555555555",
+  "66666666666",
+  "77777777777",
+  "88888888888",
+];
+
+function isPhoneValid(phone: string | null): boolean {
+  if (!phone) return false;
+
+  // Remove country code prefix for comparison
+  const digits = phone.replace(/\D/g, "");
+
+  // Too short to be valid
+  if (digits.length < 10) return false;
+
+  // Check blocklist (with and without country code)
+  const withoutCountry = digits.startsWith("55") ? digits.slice(2) : digits;
+  if (BLOCKED_PHONES.includes(digits) || BLOCKED_PHONES.includes(withoutCountry)) {
+    return false;
+  }
+
+  // All digits are the same (e.g., 99999999999)
+  if (/^(\d)\1+$/.test(digits)) return false;
+
+  // All digits after DDD are the same (e.g., 49999999999)
+  const afterDDD = withoutCountry.slice(2); // remove DDD
+  if (afterDDD.length >= 8 && /^(\d)\1+$/.test(afterDDD)) return false;
+
+  // Sequential ascending or descending
+  const isSequential = (s: string) => {
+    let asc = true, desc = true;
+    for (let i = 1; i < s.length; i++) {
+      if (parseInt(s[i]) !== parseInt(s[i - 1]) + 1) asc = false;
+      if (parseInt(s[i]) !== parseInt(s[i - 1]) - 1) desc = false;
+    }
+    return asc || desc;
+  };
+  if (afterDDD.length >= 8 && isSequential(afterDDD)) return false;
+
+  return true;
+}
+
+// ===== MAIN HANDLER =====
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -73,17 +131,28 @@ Deno.serve(async (req) => {
     // Sanitize phone (keep only digits and +)
     const sanitizedPhone = phone ? String(phone).replace(/[^\d+]/g, "").slice(0, 20) : null;
 
+    // Validate phone against blocklist
+    const phoneIsValid = isPhoneValid(sanitizedPhone);
+    const finalPhone = phoneIsValid ? sanitizedPhone : null;
+
+    // Build notes with phone warning if invalid
+    let finalNotes = notes ? String(notes).slice(0, 1000) : "";
+    if (sanitizedPhone && !phoneIsValid) {
+      const warning = `📱 Telefone inválido/placeholder detectado (${sanitizedPhone}). Lead veio do Messenger sem WhatsApp válido — solicitar contato real pelo Messenger.`;
+      finalNotes = finalNotes ? `${warning}\n\n${finalNotes}` : warning;
+    }
+
     // Create Supabase client with service_role (bypasses RLS)
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
     // Deduplication by phone — if phone exists, return existing lead
-    if (sanitizedPhone && sanitizedPhone.length >= 8) {
+    if (finalPhone && finalPhone.length >= 10) {
       const { data: existing } = await supabase
         .from("clients")
         .select("id, name, phone, pipeline_stage, created_at")
-        .eq("phone", sanitizedPhone)
+        .eq("phone", finalPhone)
         .limit(1)
         .single();
 
@@ -91,6 +160,7 @@ Deno.serve(async (req) => {
         return new Response(JSON.stringify({
           success: true,
           duplicate: true,
+          phone_invalid: false,
           message: `Lead já existe: ${existing.name}`,
           lead: existing,
         }), {
@@ -118,13 +188,13 @@ Deno.serve(async (req) => {
     // Create the lead
     const { data, error } = await supabase.from("clients").insert({
       name: name.trim().slice(0, 255),
-      phone: sanitizedPhone,
+      phone: finalPhone,
       email: email ? String(email).trim().slice(0, 255) : null,
       interest: interest ? String(interest).slice(0, 500) : null,
       source: source ? String(source).slice(0, 50) : "bot-messenger",
       city: city ? String(city).slice(0, 100) : null,
       budget_range: budget_range ? String(budget_range).slice(0, 50) : null,
-      notes: notes ? String(notes).slice(0, 1000) : null,
+      notes: finalNotes || null,
       status: "lead",
       temperature: "warm",
       pipeline_stage: "new",
@@ -162,7 +232,15 @@ Deno.serve(async (req) => {
       }
     }
 
-    return new Response(JSON.stringify({ success: true, duplicate: false, lead: data }), {
+    return new Response(JSON.stringify({
+      success: true,
+      duplicate: false,
+      phone_invalid: !phoneIsValid,
+      message: !phoneIsValid
+        ? "Lead criado sem telefone válido. Solicite o número real ao cliente."
+        : "Lead criado com sucesso",
+      lead: data,
+    }), {
       status: 201,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
