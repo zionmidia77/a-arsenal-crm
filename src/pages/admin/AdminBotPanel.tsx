@@ -415,7 +415,7 @@ const BotForm = ({ initial, onSubmit, loading }: { initial?: BotConfig; onSubmit
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.seller_name.trim()) return toast.error("Nome do vendedor é obrigatório");
-    onSubmit({ ...form, schedule_time: form.schedule_time || null });
+    onSubmit({ ...form, bot_id: form.bot_id.trim() || null, schedule_time: form.schedule_time || null });
   };
 
   return (
