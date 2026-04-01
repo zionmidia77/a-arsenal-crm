@@ -272,6 +272,7 @@ export const useDeleteMessageTemplate = () => {
 
 // ============ STATS ============
 export const useDashboardStats = () => {
+  const { user } = useAuth();
   return useQuery({
     queryKey: ["dashboard-stats"],
     queryFn: async () => {
