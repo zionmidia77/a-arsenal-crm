@@ -1,11 +1,10 @@
 import { useState, useCallback, useEffect } from "react";
-import { ChevronDown, ChevronUp, Zap, Copy, MessageCircle, RefreshCw, Check, AlertTriangle } from "lucide-react";
+import { ChevronDown, ChevronUp, Zap, Copy, MessageCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-import { useUpdateClient } from "@/hooks/useSupabase";
 import type { Tables } from "@/integrations/supabase/types";
 
 interface WhatsAppAnalyzerProps {
@@ -15,17 +14,11 @@ interface WhatsAppAnalyzerProps {
 
 interface AnalysisResult {
   situation: string;
-  detected_objection: string;
-  objection_changed: boolean;
-  detected_temperature: string;
-  temperature_changed: boolean;
   strategy: string;
   priority: string;
   response_objective: string;
   next_action: string;
-  next_action_type: string;
   suggested_message: string;
-  changes_summary: string[];
 }
 
 const ANALYZE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-whatsapp-message`;
@@ -48,16 +41,6 @@ const priorityLabels: Record<string, { label: string; color: string }> = {
   baixo: { label: "🟢 Baixo", color: "text-green-600" },
 };
 
-const objectionLabels: Record<string, string> = {
-  price: "💲 Preço", down_payment: "💸 Entrada", installment: "📊 Parcela",
-  credit: "🚫 Crédito", trust: "🤝 Confiança", comparison: "⚖️ Comparação",
-  trade_undervalued: "📉 Troca", indecision: "🤔 Indecisão", timing: "⏰ Timing", none: "Nenhuma",
-};
-
-const tempLabels: Record<string, string> = {
-  hot: "🔥 Quente", warm: "🟡 Morno", cold: "🔵 Frio", frozen: "⚪ Inativo",
-};
-
 const MAX_REGENERATIONS = 3;
 const COOLDOWN_MS = 30_000;
 
@@ -69,10 +52,8 @@ const WhatsAppAnalyzer = ({ client, onSendWhatsApp }: WhatsAppAnalyzerProps) => 
   const [editableMessage, setEditableMessage] = useState("");
   const [regenCount, setRegenCount] = useState(0);
   const [lastAnalyzedAt, setLastAnalyzedAt] = useState(0);
-  const [changesApplied, setChangesApplied] = useState(false);
 
   const qc = useQueryClient();
-  const updateClient = useUpdateClient();
 
   // Restore last analysis from lead_timeline_events on mount
   useEffect(() => {
@@ -89,10 +70,17 @@ const WhatsAppAnalyzer = ({ client, onSendWhatsApp }: WhatsAppAnalyzerProps) => 
           .maybeSingle();
 
         if (data?.metadata && typeof data.metadata === "object" && "analysis_result" in data.metadata) {
-          const savedAnalysis = (data.metadata as any).analysis_result as AnalysisResult;
-          if (savedAnalysis?.suggested_message) {
-            setAnalysis(savedAnalysis);
-            setEditableMessage(savedAnalysis.suggested_message);
+          const saved = (data.metadata as any).analysis_result;
+          if (saved?.suggested_message) {
+            setAnalysis({
+              situation: saved.situation || "",
+              strategy: saved.strategy || "",
+              priority: saved.priority || "",
+              response_objective: saved.response_objective || "",
+              next_action: saved.next_action || "",
+              suggested_message: saved.suggested_message || "",
+            });
+            setEditableMessage(saved.suggested_message);
           }
         }
       } catch (e) {
@@ -116,7 +104,6 @@ const WhatsAppAnalyzer = ({ client, onSendWhatsApp }: WhatsAppAnalyzerProps) => 
     }
 
     setIsLoading(true);
-    setChangesApplied(false);
 
     try {
       const resp = await fetch(ANALYZE_URL, {
@@ -136,8 +123,16 @@ const WhatsAppAnalyzer = ({ client, onSendWhatsApp }: WhatsAppAnalyzerProps) => 
       }
 
       const { analysis: result } = await resp.json();
-      setAnalysis(result);
-      setEditableMessage(result.suggested_message);
+      const mapped: AnalysisResult = {
+        situation: result.situation || "",
+        strategy: result.strategy || "",
+        priority: result.priority || "",
+        response_objective: result.response_objective || "",
+        next_action: result.next_action || "",
+        suggested_message: result.suggested_message || "",
+      };
+      setAnalysis(mapped);
+      setEditableMessage(mapped.suggested_message);
       setRegenCount(0);
       setLastAnalyzedAt(Date.now());
 
@@ -180,7 +175,7 @@ const WhatsAppAnalyzer = ({ client, onSendWhatsApp }: WhatsAppAnalyzerProps) => 
           messages: [
             {
               role: "user",
-              content: `${tonePrompts[tone]}\n\nMensagem original: "${analysis.suggested_message}"\n\nContexto: ${analysis.situation}. Objeção: ${analysis.detected_objection}. Objetivo: ${analysis.response_objective}.\n\nRetorne APENAS a mensagem reescrita, sem explicações.`,
+              content: `${tonePrompts[tone]}\n\nMensagem original: "${analysis.suggested_message}"\n\nContexto: ${analysis.situation}. Objetivo: ${analysis.response_objective}.\n\nRetorne APENAS a mensagem reescrita, sem explicações.`,
             },
           ],
         }),
@@ -233,30 +228,6 @@ const WhatsAppAnalyzer = ({ client, onSendWhatsApp }: WhatsAppAnalyzerProps) => 
     }
   }, [analysis, regenCount, client.id]);
 
-  const applyChanges = useCallback(async () => {
-    if (!analysis) return;
-
-    const updates: Record<string, any> = {};
-
-    if (analysis.objection_changed && analysis.detected_objection !== "none") {
-      updates.objection_type = analysis.detected_objection;
-    }
-    if (analysis.temperature_changed) {
-      updates.temperature = analysis.detected_temperature;
-    }
-    updates.next_action = analysis.next_action;
-    updates.next_action_type = analysis.next_action_type;
-
-    try {
-      await updateClient.mutateAsync({ id: client.id, ...updates });
-      setChangesApplied(true);
-      qc.invalidateQueries({ queryKey: ["client", client.id] });
-      toast.success("Mudanças aplicadas ao lead!");
-    } catch (e) {
-      toast.error("Erro ao aplicar mudanças");
-    }
-  }, [analysis, client.id, updateClient, qc]);
-
   const copyMsg = () => {
     navigator.clipboard.writeText(editableMessage);
     toast.success("Mensagem copiada!");
@@ -304,39 +275,24 @@ const WhatsAppAnalyzer = ({ client, onSendWhatsApp }: WhatsAppAnalyzerProps) => 
           {/* Analysis results */}
           {analysis && (
             <div className="space-y-3 pt-2">
-              {/* Changes summary */}
-              {analysis.changes_summary.length > 0 && (
-                <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 space-y-1">
-                  <p className="text-[10px] font-medium text-amber-600 uppercase tracking-wider">🔄 O que mudou</p>
-                  {analysis.changes_summary.map((change, i) => (
-                    <div key={i} className="flex items-center gap-1.5">
-                      <AlertTriangle className="w-3 h-3 text-amber-500 shrink-0" />
-                      <span className="text-xs text-amber-700 dark:text-amber-400">{change}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
+              {/* Strategy + Priority */}
+              <div className="flex items-center gap-2 flex-wrap">
+                {strategyLabels[analysis.strategy] && (
+                  <span className={`text-xs font-bold px-2.5 py-1 rounded-lg border border-border/50 bg-secondary/50 ${strategyLabels[analysis.strategy].color}`}>
+                    {strategyLabels[analysis.strategy].emoji} {strategyLabels[analysis.strategy].label}
+                  </span>
+                )}
+                {priorityLabels[analysis.priority] && (
+                  <span className={`text-xs font-medium ${priorityLabels[analysis.priority].color}`}>
+                    {priorityLabels[analysis.priority].label}
+                  </span>
+                )}
+              </div>
 
-              {/* Strategy + Priority + Objective */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 flex-wrap">
-                  {strategyLabels[analysis.strategy] && (
-                    <span className={`text-xs font-bold px-2.5 py-1 rounded-lg border border-border/50 bg-secondary/50 ${strategyLabels[analysis.strategy].color}`}>
-                      {strategyLabels[analysis.strategy].emoji} {strategyLabels[analysis.strategy].label}
-                    </span>
-                  )}
-                  {priorityLabels[analysis.priority] && (
-                    <span className={`text-xs font-medium ${priorityLabels[analysis.priority].color}`}>
-                      {priorityLabels[analysis.priority].label}
-                    </span>
-                  )}
-                </div>
-
-                {/* Objective */}
-                <div className="bg-primary/5 border border-primary/15 rounded-lg px-3 py-2">
-                  <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-0.5">🎯 Objetivo da resposta</p>
-                  <p className="text-sm font-medium text-foreground">{analysis.response_objective}</p>
-                </div>
+              {/* Objective */}
+              <div className="bg-primary/5 border border-primary/15 rounded-lg px-3 py-2">
+                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-0.5">🎯 Objetivo da resposta</p>
+                <p className="text-sm font-medium text-foreground">{analysis.response_objective}</p>
               </div>
 
               {/* Situation + Next action */}
@@ -350,26 +306,6 @@ const WhatsAppAnalyzer = ({ client, onSendWhatsApp }: WhatsAppAnalyzerProps) => 
                   <p className="text-sm font-medium">{analysis.next_action}</p>
                 </div>
               </div>
-
-              {/* Objection change warning */}
-              {analysis.objection_changed && (
-                <div className="bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2 flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />
-                  <span className="text-xs font-medium text-destructive">
-                    ⚠️ Objeção mudou: {objectionLabels[client.objection_type || "none"]} → {objectionLabels[analysis.detected_objection]}
-                  </span>
-                </div>
-              )}
-
-              {/* Temperature change */}
-              {analysis.temperature_changed && (
-                <div className="bg-info/10 border border-info/20 rounded-lg px-3 py-2 flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-info shrink-0" />
-                  <span className="text-xs font-medium text-info">
-                    🌡️ Temperatura mudou: {tempLabels[client.temperature]} → {tempLabels[analysis.detected_temperature]}
-                  </span>
-                </div>
-              )}
 
               {/* Suggested message */}
               <div className="bg-secondary/50 rounded-xl p-3 space-y-2">
@@ -412,23 +348,6 @@ const WhatsAppAnalyzer = ({ client, onSendWhatsApp }: WhatsAppAnalyzerProps) => 
                   )}
                 </div>
               </div>
-
-              {/* Apply changes button */}
-              {!changesApplied ? (
-                <Button
-                  onClick={applyChanges}
-                  className="w-full gap-2 rounded-xl"
-                  size="sm"
-                  variant="outline"
-                  disabled={updateClient.isPending}
-                >
-                  <Check className="w-3.5 h-3.5" /> Aplicar mudanças no lead
-                </Button>
-              ) : (
-                <div className="text-center text-xs text-green-600 font-medium py-1">
-                  ✅ Mudanças aplicadas com sucesso
-                </div>
-              )}
             </div>
           )}
         </div>
