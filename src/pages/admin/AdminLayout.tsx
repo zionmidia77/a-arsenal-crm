@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { NavLink } from "@/components/NavLink";
-import { LayoutDashboard, Users, ListChecks, MessageSquare, Menu, X, Bike, ChevronLeft, Kanban, LogOut, BarChart3, CalendarDays, Target, MessagesSquare, Calculator, Package, Smartphone, Zap, Sun, Bot } from "lucide-react";
+import { LayoutDashboard, Users, ListChecks, MessageSquare, Menu, X, Bike, ChevronLeft, Kanban, LogOut, BarChart3, CalendarDays, Target, MessagesSquare, Calculator, Package, Smartphone, Zap, Sun, Bot, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import BottomTabBar from "@/components/BottomTabBar";
 import { useRealtimeLeads } from "@/hooks/useRealtimeLeads";
