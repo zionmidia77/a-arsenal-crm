@@ -26,6 +26,7 @@ import SpeedToLeadCard from "@/components/admin/SpeedToLeadCard";
 import InactivityAlerts from "@/components/admin/InactivityAlerts";
 import LossReasonsChart from "@/components/admin/LossReasonsChart";
 import { useOverdueLeads } from "@/hooks/useOverdueLeads";
+import QueueAlertBanner from "@/components/admin/QueueAlertBanner";
 
 const tempEmoji: Record<string, string> = { hot: "🔥", warm: "🟡", cold: "🔵", frozen: "⚪" };
 const tempBg: Record<string, string> = { hot: "bg-primary/10", warm: "bg-warning/10", cold: "bg-info/10", frozen: "bg-muted" };
@@ -83,14 +84,7 @@ const AdminDashboard = () => {
   const [reportMonth, setReportMonth] = useState(new Date().getMonth() + 1);
   const [reportYear, setReportYear] = useState(new Date().getFullYear());
 
-  // Auto-redirect to queue if there are overdue leads (first visit only)
-  const [hasRedirected, setHasRedirected] = useState(false);
-  useEffect(() => {
-    if (!hasRedirected && overdueLeadCount >= 3) {
-      setHasRedirected(true);
-      navigate("/admin/queue");
-    }
-  }, [overdueLeadCount, hasRedirected, navigate]);
+  // Alert banner replaces auto-redirect (user chose "show alert only")
   const [showMonthPicker, setShowMonthPicker] = useState(false);
 
   const MONTH_NAMES_SHORT = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
@@ -146,6 +140,8 @@ const AdminDashboard = () => {
 
   return (
     <motion.div variants={stagger} initial="initial" animate="animate" className="p-4 md:p-6 space-y-5 md:space-y-6 max-w-4xl">
+      {/* Queue Alert Banner */}
+      <QueueAlertBanner />
       {/* Greeting */}
       <motion.div variants={fadeUp} className="flex items-start justify-between">
         <div>

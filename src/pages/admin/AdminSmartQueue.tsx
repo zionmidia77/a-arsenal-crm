@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import { getObjectionMessages } from "@/lib/objectionMessages";
 import NextActionModal from "@/components/admin/NextActionModal";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import PageTour from "@/components/admin/PageTour";
+import QueueDashboard from "@/components/admin/QueueDashboard";
 
 const tempBadge: Record<string, string> = {
   hot: "bg-primary/15 text-primary",
@@ -60,13 +61,81 @@ const AdminSmartQueue = () => {
   const [direction, setDirection] = useState(1);
   const [nextActionModalOpen, setNextActionModalOpen] = useState(false);
   const [attendedCount, setAttendedCount] = useState(0);
+  const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const sessionStartTime = useRef(Date.now()).current;
 
-  const queue = useMemo(() => {
+  // Enhanced sorting: overdue promises > overdue actions > hot leads > scheduled today > priority_score
+  const fullQueue = useMemo(() => {
     if (!allClients) return [];
+    const now = new Date();
+    const todayStart = new Date(new Date().setHours(0, 0, 0, 0));
+    const todayEnd = new Date(new Date().setHours(23, 59, 59, 999));
+
     return allClients
       .filter(c => !["closed_won", "closed_lost"].includes(c.pipeline_stage))
-      .sort((a, b) => (b.priority_score || 0) - (a.priority_score || 0));
+      .sort((a, b) => {
+        // 1. Overdue promises first
+        const aPromiseOverdue = a.client_promise_status === "overdue" ? 1 : 0;
+        const bPromiseOverdue = b.client_promise_status === "overdue" ? 1 : 0;
+        if (aPromiseOverdue !== bPromiseOverdue) return bPromiseOverdue - aPromiseOverdue;
+
+        // 2. Overdue next actions
+        const aOverdue = a.next_action_due && new Date(a.next_action_due) < now ? 1 : 0;
+        const bOverdue = b.next_action_due && new Date(b.next_action_due) < now ? 1 : 0;
+        if (aOverdue !== bOverdue) return bOverdue - aOverdue;
+
+        // 3. No contact > 48h gets boosted
+        const aInactive = !a.last_contact_at || (Date.now() - new Date(a.last_contact_at).getTime()) > 48 * 3600000 ? 1 : 0;
+        const bInactive = !b.last_contact_at || (Date.now() - new Date(b.last_contact_at).getTime()) > 48 * 3600000 ? 1 : 0;
+        if (aInactive !== bInactive) return bInactive - aInactive;
+
+        // 4. Scheduled for today
+        const aToday = a.next_action_due && new Date(a.next_action_due) >= todayStart && new Date(a.next_action_due) <= todayEnd ? 1 : 0;
+        const bToday = b.next_action_due && new Date(b.next_action_due) >= todayStart && new Date(b.next_action_due) <= todayEnd ? 1 : 0;
+        if (aToday !== bToday) return bToday - aToday;
+
+        // 5. Hot leads
+        const tempWeight: Record<string, number> = { hot: 4, warm: 2, cold: 1, frozen: 0 };
+        const aTempW = tempWeight[a.temperature] || 0;
+        const bTempW = tempWeight[b.temperature] || 0;
+        if (aTempW !== bTempW) return bTempW - aTempW;
+
+        // 6. Priority score
+        return (b.priority_score || 0) - (a.priority_score || 0);
+      });
   }, [allClients]);
+
+  // Apply filter
+  const queue = useMemo(() => {
+    if (!activeFilter) return fullQueue;
+    const now = new Date();
+    const todayStart = new Date(new Date().setHours(0, 0, 0, 0));
+    const todayEnd = new Date(new Date().setHours(23, 59, 59, 999));
+
+    switch (activeFilter) {
+      case "urgent":
+        return fullQueue.filter(c =>
+          c.temperature === "hot" ||
+          (c.next_action_due && new Date(c.next_action_due) < now) ||
+          c.client_promise_status === "overdue"
+        );
+      case "overdue":
+        return fullQueue.filter(c => c.next_action_due && new Date(c.next_action_due) < now);
+      case "today":
+        return fullQueue.filter(c => {
+          if (!c.next_action_due) return false;
+          const due = new Date(c.next_action_due);
+          return due >= todayStart && due <= todayEnd;
+        });
+      case "inactive":
+        return fullQueue.filter(c =>
+          !c.last_contact_at || (Date.now() - new Date(c.last_contact_at).getTime()) > 48 * 3600000
+        );
+      default:
+        return fullQueue;
+    }
+  }, [fullQueue, activeFilter]);
+
 
   const client = queue[currentIndex];
   const total = queue.length;
@@ -147,13 +216,20 @@ const AdminSmartQueue = () => {
         <div className="flex items-center gap-2">
           <Zap className="w-4 h-4 text-primary" />
           <span className="text-sm font-medium">Fila Inteligente</span>
-          {attendedCount > 0 && (
-            <span className="text-[10px] bg-success/15 text-success px-2 py-0.5 rounded-full font-medium">
-              ✅ {attendedCount} atendidos
-            </span>
-          )}
         </div>
       </div>
+
+      {/* Queue Dashboard */}
+      <QueueDashboard
+        queue={fullQueue}
+        attendedCount={attendedCount}
+        sessionStartTime={sessionStartTime}
+        activeFilter={activeFilter}
+        onFilterChange={(f) => {
+          setActiveFilter(f);
+          setCurrentIndex(0);
+        }}
+      />
 
       {/* Progress bar */}
       <div className="space-y-1" data-tour="queue-progress">
