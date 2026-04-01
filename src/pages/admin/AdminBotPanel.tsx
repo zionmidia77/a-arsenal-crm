@@ -76,7 +76,7 @@ const useBotConfigs = () =>
     queryFn: async () => {
       const { data, error } = await supabase.from("bot_configs").select("*").order("created_at", { ascending: true });
       if (error) throw error;
-      return (data as any[]).map((d) => ({ ...d, bot_type: d.bot_type ?? "messaging", schedule_time: d.schedule_time ?? null, last_heartbeat_at: d.last_heartbeat_at ?? null, last_run_at: d.last_run_at ?? null })) as BotConfig[];
+      return (data as any[]).map((d) => ({ ...d, bot_type: d.bot_type ?? "messaging", bot_id: d.bot_id ?? null, schedule_time: d.schedule_time ?? null, last_heartbeat_at: d.last_heartbeat_at ?? null, last_run_at: d.last_run_at ?? null })) as BotConfig[];
     },
   });
 
