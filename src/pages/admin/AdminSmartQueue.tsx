@@ -15,6 +15,8 @@ import NextActionModal from "@/components/admin/NextActionModal";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import PageTour from "@/components/admin/PageTour";
 import QueueDashboard from "@/components/admin/QueueDashboard";
+import CadenceBadge from "@/components/admin/CadenceBadge";
+import { useCadenceBadges } from "@/hooks/useCadenceBadges";
 
 const tempBadge: Record<string, string> = {
   hot: "bg-primary/15 text-primary",

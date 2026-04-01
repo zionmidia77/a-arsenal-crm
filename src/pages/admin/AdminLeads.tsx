@@ -20,6 +20,8 @@ import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
 import MergeLeadsDialog from "@/components/admin/MergeLeadsDialog";
 import SwipeableLeadCard from "@/components/admin/SwipeableLeadCard";
+import CadenceBadge from "@/components/admin/CadenceBadge";
+import { useCadenceBadges } from "@/hooks/useCadenceBadges";
 import { toast } from "sonner";
 
 const tempStyles: Record<string, string> = {
