@@ -9,9 +9,13 @@ interface KanbanColumnProps {
   chatDataByClient?: Record<string, { count: number; hasActive: boolean }>;
   interactionsByClient?: Record<string, number>;
   compact?: boolean;
+  subStageLabels?: Record<string, string>;
+  groupStages?: string[];
 }
 
-const KanbanColumn = ({ stage, clients, highlightId, chatDataByClient = {}, interactionsByClient = {}, compact = false }: KanbanColumnProps) => {
+const KanbanColumn = ({ stage, clients, highlightId, chatDataByClient = {}, interactionsByClient = {}, compact = false, subStageLabels = {}, groupStages = [] }: KanbanColumnProps) => {
+  const showSubStage = groupStages.length > 1;
+
   return (
     <div className={`flex flex-col min-w-[260px] max-w-[280px] md:max-w-[280px] rounded-2xl border border-border/40 bg-secondary/30 backdrop-blur-sm ${compact ? "max-w-full" : ""}`}>
       {/* Header */}
@@ -45,6 +49,7 @@ const KanbanColumn = ({ stage, clients, highlightId, chatDataByClient = {}, inte
                 hasActiveChat={chatDataByClient[client.id]?.hasActive || false}
                 interactionCount={interactionsByClient[client.id] || 0}
                 compact={compact}
+                subStageLabel={showSubStage ? subStageLabels[client.pipeline_stage] : undefined}
               />
             ))}
             {provided.placeholder}

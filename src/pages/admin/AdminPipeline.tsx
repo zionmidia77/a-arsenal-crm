@@ -13,30 +13,81 @@ import { DragDropContext, type DropResult } from "@hello-pangea/dnd";
 import KanbanColumn from "@/components/pipeline/KanbanColumn";
 import type { Tables } from "@/integrations/supabase/types";
 import PageTour from "@/components/admin/PageTour";
-import { Kanban, Filter, LayoutList as LayoutListIcon, MousePointer } from "lucide-react";
+import { Kanban, Filter, LayoutList as LayoutListIcon } from "lucide-react";
 
-const STAGES = [
-  { key: "new", label: "Novo Lead", emoji: "🆕", color: "border-t-blue-500" },
-  { key: "contacted", label: "Contatado", emoji: "📱", color: "border-t-sky-500" },
-  { key: "first_contact", label: "1º Contato", emoji: "📞", color: "border-t-yellow-500" },
-  { key: "interested", label: "Interessado", emoji: "👀", color: "border-t-amber-500" },
-  { key: "qualification", label: "Qualificação", emoji: "🔍", color: "border-t-orange-500" },
-  { key: "attending", label: "Atendendo", emoji: "🤝", color: "border-t-teal-500" },
-  { key: "scheduled", label: "Agendado", emoji: "📅", color: "border-t-cyan-500" },
-  { key: "proposal", label: "Proposta", emoji: "📋", color: "border-t-purple-500" },
-  { key: "proposal_sent", label: "Proposta Enviada", emoji: "📨", color: "border-t-violet-500" },
-  { key: "thinking", label: "Pensando", emoji: "🤔", color: "border-t-slate-500" },
-  { key: "waiting_response", label: "Aguardando", emoji: "⏳", color: "border-t-gray-500" },
-  { key: "negotiation", label: "Negociação", emoji: "💰", color: "border-t-emerald-500" },
-  { key: "negotiating", label: "Negociando", emoji: "💬", color: "border-t-lime-500" },
-  { key: "financing_analysis", label: "Análise Crédito", emoji: "🏦", color: "border-t-blue-400" },
-  { key: "approved", label: "Aprovado", emoji: "✅", color: "border-t-green-400" },
-  { key: "rejected", label: "Rejeitado", emoji: "🚫", color: "border-t-red-400" },
-  { key: "closing", label: "Fechamento", emoji: "📝", color: "border-t-indigo-500" },
-  { key: "closed_won", label: "Fechado ✅", emoji: "🏆", color: "border-t-green-500" },
-  { key: "closed_lost", label: "Perdido", emoji: "❌", color: "border-t-red-500" },
-  { key: "reactivation", label: "Reativação", emoji: "🔄", color: "border-t-pink-500" },
+// Grouped pipeline: 7 main groups, each containing sub-stages
+const STAGE_GROUPS = [
+  {
+    key: "new",
+    label: "Novo Lead",
+    emoji: "📥",
+    color: "border-t-blue-500",
+    stages: ["new"],
+  },
+  {
+    key: "contacted",
+    label: "Contatado",
+    emoji: "📞",
+    color: "border-t-sky-500",
+    stages: ["contacted", "first_contact"],
+  },
+  {
+    key: "qualification",
+    label: "Qualificação",
+    emoji: "🔍",
+    color: "border-t-amber-500",
+    stages: ["interested", "qualification", "attending", "scheduled"],
+  },
+  {
+    key: "proposal",
+    label: "Proposta",
+    emoji: "📋",
+    color: "border-t-purple-500",
+    stages: ["proposal", "proposal_sent"],
+  },
+  {
+    key: "negotiation",
+    label: "Negociação",
+    emoji: "💰",
+    color: "border-t-emerald-500",
+    stages: ["negotiation", "negotiating", "thinking", "waiting_response", "financing_analysis", "approved", "closing"],
+  },
+  {
+    key: "closed_won",
+    label: "Ganho ✅",
+    emoji: "🏆",
+    color: "border-t-green-500",
+    stages: ["closed_won"],
+  },
+  {
+    key: "closed_lost",
+    label: "Perdido",
+    emoji: "❌",
+    color: "border-t-red-500",
+    stages: ["closed_lost", "rejected", "reactivation"],
+  },
 ];
+
+// Map any old stage to its group key (for drag-drop target)
+const stageToGroup: Record<string, string> = {};
+STAGE_GROUPS.forEach((g) => g.stages.forEach((s) => (stageToGroup[s] = g.key)));
+
+// Sub-stage labels for badges inside cards
+const SUB_STAGE_LABELS: Record<string, string> = {
+  first_contact: "1º Contato",
+  interested: "Interessado",
+  attending: "Atendendo",
+  scheduled: "Agendado",
+  proposal_sent: "Proposta Enviada",
+  negotiating: "Negociando",
+  thinking: "Pensando",
+  waiting_response: "Aguardando",
+  financing_analysis: "Análise Crédito",
+  approved: "Aprovado",
+  closing: "Fechamento",
+  rejected: "Rejeitado",
+  reactivation: "Reativação",
+};
 
 const AdminPipeline = () => {
   const { data: clients, isLoading } = useAllClients();
@@ -95,12 +146,13 @@ const AdminPipeline = () => {
     return map;
   }, [interactionCounts]);
 
-  // Auto-filter to the highlighted client's stage
+  // Auto-filter to the highlighted client's group
   useEffect(() => {
     if (highlightId && clients) {
-      const c = clients.find(cl => cl.id === highlightId);
+      const c = clients.find((cl) => cl.id === highlightId);
       if (c) {
-        setActiveFilter(c.pipeline_stage);
+        const groupKey = stageToGroup[c.pipeline_stage] || c.pipeline_stage;
+        setActiveFilter(groupKey);
         setTimeout(() => {
           const el = document.getElementById(`kanban-card-${highlightId}`);
           el?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -109,23 +161,27 @@ const AdminPipeline = () => {
     }
   }, [highlightId, clients]);
 
-  const getClientsForStage = (stage: string) =>
-    (clients || []).filter((c) => c.pipeline_stage === stage);
+  const getClientsForGroup = (group: typeof STAGE_GROUPS[number]) =>
+    (clients || []).filter((c) => group.stages.includes(c.pipeline_stage));
 
   const onDragEnd = (result: DropResult) => {
     const { draggableId, destination, source } = result;
     if (!destination || destination.droppableId === source.droppableId) return;
 
-    const newStage = destination.droppableId;
-    const stageLabel = STAGES.find((s) => s.key === newStage)?.label;
+    const targetGroupKey = destination.droppableId;
+    const targetGroup = STAGE_GROUPS.find((g) => g.key === targetGroupKey);
+    if (!targetGroup) return;
+
+    // Set to the main stage of the target group
+    const newStage = targetGroup.key;
 
     updateClient.mutate({ id: draggableId, pipeline_stage: newStage as any });
-    toast.success(`Movido para ${stageLabel}`);
+    toast.success(`Movido para ${targetGroup.emoji} ${targetGroup.label}`);
   };
 
-  const visibleStages = activeFilter
-    ? STAGES.filter((s) => s.key === activeFilter)
-    : STAGES;
+  const visibleGroups = activeFilter
+    ? STAGE_GROUPS.filter((g) => g.key === activeFilter)
+    : STAGE_GROUPS;
 
   if (isLoading) {
     return (
@@ -143,7 +199,7 @@ const AdminPipeline = () => {
   const totalLeads = clients?.length || 0;
 
   const pipelineTourSteps = [
-    { target: '[data-tour="pipeline-stages"]', title: "Colunas do pipeline", description: "Cada coluna representa uma etapa da negociação. Leads fluem da esquerda para a direita.", icon: Kanban, position: "bottom" as const },
+    { target: '[data-tour="pipeline-stages"]', title: "Colunas do pipeline", description: "7 etapas principais. Leads fluem da esquerda para a direita.", icon: Kanban, position: "bottom" as const },
     { target: '[data-tour="pipeline-filters"]', title: "Filtros por etapa", description: "Clique em uma etapa para focar apenas nela, ou veja todas de uma vez.", icon: Filter, position: "bottom" as const },
     { target: '[data-tour="pipeline-compact"]', title: "Modo compacto", description: "Alterne entre cards detalhados e uma visualização mais enxuta.", icon: LayoutListIcon, position: "bottom" as const },
   ];
@@ -164,7 +220,7 @@ const AdminPipeline = () => {
               {totalLeads} clientes no funil · Arraste para mover
             </p>
           </div>
-          <div className="flex rounded-full border border-border/50 overflow-hidden">
+          <div className="flex rounded-full border border-border/50 overflow-hidden" data-tour="pipeline-compact">
             <button
               onClick={() => setCompactMode(false)}
               className={`p-2 transition-colors ${!compactMode ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-muted"}`}
@@ -183,7 +239,7 @@ const AdminPipeline = () => {
         </div>
 
         {/* Filter chips */}
-        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
+        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide" data-tour="pipeline-filters">
           <Button
             variant={activeFilter === null ? "default" : "outline"}
             size="sm"
@@ -192,23 +248,23 @@ const AdminPipeline = () => {
           >
             Todos
           </Button>
-          {STAGES.map((stage) => {
-            const count = getClientsForStage(stage.key).length;
+          {STAGE_GROUPS.map((group) => {
+            const count = getClientsForGroup(group).length;
             return (
               <Button
-                key={stage.key}
-                variant={activeFilter === stage.key ? "default" : "outline"}
+                key={group.key}
+                variant={activeFilter === group.key ? "default" : "outline"}
                 size="sm"
                 onClick={() =>
-                  setActiveFilter(activeFilter === stage.key ? null : stage.key)
+                  setActiveFilter(activeFilter === group.key ? null : group.key)
                 }
                 className="rounded-full shrink-0 text-xs gap-1 min-h-[40px] md:min-h-[32px] h-auto px-4 md:px-3"
               >
-                {stage.emoji} {stage.label}
+                {group.emoji} {group.label}
                 {count > 0 && (
                   <span
                     className={`ml-0.5 text-[10px] px-1.5 py-0.5 rounded-full ${
-                      activeFilter === stage.key
+                      activeFilter === group.key
                         ? "bg-primary-foreground/20"
                         : "bg-primary/15 text-primary"
                     }`}
@@ -224,20 +280,21 @@ const AdminPipeline = () => {
 
       {/* Kanban Board */}
       <DragDropContext onDragEnd={onDragEnd}>
-        <div className="flex-1 overflow-x-auto px-4 md:px-5 pb-24">
-          {/* Mobile: vertical stack when single stage filtered, horizontal scroll otherwise */}
+        <div className="flex-1 overflow-x-auto px-4 md:px-5 pb-24" data-tour="pipeline-stages">
           <div className={`flex gap-3 min-h-[400px] ${
             activeFilter ? "flex-col md:flex-row" : ""
           }`}>
-            {visibleStages.map((stage) => (
+            {visibleGroups.map((group) => (
               <KanbanColumn
-                key={stage.key}
-                stage={stage}
-                clients={getClientsForStage(stage.key)}
+                key={group.key}
+                stage={group}
+                clients={getClientsForGroup(group)}
                 highlightId={highlightId}
                 chatDataByClient={chatDataByClient}
                 interactionsByClient={interactionsByClient}
                 compact={compactMode}
+                subStageLabels={SUB_STAGE_LABELS}
+                groupStages={group.stages}
               />
             ))}
           </div>

@@ -41,6 +41,14 @@ const churnRiskConfig = (risk: number) => {
   return null;
 };
 
+const queueReasonBadge: Record<string, { label: string; color: string }> = {
+  promise_overdue: { label: "🤝 Promessa vencida", color: "bg-destructive/15 text-destructive" },
+  action_overdue: { label: "⏰ Ação atrasada", color: "bg-destructive/15 text-destructive" },
+  no_contact_48h: { label: "📵 Sem contato 48h", color: "bg-warning/15 text-warning" },
+  scheduled_today: { label: "📅 Agendado hoje", color: "bg-info/15 text-info" },
+  hot_lead: { label: "🔥 Lead quente", color: "bg-primary/15 text-primary" },
+};
+
 interface KanbanCardProps {
   client: Tables<"clients">;
   index: number;
@@ -49,9 +57,10 @@ interface KanbanCardProps {
   hasActiveChat?: boolean;
   interactionCount?: number;
   compact?: boolean;
+  subStageLabel?: string;
 }
 
-const KanbanCard = ({ client, index, highlight, chatCount = 0, hasActiveChat = false, interactionCount = 0, compact = false }: KanbanCardProps) => {
+const KanbanCard = ({ client, index, highlight, chatCount = 0, hasActiveChat = false, interactionCount = 0, compact = false, subStageLabel }: KanbanCardProps) => {
   const navigate = useNavigate();
   const noContact = interactionCount === 0 && client.pipeline_stage === "new";
   const churnRisk = (client as any).churn_risk || 0;
@@ -64,10 +73,21 @@ const KanbanCard = ({ client, index, highlight, chatCount = 0, hasActiveChat = f
   const dealValue = (client as any).deal_value as number | null;
   const creditStatus = (client as any).credit_status as string | null;
   const docsStatus = (client as any).docs_status as string | null;
+  const queueReason = (client as any).queue_reason as string | null;
+  const substatus = (client as any).substatus as string | null;
 
   const riskInfo = churnRiskConfig(churnRisk);
   const isActionOverdue = nextActionDue ? new Date(nextActionDue) < new Date() : false;
   const isPromiseBroken = clientPromiseStatus === 'broken' || clientPromiseStatus === 'overdue';
+  const qrBadge = queueReason && queueReason !== 'standard' ? queueReasonBadge[queueReason] : null;
+
+  const substatusLabels: Record<string, string> = {
+    scheduled: "📅 Agendado",
+    waiting_client: "⏳ Aguardando",
+    thinking: "🤔 Pensando",
+    no_response: "🔇 Sem resposta",
+    docs_pending: "📄 Docs pendentes",
+  };
 
   return (
     <Draggable draggableId={client.id} index={index}>
@@ -89,9 +109,10 @@ const KanbanCard = ({ client, index, highlight, chatCount = 0, hasActiveChat = f
                 {tempEmoji[client.temperature]}
               </span>
               <span className="text-xs font-medium truncate flex-1">{client.name}</span>
-              {dealType && dealTypeLabels[dealType] && (
-                <span className="text-[9px]">{dealTypeLabels[dealType].emoji}</span>
+              {subStageLabel && (
+                <span className="text-[8px] bg-accent/40 text-accent-foreground px-1 py-0.5 rounded-full">{subStageLabel}</span>
               )}
+              {qrBadge && <span className="text-[8px]">{qrBadge.label.split(" ")[0]}</span>}
               {riskInfo && <span className="text-[9px]">{riskInfo.emoji}</span>}
               <span className="text-[9px] text-muted-foreground font-mono">{priorityScore}</span>
               {hasActiveChat && <MessageCircle className="w-2.5 h-2.5 text-primary shrink-0" />}
@@ -142,6 +163,29 @@ const KanbanCard = ({ client, index, highlight, chatCount = 0, hasActiveChat = f
                   <span className="text-[10px] text-muted-foreground tabular-nums font-mono">{priorityScore}pts</span>
                 </div>
               </div>
+
+              {/* Sub-stage + substatus badges */}
+              {(subStageLabel || (substatus && substatus !== 'active')) && (
+                <div className="flex gap-1 flex-wrap">
+                  {subStageLabel && (
+                    <span className="text-[9px] font-medium bg-accent/50 text-accent-foreground px-1.5 py-0.5 rounded-full">
+                      📌 {subStageLabel}
+                    </span>
+                  )}
+                  {substatus && substatus !== 'active' && substatusLabels[substatus] && (
+                    <span className="text-[9px] font-medium bg-muted/60 text-muted-foreground px-1.5 py-0.5 rounded-full">
+                      {substatusLabels[substatus]}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* Queue reason badge */}
+              {qrBadge && (
+                <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full inline-block ${qrBadge.color}`}>
+                  {qrBadge.label}
+                </span>
+              )}
 
               {/* Badges row: deal type + deal value + credit/docs */}
               <div className="flex flex-wrap gap-1">
