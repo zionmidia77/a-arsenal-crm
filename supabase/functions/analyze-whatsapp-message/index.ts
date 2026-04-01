@@ -24,7 +24,6 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Fetch client data
     const { data: client, error: clientErr } = await supabase
       .from("clients")
       .select("name, pipeline_stage, temperature, objection_type, deal_type, deal_value, last_contact_at, client_promise, client_promise_status, next_action, next_action_type, queue_reason, churn_risk, has_down_payment, has_clean_credit, interest, budget_range, down_payment_amount, credit_status, docs_status")
@@ -37,14 +36,12 @@ serve(async (req) => {
       });
     }
 
-    // Fetch lead memory
     const { data: memory } = await supabase
       .from("lead_memory")
       .select("summary, objections, interests, behavior_patterns, recommended_action")
       .eq("client_id", client_id)
       .maybeSingle();
 
-    // Fetch last 3 interactions
     const { data: recentInteractions } = await supabase
       .from("interactions")
       .select("type, content, created_at")
@@ -53,14 +50,15 @@ serve(async (req) => {
       .limit(3);
 
     const systemPrompt = `Você é um analista de vendas especialista em motos e veículos da Arsenal Motors.
-Sua função é analisar a ÚLTIMA MENSAGEM do cliente e, com base no contexto completo do lead, retornar uma análise estruturada.
+Sua função é analisar a ÚLTIMA MENSAGEM do cliente e retornar uma análise focada em RESPOSTA e CONVERSÃO.
 
 REGRAS CRÍTICAS:
 - Foque em CONVERSÃO. Toda sugestão deve avançar a venda.
 - Mensagens sugeridas devem provocar RESPOSTA do cliente e avançar a conversa.
+- Máximo 2 frases na mensagem sugerida.
 - NUNCA sugira mensagens genéricas ou apenas educadas.
-- Detecte mudanças de objeção, temperatura e urgência.
-- Se detectar impossibilidade de financiamento, sugira consórcio como alternativa.
+- NÃO sugira mudanças de pipeline ou substatus — isso não é sua responsabilidade.
+- Foque apenas em: situação, estratégia, próxima ação, mensagem e objetivo.
 - Responda APENAS com a tool call estruturada, sem texto adicional.`;
 
     const userPrompt = `CONTEXTO DO LEAD:
@@ -122,24 +120,6 @@ Analise e retorne a avaliação estruturada usando a tool.`;
                     type: "string",
                     description: "Situação atual do lead em 1 frase curta (ex: 'Cliente negociando entrada menor')",
                   },
-                  detected_objection: {
-                    type: "string",
-                    enum: ["price", "down_payment", "installment", "credit", "trust", "comparison", "trade_undervalued", "indecision", "timing", "none"],
-                    description: "Objeção principal detectada na mensagem",
-                  },
-                  objection_changed: {
-                    type: "boolean",
-                    description: "Se a objeção mudou em relação à atual",
-                  },
-                  detected_temperature: {
-                    type: "string",
-                    enum: ["hot", "warm", "cold", "frozen"],
-                    description: "Temperatura detectada do lead",
-                  },
-                  temperature_changed: {
-                    type: "boolean",
-                    description: "Se a temperatura mudou",
-                  },
                   strategy: {
                     type: "string",
                     enum: ["pressionar_forte", "pressionar_medio", "pressionar_leve", "educar_medio", "educar_leve", "fechar_direto", "recuperar", "aguardar", "qualificar"],
@@ -158,22 +138,12 @@ Analise e retorne a avaliação estruturada usando a tool.`;
                     type: "string",
                     description: "Próxima ação sugerida (ex: 'Simular parcela com entrada menor')",
                   },
-                  next_action_type: {
-                    type: "string",
-                    enum: ["call", "send_proposal", "send_message", "collect_docs", "follow_up", "schedule_visit", "submit_credit", "wait_client", "close_deal", "send_content"],
-                    description: "Tipo da próxima ação",
-                  },
                   suggested_message: {
                     type: "string",
-                    description: "Mensagem sugerida para enviar ao cliente. Deve ser conversional, focada em conversão, provocar resposta e avançar a negociação. NÃO seja genérico.",
-                  },
-                  changes_summary: {
-                    type: "array",
-                    items: { type: "string" },
-                    description: "Lista de mudanças detectadas (ex: ['Objeção: preço → entrada', 'Prioridade: normal → urgente'])",
+                    description: "Mensagem sugerida para enviar ao cliente. Máximo 2 frases. Deve ser conversional, focada em conversão, provocar resposta e avançar a negociação. NÃO seja genérico.",
                   },
                 },
-                required: ["situation", "detected_objection", "objection_changed", "detected_temperature", "temperature_changed", "strategy", "priority", "response_objective", "next_action", "next_action_type", "suggested_message", "changes_summary"],
+                required: ["situation", "strategy", "priority", "response_objective", "next_action", "suggested_message"],
                 additionalProperties: false,
               },
             },
@@ -190,7 +160,7 @@ Analise e retorne a avaliação estruturada usando a tool.`;
         });
       }
       if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Créditos de IA esgotados. Adicione créditos em Settings → Workspace → Usage." }), {
+        return new Response(JSON.stringify({ error: "Créditos de IA esgotados." }), {
           status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
@@ -220,16 +190,16 @@ Analise e retorne a avaliação estruturada usando a tool.`;
       created_by: "whatsapp_analyzer",
     });
 
-    // Add timeline event
+    // Add timeline event with full analysis for restoration
     await supabase.from("lead_timeline_events").insert({
       client_id,
       event_type: "message_received",
       content: `Mensagem WhatsApp analisada: "${new_message.slice(0, 100)}"`,
       source: "whatsapp_analyzer",
-      metadata: { analysis_result: analysis },
+      metadata: { analysis_result: analysis, original_message: new_message },
     });
 
-    // Persist recommended_message and analysis to lead_memory
+    // Persist to lead_memory
     const { data: existingMemory } = await supabase
       .from("lead_memory")
       .select("id")
@@ -239,10 +209,9 @@ Analise e retorne a avaliação estruturada usando a tool.`;
     const memoryUpdate = {
       recommended_message: analysis.suggested_message,
       recommended_action: analysis.next_action,
-      lead_temperature_ai: analysis.detected_temperature,
       last_analyzed_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-      summary: `[WhatsApp] ${analysis.situation}. Estratégia: ${analysis.strategy}. Objeção: ${analysis.detected_objection}. Prioridade: ${analysis.priority}.`,
+      summary: `[WhatsApp] ${analysis.situation}. Estratégia: ${analysis.strategy}. Prioridade: ${analysis.priority}.`,
     };
 
     if (existingMemory) {
@@ -251,7 +220,7 @@ Analise e retorne a avaliação estruturada usando a tool.`;
       await supabase.from("lead_memory").insert({ client_id, ...memoryUpdate });
     }
 
-    return new Response(JSON.stringify({ analysis, current: { objection_type: client.objection_type, temperature: client.temperature, pipeline_stage: client.pipeline_stage } }), {
+    return new Response(JSON.stringify({ analysis }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
