@@ -115,6 +115,7 @@ const KanbanCard = ({ client, index, highlight, chatCount = 0, hasActiveChat = f
                 <span className="text-[8px] bg-accent/40 text-accent-foreground px-1 py-0.5 rounded-full">{subStageLabel}</span>
               )}
               {qrBadge && <span className="text-[8px]">{qrBadge.label.split(" ")[0]}</span>}
+              <span className={`text-[8px] font-bold px-1 py-0.5 rounded ${strategy.color}`}>{strategy.emoji}</span>
               {riskInfo && <span className="text-[9px]">{riskInfo.emoji}</span>}
               <span className="text-[9px] text-muted-foreground font-mono">{priorityScore}</span>
               {hasActiveChat && <MessageCircle className="w-2.5 h-2.5 text-primary shrink-0" />}
