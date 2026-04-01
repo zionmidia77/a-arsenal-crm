@@ -440,6 +440,7 @@ const AdminSmartQueue = () => {
         }}
         clientId={client.id}
         clientName={client.name}
+        currentStage={client.pipeline_stage}
       />
     </div>
   );
