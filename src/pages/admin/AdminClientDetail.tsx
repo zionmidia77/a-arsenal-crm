@@ -289,9 +289,9 @@ const AdminClientDetail = () => {
   };
 
   const markAttended = () => {
-    updateClient.mutate({ id: client.id, pipeline_stage: "contacted" as any, last_contact_at: new Date().toISOString() } as any);
-    createInteraction.mutate({ client_id: client.id, type: "system", content: "Marcado como atendido", created_by: "admin" });
-    toast.success("Marcado como atendido!");
+    updateClient.mutate({ id: client.id, last_contact_at: new Date().toISOString() } as any);
+    createInteraction.mutate({ client_id: client.id, type: "system", content: "Atendimento registrado", created_by: "admin" });
+    toast.success("Atendimento registrado!");
   };
 
   const scheduleFollowUp = () => {
