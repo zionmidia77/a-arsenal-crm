@@ -282,6 +282,7 @@ const AdminSmartQueue = () => {
                       ⚖️ {client.objection_type}
                     </span>
                   )}
+                  <CadenceBadge info={cadenceBadges?.[client.id]} />
                 </div>
               </div>
               <TooltipProvider>
