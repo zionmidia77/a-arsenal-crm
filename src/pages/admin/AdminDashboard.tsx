@@ -27,6 +27,7 @@ import InactivityAlerts from "@/components/admin/InactivityAlerts";
 import LossReasonsChart from "@/components/admin/LossReasonsChart";
 import { useOverdueLeads } from "@/hooks/useOverdueLeads";
 import QueueAlertBanner from "@/components/admin/QueueAlertBanner";
+import CadenceWidget from "@/components/admin/CadenceWidget";
 
 const tempEmoji: Record<string, string> = { hot: "🔥", warm: "🟡", cold: "🔵", frozen: "⚪" };
 const tempBg: Record<string, string> = { hot: "bg-primary/10", warm: "bg-warning/10", cold: "bg-info/10", frozen: "bg-muted" };
@@ -508,6 +509,9 @@ const AdminDashboard = () => {
       <motion.div variants={fadeUp}>
         <InactivityAlerts />
       </motion.div>
+
+      {/* ⚡ Cadence Widget */}
+      <CadenceWidget />
 
       {/* 🧠 Smart Alerts */}
       <SmartAlerts />

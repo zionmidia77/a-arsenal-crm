@@ -193,6 +193,103 @@ export type Database = {
           },
         ]
       }
+      cadence_steps: {
+        Row: {
+          client_id: string
+          completed_at: string | null
+          created_at: string
+          id: string
+          pipeline_stage: string
+          scheduled_for: string
+          skipped: boolean
+          step_number: number
+          task_id: string | null
+          template_id: string
+        }
+        Insert: {
+          client_id: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          pipeline_stage: string
+          scheduled_for: string
+          skipped?: boolean
+          step_number: number
+          task_id?: string | null
+          template_id: string
+        }
+        Update: {
+          client_id?: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          pipeline_stage?: string
+          scheduled_for?: string
+          skipped?: boolean
+          step_number?: number
+          task_id?: string | null
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cadence_steps_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cadence_steps_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cadence_steps_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "cadence_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cadence_templates: {
+        Row: {
+          action_type: string
+          created_at: string
+          delay_days: number
+          id: string
+          is_active: boolean
+          pipeline_stage: string
+          step_number: number
+          suggested_message: string | null
+          task_reason: string
+        }
+        Insert: {
+          action_type?: string
+          created_at?: string
+          delay_days?: number
+          id?: string
+          is_active?: boolean
+          pipeline_stage: string
+          step_number: number
+          suggested_message?: string | null
+          task_reason: string
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          delay_days?: number
+          id?: string
+          is_active?: boolean
+          pipeline_stage?: string
+          step_number?: number
+          suggested_message?: string | null
+          task_reason?: string
+        }
+        Relationships: []
+      }
       chat_conversations: {
         Row: {
           client_id: string | null
@@ -1539,6 +1636,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      advance_cadence: { Args: never; Returns: undefined }
       auto_birthday_alerts: { Args: never; Returns: undefined }
       auto_checkin_schedule: { Args: never; Returns: undefined }
       auto_cool_leads: { Args: never; Returns: undefined }
@@ -1563,6 +1661,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      start_cadence: {
+        Args: { p_client_id: string; p_pipeline_stage: string }
+        Returns: undefined
       }
     }
     Enums: {
