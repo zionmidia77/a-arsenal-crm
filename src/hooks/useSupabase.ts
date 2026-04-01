@@ -136,6 +136,8 @@ export const useTasks = (filters?: { status?: string; due_date?: string }) => {
       if (error) throw error;
       return data;
     },
+    staleTime: 30_000,
+    refetchInterval: 60_000,
   });
 };
 
@@ -152,6 +154,8 @@ export const useAllPendingTasks = () => {
       if (error) throw error;
       return data;
     },
+    staleTime: 30_000,
+    refetchInterval: 60_000,
   });
 };
 
@@ -169,7 +173,17 @@ export const useOverdueTasks = () => {
       if (error) throw error;
       return data;
     },
+    staleTime: 30_000,
+    refetchInterval: 60_000,
   });
+};
+
+// Helper to invalidate all task-related queries
+const invalidateAllTasks = (qc: ReturnType<typeof useQueryClient>) => {
+  qc.invalidateQueries({ queryKey: ["tasks"] });
+  qc.invalidateQueries({ queryKey: ["tasks-pending"] });
+  qc.invalidateQueries({ queryKey: ["tasks-overdue"] });
+  qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
 };
 
 export const useCreateTask = () => {
@@ -180,11 +194,7 @@ export const useCreateTask = () => {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["tasks"] });
-      qc.invalidateQueries({ queryKey: ["tasks-pending"] });
-      qc.invalidateQueries({ queryKey: ["tasks-overdue"] });
-    },
+    onSuccess: () => invalidateAllTasks(qc),
   });
 };
 
@@ -196,11 +206,7 @@ export const useUpdateTask = () => {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["tasks"] });
-      qc.invalidateQueries({ queryKey: ["tasks-pending"] });
-      qc.invalidateQueries({ queryKey: ["tasks-overdue"] });
-    },
+    onSuccess: () => invalidateAllTasks(qc),
   });
 };
 
