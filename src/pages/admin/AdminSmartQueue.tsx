@@ -322,10 +322,17 @@ const AdminSmartQueue = () => {
               </TooltipProvider>
             </div>
 
-            {/* Priority reason tags */}
+            {/* Main queue reason banner */}
+            {client.queue_reason && client.queue_reason !== 'standard' && queueReasonConfig[client.queue_reason as string] && (
+              <div className={`text-xs font-bold px-3 py-1.5 rounded-lg text-center ${queueReasonConfig[client.queue_reason as string].color}`}>
+                {queueReasonConfig[client.queue_reason as string].label}
+              </div>
+            )}
+
+            {/* Additional priority tags */}
             {priorityReasons.length > 0 && (
               <div className="flex flex-wrap gap-1.5">
-                {priorityReasons.map((r, i) => (
+                {priorityReasons.filter((_, i) => !(i === 0 && client.queue_reason && client.queue_reason !== 'standard')).map((r, i) => (
                   <span key={i} className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${r.color}`}>
                     {r.label}
                   </span>
