@@ -297,6 +297,7 @@ const AdminBotPanel = () => {
                           <TypeIcon className={`w-4 h-4 ${typeInfo.color}`} />
                           {bot.seller_name}
                           <Badge variant="outline" className="text-[10px] font-normal capitalize">{typeInfo.label}</Badge>
+                          {bot.bot_id && <Badge variant="secondary" className="text-[10px] font-mono">{bot.bot_id}</Badge>}
                         </CardTitle>
                         <Switch checked={bot.is_active} onCheckedChange={(checked) => handleToggle(bot, checked)} />
                       </div>
