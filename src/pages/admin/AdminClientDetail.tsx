@@ -446,12 +446,6 @@ const AdminClientDetail = () => {
         </div>
       </motion.div>
 
-      {/* 🤖 AI Copilot - Only on mobile */}
-      {isMobile && (
-        <motion.div variants={fadeUp}>
-          <LeadCopilotPanel clientId={client.id} clientName={client.name} clientPhone={client.phone || undefined} clientInterest={client.interest || undefined} clientBudget={client.budget_range || undefined} />
-        </motion.div>
-      )}
 
       {/* Tags */}
       <motion.div variants={fadeUp} className="glass-card p-3">
