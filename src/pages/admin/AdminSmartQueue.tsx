@@ -174,7 +174,7 @@ const AdminSmartQueue = () => {
   const total = queue.length;
 
   useEffect(() => {
-    if (isLoading) return;
+    if (isLoading || allClients === undefined) return;
 
     if (queue.length === 0) {
       if (currentClientId !== null) {
