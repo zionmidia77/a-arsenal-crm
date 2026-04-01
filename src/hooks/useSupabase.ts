@@ -302,6 +302,7 @@ export const useDashboardStats = () => {
         conversionRate: total > 0 ? Math.round((won / total) * 100) : 0,
       };
     },
+    enabled: !!user,
     staleTime: 30_000,
     refetchInterval: 60_000,
   });
