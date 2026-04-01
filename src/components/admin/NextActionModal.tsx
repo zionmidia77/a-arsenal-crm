@@ -19,25 +19,25 @@ const actionOptions = [
   { type: "send_content", label: "Enviar conteúdo", icon: Mail, emoji: "📤" },
 ] as const;
 
-// Pipeline stage progression map — suggests the next logical stage
+// Simplified pipeline stage progression — suggests the next logical group
 const STAGE_FLOW: Record<string, { key: string; label: string; emoji: string }> = {
-  new: { key: "contacted", label: "Contatado", emoji: "📱" },
-  contacted: { key: "first_contact", label: "1º Contato", emoji: "📞" },
+  new: { key: "contacted", label: "Contatado", emoji: "📞" },
+  contacted: { key: "qualification", label: "Qualificação", emoji: "🔍" },
   first_contact: { key: "qualification", label: "Qualificação", emoji: "🔍" },
-  interested: { key: "attending", label: "Atendendo", emoji: "🤝" },
+  interested: { key: "qualification", label: "Qualificação", emoji: "🔍" },
   qualification: { key: "proposal", label: "Proposta", emoji: "📋" },
   attending: { key: "proposal", label: "Proposta", emoji: "📋" },
-  scheduled: { key: "attending", label: "Atendendo", emoji: "🤝" },
-  proposal: { key: "proposal_sent", label: "Proposta Enviada", emoji: "📨" },
+  scheduled: { key: "qualification", label: "Qualificação", emoji: "🔍" },
+  proposal: { key: "negotiation", label: "Negociação", emoji: "💰" },
   proposal_sent: { key: "negotiation", label: "Negociação", emoji: "💰" },
   thinking: { key: "negotiation", label: "Negociação", emoji: "💰" },
   waiting_response: { key: "negotiation", label: "Negociação", emoji: "💰" },
-  negotiation: { key: "financing_analysis", label: "Análise Crédito", emoji: "🏦" },
-  negotiating: { key: "financing_analysis", label: "Análise Crédito", emoji: "🏦" },
-  financing_analysis: { key: "approved", label: "Aprovado", emoji: "✅" },
-  approved: { key: "closing", label: "Fechamento", emoji: "📝" },
-  closing: { key: "closed_won", label: "Fechado ✅", emoji: "🏆" },
-  reactivation: { key: "contacted", label: "Contatado", emoji: "📱" },
+  negotiation: { key: "closed_won", label: "Ganho ✅", emoji: "🏆" },
+  negotiating: { key: "closed_won", label: "Ganho ✅", emoji: "🏆" },
+  financing_analysis: { key: "negotiation", label: "Negociação", emoji: "💰" },
+  approved: { key: "closed_won", label: "Ganho ✅", emoji: "🏆" },
+  closing: { key: "closed_won", label: "Ganho ✅", emoji: "🏆" },
+  reactivation: { key: "contacted", label: "Contatado", emoji: "📞" },
 };
 
 const STAGE_LABELS: Record<string, string> = {
@@ -46,7 +46,7 @@ const STAGE_LABELS: Record<string, string> = {
   scheduled: "Agendado", proposal: "Proposta", proposal_sent: "Proposta Enviada",
   thinking: "Pensando", waiting_response: "Aguardando", negotiation: "Negociação",
   negotiating: "Negociando", financing_analysis: "Análise Crédito", approved: "Aprovado",
-  rejected: "Rejeitado", closing: "Fechamento", closed_won: "Fechado ✅",
+  rejected: "Rejeitado", closing: "Fechamento", closed_won: "Ganho ✅",
   closed_lost: "Perdido", reactivation: "Reativação",
 };
 
