@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import { getObjectionMessages } from "@/lib/objectionMessages";
 import NextActionModal from "@/components/admin/NextActionModal";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import PageTour from "@/components/admin/PageTour";
+import QueueDashboard from "@/components/admin/QueueDashboard";
 
 const tempBadge: Record<string, string> = {
   hot: "bg-primary/15 text-primary",
