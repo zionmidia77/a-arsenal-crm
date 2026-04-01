@@ -215,7 +215,11 @@ export const useCreateTask = () => {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => invalidateAllTasks(qc),
+    onSuccess: () => {
+      invalidateAllTasks(qc);
+      toast.success("Tarefa criada!");
+    },
+    onError: (e: any) => toast.error("Erro ao criar tarefa", { description: e.message }),
   });
 };
 
