@@ -54,7 +54,11 @@ export const useCreateClient = () => {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => invalidateAllClients(qc),
+    onSuccess: () => {
+      invalidateAllClients(qc);
+      toast.success("Lead criado com sucesso!");
+    },
+    onError: (e: any) => toast.error("Erro ao criar lead", { description: e.message }),
   });
 };
 
