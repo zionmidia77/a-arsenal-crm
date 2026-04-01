@@ -510,6 +510,9 @@ const AdminDashboard = () => {
         <InactivityAlerts />
       </motion.div>
 
+      {/* ⚡ Cadence Widget */}
+      <CadenceWidget />
+
       {/* 🧠 Smart Alerts */}
       <SmartAlerts />
 

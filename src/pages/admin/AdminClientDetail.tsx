@@ -781,6 +781,11 @@ const AdminClientDetail = () => {
         </div>
       </motion.div>
 
+      {/* Cadence Tracker */}
+      <motion.div variants={fadeUp} className="glass-card p-4">
+        <CadenceTracker clientId={client.id} />
+      </motion.div>
+
       {/* Unified Timeline - always visible */}
       <motion.div variants={fadeUp}>
         <h2 className="font-display font-semibold text-sm mb-3 flex items-center gap-2"><Clock className="w-4 h-4" /> Timeline Unificada</h2>
