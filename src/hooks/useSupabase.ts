@@ -74,6 +74,7 @@ export const useUpdateClient = () => {
 
 // ============ ALL CLIENTS FOR KANBAN ============
 export const useAllClients = () => {
+  const { user } = useAuth();
   return useQuery({
     queryKey: ["clients-all"],
     queryFn: async () => {
@@ -84,6 +85,7 @@ export const useAllClients = () => {
       if (error) throw error;
       return data;
     },
+    enabled: !!user,
     staleTime: 30_000,
     refetchInterval: 60_000,
   });
