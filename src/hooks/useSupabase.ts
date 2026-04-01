@@ -120,7 +120,11 @@ export const useCreateInteraction = () => {
       if (error) throw error;
       return data;
     },
-    onSuccess: (_, vars) => qc.invalidateQueries({ queryKey: ["interactions", vars.client_id] }),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["interactions", vars.client_id] });
+      // Interactions trigger lead_score recalc, so refresh client data
+      invalidateAllClients(qc);
+    },
   });
 };
 
