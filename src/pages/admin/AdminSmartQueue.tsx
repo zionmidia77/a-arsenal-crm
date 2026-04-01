@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -74,7 +74,7 @@ const AdminSmartQueue = () => {
   const { data: allClients, isLoading } = useClients();
   const updateClient = useUpdateClient();
   const createInteraction = useCreateInteraction();
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [currentClientId, setCurrentClientId] = useState<string | null>(null);
   const [direction, setDirection] = useState(1);
   const [nextActionModalOpen, setNextActionModalOpen] = useState(false);
   const [attendedCount, setAttendedCount] = useState(0);
@@ -153,9 +153,26 @@ const AdminSmartQueue = () => {
     }
   }, [fullQueue, activeFilter]);
 
+  const client = useMemo(() => {
+    if (queue.length === 0) return null;
+    return queue.find(item => item.id === currentClientId) ?? queue[0];
+  }, [queue, currentClientId]);
 
-  const client = queue[currentIndex];
+  const currentIndex = client ? queue.findIndex(item => item.id === client.id) : 0;
   const total = queue.length;
+
+  useEffect(() => {
+    if (queue.length === 0) {
+      if (currentClientId !== null) {
+        setCurrentClientId(null);
+      }
+      return;
+    }
+
+    if (!currentClientId || !queue.some(item => item.id === currentClientId)) {
+      setCurrentClientId(queue[0].id);
+    }
+  }, [queue, currentClientId]);
 
   // Cadence badges for visible clients
   const { data: cadenceBadges } = useCadenceBadges(client ? [client.id] : []);
@@ -163,13 +180,14 @@ const AdminSmartQueue = () => {
   const goNext = () => {
     if (currentIndex < total - 1) {
       setDirection(1);
-      setCurrentIndex(i => i + 1);
+      setCurrentClientId(queue[currentIndex + 1].id);
     }
   };
+
   const goPrev = () => {
     if (currentIndex > 0) {
       setDirection(-1);
-      setCurrentIndex(i => i - 1);
+      setCurrentClientId(queue[currentIndex - 1].id);
     }
   };
 
@@ -202,7 +220,7 @@ const AdminSmartQueue = () => {
     );
   }
 
-  if (total === 0) {
+  if (total === 0 || !client) {
     return (
       <div className="p-6 text-center space-y-4">
         <div className="text-4xl">🎉</div>
@@ -247,7 +265,8 @@ const AdminSmartQueue = () => {
         activeFilter={activeFilter}
         onFilterChange={(f) => {
           setActiveFilter(f);
-          setCurrentIndex(0);
+          setDirection(1);
+          setCurrentClientId(null);
         }}
       />
 
@@ -255,7 +274,7 @@ const AdminSmartQueue = () => {
       <div className="space-y-1" data-tour="queue-progress">
         <div className="flex justify-between text-xs text-muted-foreground">
           <span>Lead {currentIndex + 1} de {total}</span>
-          <span>Faltam {total - currentIndex - 1}</span>
+          <span>Faltam {Math.max(total - currentIndex - 1, 0)}</span>
         </div>
         <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
           <motion.div
@@ -458,7 +477,6 @@ const AdminSmartQueue = () => {
         open={nextActionModalOpen}
         onClose={() => {
           setNextActionModalOpen(false);
-          setTimeout(goNext, 300);
         }}
         clientId={client.id}
         clientName={client.name}
