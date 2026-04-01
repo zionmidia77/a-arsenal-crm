@@ -459,6 +459,7 @@ export type Database = {
           position: string | null
           priority_score: number | null
           profession: string | null
+          queue_reason: string | null
           reference_name: string | null
           reference_name_2: string | null
           reference_phone: string | null
@@ -473,6 +474,7 @@ export type Database = {
           salary: number | null
           source: string | null
           status: Database["public"]["Enums"]["client_status"]
+          substatus: Database["public"]["Enums"]["client_substatus"] | null
           temperature: Database["public"]["Enums"]["lead_temperature"]
           updated_at: string
           vehicle_id: string | null
@@ -547,6 +549,7 @@ export type Database = {
           position?: string | null
           priority_score?: number | null
           profession?: string | null
+          queue_reason?: string | null
           reference_name?: string | null
           reference_name_2?: string | null
           reference_phone?: string | null
@@ -561,6 +564,7 @@ export type Database = {
           salary?: number | null
           source?: string | null
           status?: Database["public"]["Enums"]["client_status"]
+          substatus?: Database["public"]["Enums"]["client_substatus"] | null
           temperature?: Database["public"]["Enums"]["lead_temperature"]
           updated_at?: string
           vehicle_id?: string | null
@@ -635,6 +639,7 @@ export type Database = {
           position?: string | null
           priority_score?: number | null
           profession?: string | null
+          queue_reason?: string | null
           reference_name?: string | null
           reference_name_2?: string | null
           reference_phone?: string | null
@@ -649,6 +654,7 @@ export type Database = {
           salary?: number | null
           source?: string | null
           status?: Database["public"]["Enums"]["client_status"]
+          substatus?: Database["public"]["Enums"]["client_substatus"] | null
           temperature?: Database["public"]["Enums"]["lead_temperature"]
           updated_at?: string
           vehicle_id?: string | null
@@ -1671,6 +1677,13 @@ export type Database = {
       app_role: "admin" | "moderator" | "user"
       client_promise_status: "pending" | "overdue" | "fulfilled" | "broken"
       client_status: "lead" | "active" | "inactive" | "lost"
+      client_substatus:
+        | "active"
+        | "scheduled"
+        | "waiting_client"
+        | "thinking"
+        | "no_response"
+        | "docs_pending"
       credit_status:
         | "pending"
         | "submitted"
@@ -1900,6 +1913,14 @@ export const Constants = {
       app_role: ["admin", "moderator", "user"],
       client_promise_status: ["pending", "overdue", "fulfilled", "broken"],
       client_status: ["lead", "active", "inactive", "lost"],
+      client_substatus: [
+        "active",
+        "scheduled",
+        "waiting_client",
+        "thinking",
+        "no_response",
+        "docs_pending",
+      ],
       credit_status: [
         "pending",
         "submitted",
