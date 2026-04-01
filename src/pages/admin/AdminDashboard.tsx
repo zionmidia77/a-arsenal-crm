@@ -26,6 +26,7 @@ import SpeedToLeadCard from "@/components/admin/SpeedToLeadCard";
 import InactivityAlerts from "@/components/admin/InactivityAlerts";
 import LossReasonsChart from "@/components/admin/LossReasonsChart";
 import { useOverdueLeads } from "@/hooks/useOverdueLeads";
+import QueueAlertBanner from "@/components/admin/QueueAlertBanner";
 
 const tempEmoji: Record<string, string> = { hot: "🔥", warm: "🟡", cold: "🔵", frozen: "⚪" };
 const tempBg: Record<string, string> = { hot: "bg-primary/10", warm: "bg-warning/10", cold: "bg-info/10", frozen: "bg-muted" };
