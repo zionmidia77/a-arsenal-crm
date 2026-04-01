@@ -5,6 +5,7 @@ import type { Tables } from "@/integrations/supabase/types";
 import { Draggable } from "@hello-pangea/dnd";
 import TagManager from "@/components/admin/TagManager";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { computeStrategy } from "@/components/admin/BriefingCard";
 
 const tempBadge: Record<string, string> = {
   hot: "bg-primary/15 text-primary",
@@ -80,6 +81,7 @@ const KanbanCard = ({ client, index, highlight, chatCount = 0, hasActiveChat = f
   const isActionOverdue = nextActionDue ? new Date(nextActionDue) < new Date() : false;
   const isPromiseBroken = clientPromiseStatus === 'broken' || clientPromiseStatus === 'overdue';
   const qrBadge = queueReason && queueReason !== 'standard' ? queueReasonBadge[queueReason] : null;
+  const strategy = computeStrategy(client);
 
   const substatusLabels: Record<string, string> = {
     scheduled: "📅 Agendado",
@@ -113,6 +115,7 @@ const KanbanCard = ({ client, index, highlight, chatCount = 0, hasActiveChat = f
                 <span className="text-[8px] bg-accent/40 text-accent-foreground px-1 py-0.5 rounded-full">{subStageLabel}</span>
               )}
               {qrBadge && <span className="text-[8px]">{qrBadge.label.split(" ")[0]}</span>}
+              <span className={`text-[8px] font-bold px-1 py-0.5 rounded ${strategy.color}`}>{strategy.emoji}</span>
               {riskInfo && <span className="text-[9px]">{riskInfo.emoji}</span>}
               <span className="text-[9px] text-muted-foreground font-mono">{priorityScore}</span>
               {hasActiveChat && <MessageCircle className="w-2.5 h-2.5 text-primary shrink-0" />}
@@ -187,7 +190,10 @@ const KanbanCard = ({ client, index, highlight, chatCount = 0, hasActiveChat = f
                 </span>
               )}
 
-              {/* Badges row: deal type + deal value + credit/docs */}
+              {/* Strategy badge */}
+              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border ${strategy.color}`}>
+                {strategy.emoji} {strategy.label}
+              </span>
               <div className="flex flex-wrap gap-1">
                 {dealType && dealTypeLabels[dealType] && (
                   <span className="text-[9px] font-medium bg-accent/50 text-accent-foreground px-1.5 py-0.5 rounded-full">

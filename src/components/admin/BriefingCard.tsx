@@ -11,10 +11,10 @@ interface BriefingCardProps {
 }
 
 // ── Strategy Engine ──────────────────────────────────────────
-type StrategyLevel = "leve" | "médio" | "forte" | "direto";
-type StrategyType = "pressionar" | "educar" | "fechar" | "recuperar" | "aguardar" | "qualificar";
+export type StrategyLevel = "leve" | "médio" | "forte" | "direto";
+export type StrategyType = "pressionar" | "educar" | "fechar" | "recuperar" | "aguardar" | "qualificar";
 
-interface Strategy {
+export interface Strategy {
   type: StrategyType;
   level: StrategyLevel;
   label: string;
@@ -33,7 +33,7 @@ interface WhyReason {
   text: string;
 }
 
-function computeStrategy(client: Tables<"clients">): Strategy {
+export function computeStrategy(client: Tables<"clients">): Strategy {
   const stage = client.pipeline_stage;
   const obj = client.objection_type;
   const temp = client.temperature;
