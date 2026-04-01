@@ -8,6 +8,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import QueryErrorHandler from "@/components/QueryErrorHandler";
 import Index from "./pages/Index";
 
 // Lazy-loaded pages
