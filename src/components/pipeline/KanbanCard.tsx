@@ -190,7 +190,10 @@ const KanbanCard = ({ client, index, highlight, chatCount = 0, hasActiveChat = f
                 </span>
               )}
 
-              {/* Badges row: deal type + deal value + credit/docs */}
+              {/* Strategy badge */}
+              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border ${strategy.color}`}>
+                {strategy.emoji} {strategy.label}
+              </span>
               <div className="flex flex-wrap gap-1">
                 {dealType && dealTypeLabels[dealType] && (
                   <span className="text-[9px] font-medium bg-accent/50 text-accent-foreground px-1.5 py-0.5 rounded-full">
