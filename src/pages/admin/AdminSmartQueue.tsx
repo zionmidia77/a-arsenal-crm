@@ -15,6 +15,8 @@ import NextActionModal from "@/components/admin/NextActionModal";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import PageTour from "@/components/admin/PageTour";
 import QueueDashboard from "@/components/admin/QueueDashboard";
+import CadenceBadge from "@/components/admin/CadenceBadge";
+import { useCadenceBadges } from "@/hooks/useCadenceBadges";
 
 const tempBadge: Record<string, string> = {
   hot: "bg-primary/15 text-primary",
@@ -139,6 +141,9 @@ const AdminSmartQueue = () => {
 
   const client = queue[currentIndex];
   const total = queue.length;
+
+  // Cadence badges for visible clients
+  const { data: cadenceBadges } = useCadenceBadges(client ? [client.id] : []);
 
   const goNext = () => {
     if (currentIndex < total - 1) {
@@ -277,6 +282,7 @@ const AdminSmartQueue = () => {
                       ⚖️ {client.objection_type}
                     </span>
                   )}
+                  <CadenceBadge info={cadenceBadges?.[client.id]} />
                 </div>
               </div>
               <TooltipProvider>

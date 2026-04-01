@@ -20,6 +20,8 @@ import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
 import MergeLeadsDialog from "@/components/admin/MergeLeadsDialog";
 import SwipeableLeadCard from "@/components/admin/SwipeableLeadCard";
+import CadenceBadge from "@/components/admin/CadenceBadge";
+import { useCadenceBadges } from "@/hooks/useCadenceBadges";
 import { toast } from "sonner";
 
 const tempStyles: Record<string, string> = {
@@ -200,6 +202,10 @@ const AdminLeads = () => {
       else cmp = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
       return sortAsc ? cmp : -cmp;
     });
+
+  // Cadence badges for filtered clients
+  const filteredIds = filtered.map(c => c.id);
+  const { data: cadenceBadges } = useCadenceBadges(filteredIds);
 
   const leadsTourSteps = [
     { target: '[data-tour="leads-search"]', title: "Buscar leads", description: "Pesquise por nome, telefone ou interesse para encontrar leads rapidamente.", icon: SearchIcon, position: "bottom" as const },
@@ -437,6 +443,7 @@ const AdminLeads = () => {
                 {STAGE_LABELS[client.pipeline_stage] || client.pipeline_stage}
               </span>
               <span className="text-[10px] text-muted-foreground font-mono shrink-0 w-8 text-right">{client.lead_score}</span>
+              <CadenceBadge info={cadenceBadges?.[client.id]} compact />
               <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full shrink-0 ${tempBadge[client.temperature]}`}>
                 {tempLabel[client.temperature]}
               </span>
@@ -509,6 +516,7 @@ const AdminLeads = () => {
                 <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-secondary text-muted-foreground">
                   {STAGE_LABELS[client.pipeline_stage] || client.pipeline_stage}
                 </span>
+                <CadenceBadge info={cadenceBadges?.[client.id]} />
                 <span className="text-[9px] text-muted-foreground font-mono ml-auto">{client.lead_score}pts</span>
               </div>
 
