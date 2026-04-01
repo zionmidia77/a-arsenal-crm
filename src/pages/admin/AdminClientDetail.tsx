@@ -29,6 +29,7 @@ import ExclusiveOffersSection from "@/components/admin/ExclusiveOffersSection";
 import ChatHistorySection from "@/components/admin/ChatHistorySection";
 import LeadCopilotPanel from "@/components/admin/LeadCopilotPanel";
 import LeadTimeline from "@/components/admin/LeadTimeline";
+import CadenceTracker from "@/components/admin/CadenceTracker";
 
 const tempBadge: Record<string, string> = {
   hot: "bg-primary/15 text-primary",
