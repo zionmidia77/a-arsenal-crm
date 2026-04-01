@@ -408,6 +408,7 @@ const BotForm = ({ initial, onSubmit, loading }: { initial?: BotConfig; onSubmit
     delay_seconds: initial?.delay_seconds || 30,
     dry_mode: initial?.dry_mode || false,
     bot_type: initial?.bot_type || "messaging",
+    bot_id: initial?.bot_id || "",
     schedule_time: initial?.schedule_time || "",
   });
 
