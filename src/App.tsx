@@ -53,6 +53,7 @@ const App = () => (
   <HelmetProvider>
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
       <QueryClientProvider client={queryClient}>
+        <QueryErrorHandler />
         <TooltipProvider>
           <Toaster />
           <Sonner />
