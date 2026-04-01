@@ -187,6 +187,7 @@ export const useOverdueTasks = () => {
       if (error) throw error;
       return data;
     },
+    enabled: !!user,
     staleTime: 30_000,
     refetchInterval: 60_000,
   });
