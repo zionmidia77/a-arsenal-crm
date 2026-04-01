@@ -378,6 +378,11 @@ const AdminClientDetail = () => {
         </div>
       </motion.div>
 
+      {/* ═══ AI BRIEFING CARD ═══ */}
+      <motion.div variants={fadeUp}>
+        <BriefingCard client={client} onSendWhatsApp={sendWhatsApp} />
+      </motion.div>
+
       {/* ═══ SUMMARY CARD (Zona 2) ═══ */}
       <motion.div variants={fadeUp} className={cn(
         "rounded-2xl border-2 p-5 space-y-3",
