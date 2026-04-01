@@ -215,9 +215,16 @@ const WhatsAppAnalyzer = ({ client, onSendWhatsApp }: WhatsAppAnalyzerProps) => 
       }
 
       if (result.trim()) {
-        setEditableMessage(result.trim());
+        const newMsg = result.trim();
+        setEditableMessage(newMsg);
         setRegenCount(prev => prev + 1);
         toast.success(`Mensagem reescrita (tom ${tone})`);
+
+        // Persist regenerated message to lead_memory
+        await supabase
+          .from("lead_memory")
+          .update({ recommended_message: newMsg, updated_at: new Date().toISOString() })
+          .eq("client_id", client.id);
       }
     } catch (e) {
       toast.error("Erro ao regenerar mensagem");
