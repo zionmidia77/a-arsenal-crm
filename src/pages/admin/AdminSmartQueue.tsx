@@ -42,12 +42,22 @@ const nextActionLabels: Record<string, string> = {
 };
 
 const SMART_QUEUE_ACTIVE_CLIENT_STORAGE_KEY = "admin-smart-queue:active-client-id";
+const SMART_QUEUE_ACTIVE_FILTER_STORAGE_KEY = "admin-smart-queue:active-filter";
 
 const getStoredQueueClientId = () => {
   if (typeof window === "undefined") return null;
 
   try {
     return sessionStorage.getItem(SMART_QUEUE_ACTIVE_CLIENT_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+};
+
+const getStoredQueueFilter = (): string | null => {
+  if (typeof window === "undefined") return null;
+  try {
+    return sessionStorage.getItem(SMART_QUEUE_ACTIVE_FILTER_STORAGE_KEY);
   } catch {
     return null;
   }
@@ -90,7 +100,7 @@ const AdminSmartQueue = () => {
   const [direction, setDirection] = useState(1);
   const [nextActionModalOpen, setNextActionModalOpen] = useState(false);
   const [attendedCount, setAttendedCount] = useState(0);
-  const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const [activeFilter, setActiveFilter] = useState<string | null>(() => getStoredQueueFilter());
   const sessionStartTime = useRef(Date.now()).current;
 
   // Enhanced sorting: overdue promises > overdue actions > hot leads > scheduled today > priority_score
@@ -200,6 +210,17 @@ const AdminSmartQueue = () => {
       sessionStorage.removeItem(SMART_QUEUE_ACTIVE_CLIENT_STORAGE_KEY);
     } catch {}
   }, [currentClientId]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      if (activeFilter) {
+        sessionStorage.setItem(SMART_QUEUE_ACTIVE_FILTER_STORAGE_KEY, activeFilter);
+      } else {
+        sessionStorage.removeItem(SMART_QUEUE_ACTIVE_FILTER_STORAGE_KEY);
+      }
+    } catch {}
+  }, [activeFilter]);
 
   // Cadence badges for visible clients
   const { data: cadenceBadges } = useCadenceBadges(client ? [client.id] : []);
