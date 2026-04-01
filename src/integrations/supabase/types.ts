@@ -1661,6 +1661,10 @@ export type Database = {
         Args: { client_id_param: string }
         Returns: number
       }
+      calculate_queue_reason: {
+        Args: { client_id_param: string }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
