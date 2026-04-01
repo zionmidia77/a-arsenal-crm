@@ -37,6 +37,7 @@ export type Database = {
       }
       bot_configs: {
         Row: {
+          bot_id: string | null
           bot_type: string | null
           created_at: string
           delay_seconds: number
@@ -56,6 +57,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          bot_id?: string | null
           bot_type?: string | null
           created_at?: string
           delay_seconds?: number
@@ -75,6 +77,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          bot_id?: string | null
           bot_type?: string | null
           created_at?: string
           delay_seconds?: number

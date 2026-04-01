@@ -37,6 +37,7 @@ type BotConfig = {
   created_at: string;
   updated_at: string;
   bot_type: string | null;
+  bot_id: string | null;
   schedule_time: string | null;
   last_heartbeat_at: string | null;
   last_run_at: string | null;
@@ -75,7 +76,7 @@ const useBotConfigs = () =>
     queryFn: async () => {
       const { data, error } = await supabase.from("bot_configs").select("*").order("created_at", { ascending: true });
       if (error) throw error;
-      return (data as any[]).map((d) => ({ ...d, bot_type: d.bot_type ?? "messaging", schedule_time: d.schedule_time ?? null, last_heartbeat_at: d.last_heartbeat_at ?? null, last_run_at: d.last_run_at ?? null })) as BotConfig[];
+      return (data as any[]).map((d) => ({ ...d, bot_type: d.bot_type ?? "messaging", bot_id: d.bot_id ?? null, schedule_time: d.schedule_time ?? null, last_heartbeat_at: d.last_heartbeat_at ?? null, last_run_at: d.last_run_at ?? null })) as BotConfig[];
     },
   });
 
@@ -296,6 +297,7 @@ const AdminBotPanel = () => {
                           <TypeIcon className={`w-4 h-4 ${typeInfo.color}`} />
                           {bot.seller_name}
                           <Badge variant="outline" className="text-[10px] font-normal capitalize">{typeInfo.label}</Badge>
+                          {bot.bot_id && <Badge variant="secondary" className="text-[10px] font-mono">{bot.bot_id}</Badge>}
                         </CardTitle>
                         <Switch checked={bot.is_active} onCheckedChange={(checked) => handleToggle(bot, checked)} />
                       </div>
@@ -406,20 +408,26 @@ const BotForm = ({ initial, onSubmit, loading }: { initial?: BotConfig; onSubmit
     delay_seconds: initial?.delay_seconds || 30,
     dry_mode: initial?.dry_mode || false,
     bot_type: initial?.bot_type || "messaging",
+    bot_id: initial?.bot_id || "",
     schedule_time: initial?.schedule_time || "",
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.seller_name.trim()) return toast.error("Nome do vendedor é obrigatório");
-    onSubmit({ ...form, schedule_time: form.schedule_time || null });
+    onSubmit({ ...form, bot_id: form.bot_id.trim() || null, schedule_time: form.schedule_time || null });
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
         <Label>Nome do Bot / Vendedor *</Label>
-        <Input value={form.seller_name} onChange={(e) => setForm({ ...form, seller_name: e.target.value })} placeholder="Ex: Bot Messenger" />
+        <Input value={form.seller_name} onChange={(e) => setForm({ ...form, seller_name: e.target.value })} placeholder="Ex: Facebook 1" />
+      </div>
+      <div className="space-y-2">
+        <Label>Bot ID (identificador único usado pelo bot externo) *</Label>
+        <Input value={form.bot_id} onChange={(e) => setForm({ ...form, bot_id: e.target.value })} placeholder="Ex: facebook1, facebook2" className="font-mono" />
+        <p className="text-[11px] text-muted-foreground">Deve ser o mesmo valor configurado no BOT_ID do .env do bot</p>
       </div>
       <div className="space-y-2">
         <Label>Tipo do Bot</Label>
