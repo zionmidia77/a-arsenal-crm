@@ -2,6 +2,16 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 
+// Helper to invalidate all client-related queries
+const invalidateAllClients = (qc: ReturnType<typeof useQueryClient>) => {
+  qc.invalidateQueries({ queryKey: ["clients"] });
+  qc.invalidateQueries({ queryKey: ["clients-all"] });
+  qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
+  qc.invalidateQueries({ queryKey: ["tasks-pending"] });
+  qc.invalidateQueries({ queryKey: ["tasks-overdue"] });
+  qc.invalidateQueries({ queryKey: ["tasks"] });
+};
+
 // ============ CLIENTS ============
 export const useClients = (filters?: { status?: string; temperature?: string; pipeline_stage?: string }) => {
   return useQuery({
@@ -15,6 +25,8 @@ export const useClients = (filters?: { status?: string; temperature?: string; pi
       if (error) throw error;
       return data;
     },
+    staleTime: 30_000,
+    refetchInterval: 60_000,
   });
 };
 
