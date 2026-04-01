@@ -2,6 +2,16 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 
+// Helper to invalidate all client-related queries
+const invalidateAllClients = (qc: ReturnType<typeof useQueryClient>) => {
+  qc.invalidateQueries({ queryKey: ["clients"] });
+  qc.invalidateQueries({ queryKey: ["clients-all"] });
+  qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
+  qc.invalidateQueries({ queryKey: ["tasks-pending"] });
+  qc.invalidateQueries({ queryKey: ["tasks-overdue"] });
+  qc.invalidateQueries({ queryKey: ["tasks"] });
+};
+
 // ============ CLIENTS ============
 export const useClients = (filters?: { status?: string; temperature?: string; pipeline_stage?: string }) => {
   return useQuery({
@@ -15,6 +25,8 @@ export const useClients = (filters?: { status?: string; temperature?: string; pi
       if (error) throw error;
       return data;
     },
+    staleTime: 30_000,
+    refetchInterval: 60_000,
   });
 };
 
@@ -38,7 +50,7 @@ export const useCreateClient = () => {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["clients"] }),
+    onSuccess: () => invalidateAllClients(qc),
   });
 };
 
@@ -51,7 +63,7 @@ export const useUpdateClient = () => {
       return data;
     },
     onSuccess: (_, vars) => {
-      qc.invalidateQueries({ queryKey: ["clients"] });
+      invalidateAllClients(qc);
       qc.invalidateQueries({ queryKey: ["client", vars.id] });
     },
   });
@@ -69,6 +81,8 @@ export const useAllClients = () => {
       if (error) throw error;
       return data;
     },
+    staleTime: 30_000,
+    refetchInterval: 60_000,
   });
 };
 
@@ -106,7 +120,11 @@ export const useCreateInteraction = () => {
       if (error) throw error;
       return data;
     },
-    onSuccess: (_, vars) => qc.invalidateQueries({ queryKey: ["interactions", vars.client_id] }),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["interactions", vars.client_id] });
+      // Interactions trigger lead_score recalc, so refresh client data
+      invalidateAllClients(qc);
+    },
   });
 };
 
@@ -122,6 +140,8 @@ export const useTasks = (filters?: { status?: string; due_date?: string }) => {
       if (error) throw error;
       return data;
     },
+    staleTime: 30_000,
+    refetchInterval: 60_000,
   });
 };
 
@@ -138,6 +158,8 @@ export const useAllPendingTasks = () => {
       if (error) throw error;
       return data;
     },
+    staleTime: 30_000,
+    refetchInterval: 60_000,
   });
 };
 
@@ -155,7 +177,17 @@ export const useOverdueTasks = () => {
       if (error) throw error;
       return data;
     },
+    staleTime: 30_000,
+    refetchInterval: 60_000,
   });
+};
+
+// Helper to invalidate all task-related queries
+const invalidateAllTasks = (qc: ReturnType<typeof useQueryClient>) => {
+  qc.invalidateQueries({ queryKey: ["tasks"] });
+  qc.invalidateQueries({ queryKey: ["tasks-pending"] });
+  qc.invalidateQueries({ queryKey: ["tasks-overdue"] });
+  qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
 };
 
 export const useCreateTask = () => {
@@ -166,11 +198,7 @@ export const useCreateTask = () => {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["tasks"] });
-      qc.invalidateQueries({ queryKey: ["tasks-pending"] });
-      qc.invalidateQueries({ queryKey: ["tasks-overdue"] });
-    },
+    onSuccess: () => invalidateAllTasks(qc),
   });
 };
 
@@ -182,11 +210,7 @@ export const useUpdateTask = () => {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["tasks"] });
-      qc.invalidateQueries({ queryKey: ["tasks-pending"] });
-      qc.invalidateQueries({ queryKey: ["tasks-overdue"] });
-    },
+    onSuccess: () => invalidateAllTasks(qc),
   });
 };
 
@@ -272,6 +296,8 @@ export const useDashboardStats = () => {
         conversionRate: total > 0 ? Math.round((won / total) * 100) : 0,
       };
     },
+    staleTime: 30_000,
+    refetchInterval: 60_000,
   });
 };
 
