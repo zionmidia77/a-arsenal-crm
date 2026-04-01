@@ -216,13 +216,20 @@ const AdminSmartQueue = () => {
         <div className="flex items-center gap-2">
           <Zap className="w-4 h-4 text-primary" />
           <span className="text-sm font-medium">Fila Inteligente</span>
-          {attendedCount > 0 && (
-            <span className="text-[10px] bg-success/15 text-success px-2 py-0.5 rounded-full font-medium">
-              ✅ {attendedCount} atendidos
-            </span>
-          )}
         </div>
       </div>
+
+      {/* Queue Dashboard */}
+      <QueueDashboard
+        queue={fullQueue}
+        attendedCount={attendedCount}
+        sessionStartTime={sessionStartTime}
+        activeFilter={activeFilter}
+        onFilterChange={(f) => {
+          setActiveFilter(f);
+          setCurrentIndex(0);
+        }}
+      />
 
       {/* Progress bar */}
       <div className="space-y-1" data-tour="queue-progress">
