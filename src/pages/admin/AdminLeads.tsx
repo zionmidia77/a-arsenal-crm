@@ -1,4 +1,5 @@
 import { useState } from "react";
+import EmptyState from "@/components/EmptyState";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -452,7 +453,16 @@ const AdminLeads = () => {
             </motion.div>
           ))}
           {filtered.length === 0 && (
-            <div className="text-center py-12 text-muted-foreground text-sm">Nenhum lead encontrado</div>
+            <EmptyState
+              icon={Search}
+              title={search || hasActiveFilters ? "Nenhum lead encontrado" : "Nenhum lead ainda"}
+              description={search || hasActiveFilters ? "Tente ajustar seus filtros ou termos de busca." : "Compartilhe o funil de captura para começar a receber leads!"}
+              actionLabel={search || hasActiveFilters ? "Limpar filtros" : "Copiar link do funil"}
+              onAction={search || hasActiveFilters ? clearFilters : () => {
+                navigator.clipboard.writeText(`${window.location.origin}/chat`);
+                toast.success("Link copiado!");
+              }}
+            />
           )}
         </div>
       ) : (
@@ -565,7 +575,16 @@ const AdminLeads = () => {
             </motion.div>
           ))}
           {filtered.length === 0 && (
-            <div className="text-center py-12 text-muted-foreground text-sm">Nenhum lead encontrado</div>
+            <EmptyState
+              icon={Search}
+              title={search || hasActiveFilters ? "Nenhum lead encontrado" : "Nenhum lead ainda"}
+              description={search || hasActiveFilters ? "Tente ajustar seus filtros ou termos de busca." : "Compartilhe o funil de captura para começar a receber leads!"}
+              actionLabel={search || hasActiveFilters ? "Limpar filtros" : "Copiar link do funil"}
+              onAction={search || hasActiveFilters ? clearFilters : () => {
+                navigator.clipboard.writeText(`${window.location.origin}/chat`);
+                toast.success("Link copiado!");
+              }}
+            />
           )}
         </div>
       )}

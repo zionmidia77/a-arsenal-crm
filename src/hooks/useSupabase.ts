@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
 // Helper to invalidate all client-related queries
 const invalidateAllClients = (qc: ReturnType<typeof useQueryClient>) => {
@@ -53,7 +54,11 @@ export const useCreateClient = () => {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => invalidateAllClients(qc),
+    onSuccess: () => {
+      invalidateAllClients(qc);
+      toast.success("Lead criado com sucesso!");
+    },
+    onError: (e: any) => toast.error("Erro ao criar lead", { description: e.message }),
   });
 };
 
@@ -69,6 +74,7 @@ export const useUpdateClient = () => {
       invalidateAllClients(qc);
       qc.invalidateQueries({ queryKey: ["client", vars.id] });
     },
+    onError: (e: any) => toast.error("Erro ao atualizar lead", { description: e.message }),
   });
 };
 
@@ -209,7 +215,11 @@ export const useCreateTask = () => {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => invalidateAllTasks(qc),
+    onSuccess: () => {
+      invalidateAllTasks(qc);
+      toast.success("Tarefa criada!");
+    },
+    onError: (e: any) => toast.error("Erro ao criar tarefa", { description: e.message }),
   });
 };
 
@@ -222,6 +232,7 @@ export const useUpdateTask = () => {
       return data;
     },
     onSuccess: () => invalidateAllTasks(qc),
+    onError: (e: any) => toast.error("Erro ao atualizar tarefa", { description: e.message }),
   });
 };
 

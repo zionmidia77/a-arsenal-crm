@@ -8,6 +8,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import QueryErrorHandler from "@/components/QueryErrorHandler";
 import Index from "./pages/Index";
 
 // Lazy-loaded pages
@@ -52,6 +53,7 @@ const App = () => (
   <HelmetProvider>
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
       <QueryClientProvider client={queryClient}>
+        <QueryErrorHandler />
         <TooltipProvider>
           <Toaster />
           <Sonner />
