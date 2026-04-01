@@ -135,6 +135,7 @@ export const useCreateInteraction = () => {
 
 // ============ TASKS ============
 export const useTasks = (filters?: { status?: string; due_date?: string }) => {
+  const { user } = useAuth();
   return useQuery({
     queryKey: ["tasks", filters],
     queryFn: async () => {
