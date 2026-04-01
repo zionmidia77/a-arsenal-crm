@@ -232,6 +232,7 @@ export const useUpdateTask = () => {
       return data;
     },
     onSuccess: () => invalidateAllTasks(qc),
+    onError: (e: any) => toast.error("Erro ao atualizar tarefa", { description: e.message }),
   });
 };
 
