@@ -17,13 +17,25 @@ import { Kanban, Filter, LayoutList as LayoutListIcon, MousePointer } from "luci
 
 const STAGES = [
   { key: "new", label: "Novo Lead", emoji: "🆕", color: "border-t-blue-500" },
+  { key: "contacted", label: "Contatado", emoji: "📱", color: "border-t-sky-500" },
   { key: "first_contact", label: "1º Contato", emoji: "📞", color: "border-t-yellow-500" },
+  { key: "interested", label: "Interessado", emoji: "👀", color: "border-t-amber-500" },
   { key: "qualification", label: "Qualificação", emoji: "🔍", color: "border-t-orange-500" },
+  { key: "attending", label: "Atendendo", emoji: "🤝", color: "border-t-teal-500" },
+  { key: "scheduled", label: "Agendado", emoji: "📅", color: "border-t-cyan-500" },
   { key: "proposal", label: "Proposta", emoji: "📋", color: "border-t-purple-500" },
+  { key: "proposal_sent", label: "Proposta Enviada", emoji: "📨", color: "border-t-violet-500" },
+  { key: "thinking", label: "Pensando", emoji: "🤔", color: "border-t-slate-500" },
+  { key: "waiting_response", label: "Aguardando", emoji: "⏳", color: "border-t-gray-500" },
   { key: "negotiation", label: "Negociação", emoji: "💰", color: "border-t-emerald-500" },
+  { key: "negotiating", label: "Negociando", emoji: "💬", color: "border-t-lime-500" },
+  { key: "financing_analysis", label: "Análise Crédito", emoji: "🏦", color: "border-t-blue-400" },
+  { key: "approved", label: "Aprovado", emoji: "✅", color: "border-t-green-400" },
+  { key: "rejected", label: "Rejeitado", emoji: "🚫", color: "border-t-red-400" },
   { key: "closing", label: "Fechamento", emoji: "📝", color: "border-t-indigo-500" },
   { key: "closed_won", label: "Fechado ✅", emoji: "🏆", color: "border-t-green-500" },
   { key: "closed_lost", label: "Perdido", emoji: "❌", color: "border-t-red-500" },
+  { key: "reactivation", label: "Reativação", emoji: "🔄", color: "border-t-pink-500" },
 ];
 
 const AdminPipeline = () => {
