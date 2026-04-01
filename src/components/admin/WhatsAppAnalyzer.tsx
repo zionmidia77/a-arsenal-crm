@@ -74,6 +74,34 @@ const WhatsAppAnalyzer = ({ client, onSendWhatsApp }: WhatsAppAnalyzerProps) => 
   const qc = useQueryClient();
   const updateClient = useUpdateClient();
 
+  // Restore last analysis from lead_timeline_events on mount
+  useEffect(() => {
+    const restoreLastAnalysis = async () => {
+      try {
+        const { data } = await supabase
+          .from("lead_timeline_events")
+          .select("metadata, created_at")
+          .eq("client_id", client.id)
+          .eq("source", "whatsapp_analyzer")
+          .eq("event_type", "message_received")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (data?.metadata && typeof data.metadata === "object" && "analysis_result" in data.metadata) {
+          const savedAnalysis = (data.metadata as any).analysis_result as AnalysisResult;
+          if (savedAnalysis?.suggested_message) {
+            setAnalysis(savedAnalysis);
+            setEditableMessage(savedAnalysis.suggested_message);
+          }
+        }
+      } catch (e) {
+        console.error("Error restoring analysis:", e);
+      }
+    };
+    restoreLastAnalysis();
+  }, [client.id]);
+
   const analyze = useCallback(async () => {
     if (!message.trim()) {
       toast.error("Cole a mensagem do cliente antes de analisar.");
