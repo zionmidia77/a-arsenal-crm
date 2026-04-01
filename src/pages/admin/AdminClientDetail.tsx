@@ -366,12 +366,7 @@ const AdminClientDetail = () => {
             <span className="text-[10px] text-muted-foreground">· {daysAgo === 0 ? "hoje" : `${daysAgo}d atrás`}</span>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          {!isMobile && (
-            <Button variant="ghost" size="icon" className="rounded-full" onClick={() => setCopilotOpen(!copilotOpen)} title={copilotOpen ? "Fechar Copilot" : "Abrir Copilot"}>
-              {copilotOpen ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
-            </Button>
-          )}
+         <div className="flex items-center gap-2">
           <div className="text-right">
             <p className="text-xs text-muted-foreground">Score</p>
             <p className="text-lg font-display font-bold text-primary">{client.lead_score}</p>
