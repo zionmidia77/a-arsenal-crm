@@ -516,6 +516,7 @@ const AdminLeads = () => {
                 <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-secondary text-muted-foreground">
                   {STAGE_LABELS[client.pipeline_stage] || client.pipeline_stage}
                 </span>
+                <CadenceBadge info={cadenceBadges?.[client.id]} />
                 <span className="text-[9px] text-muted-foreground font-mono ml-auto">{client.lead_score}pts</span>
               </div>
 
