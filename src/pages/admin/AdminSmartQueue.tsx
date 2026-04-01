@@ -47,9 +47,7 @@ const getStoredQueueClientId = () => {
   if (typeof window === "undefined") return null;
 
   try {
-    const stored = sessionStorage.getItem(SMART_QUEUE_ACTIVE_CLIENT_STORAGE_KEY);
-    console.log("[SmartQueue] 🔄 getStoredQueueClientId →", stored);
-    return stored;
+    return sessionStorage.getItem(SMART_QUEUE_ACTIVE_CLIENT_STORAGE_KEY);
   } catch {
     return null;
   }
@@ -88,11 +86,7 @@ const AdminSmartQueue = () => {
   const { data: allClients, isLoading } = useClients();
   const updateClient = useUpdateClient();
   const createInteraction = useCreateInteraction();
-  const [currentClientId, _setCurrentClientId] = useState<string | null>(() => getStoredQueueClientId());
-  const setCurrentClientId = (id: string | null) => {
-    console.log("[SmartQueue] ✏️ setCurrentClientId:", currentClientId, "→", id, new Error().stack?.split("\n")[2]?.trim());
-    _setCurrentClientId(id);
-  };
+  const [currentClientId, setCurrentClientId] = useState<string | null>(() => getStoredQueueClientId());
   const [direction, setDirection] = useState(1);
   const [nextActionModalOpen, setNextActionModalOpen] = useState(false);
   const [attendedCount, setAttendedCount] = useState(0);
@@ -181,7 +175,6 @@ const AdminSmartQueue = () => {
 
   useEffect(() => {
     if (isLoading || allClients === undefined) return;
-    console.log("[SmartQueue] 🔍 sync effect — isLoading:", isLoading, "queue.length:", queue.length, "currentClientId:", currentClientId, "found:", queue.some(item => item.id === currentClientId));
 
     if (queue.length === 0) {
       if (currentClientId !== null) {
@@ -200,12 +193,10 @@ const AdminSmartQueue = () => {
 
     try {
       if (currentClientId) {
-        console.log("[SmartQueue] 💾 saving to sessionStorage:", currentClientId);
         sessionStorage.setItem(SMART_QUEUE_ACTIVE_CLIENT_STORAGE_KEY, currentClientId);
         return;
       }
 
-      console.log("[SmartQueue] 🗑️ removing from sessionStorage");
       sessionStorage.removeItem(SMART_QUEUE_ACTIVE_CLIENT_STORAGE_KEY);
     } catch {}
   }, [currentClientId]);
