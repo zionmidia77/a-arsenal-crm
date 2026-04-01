@@ -172,10 +172,10 @@ const AdminSmartQueue = () => {
 
   const markAttended = () => {
     if (!client) return;
-    updateClient.mutate({ id: client.id, pipeline_stage: "contacted" as any, last_contact_at: new Date().toISOString() } as any);
-    createInteraction.mutate({ client_id: client.id, type: "system", content: "Marcado como atendido (fila inteligente)", created_by: "admin" });
+    updateClient.mutate({ id: client.id, last_contact_at: new Date().toISOString() } as any);
+    createInteraction.mutate({ client_id: client.id, type: "system", content: "Atendimento registrado (fila inteligente)", created_by: "admin" });
     setAttendedCount(c => c + 1);
-    toast.success("Atendido!");
+    toast.success("Atendimento registrado!");
     setNextActionModalOpen(true);
   };
 
