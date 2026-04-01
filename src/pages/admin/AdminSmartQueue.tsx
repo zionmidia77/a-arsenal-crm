@@ -41,17 +41,32 @@ const nextActionLabels: Record<string, string> = {
   send_content: "📤 Enviar conteúdo",
 };
 
+/** Queue reason badge config */
+const queueReasonConfig: Record<string, { label: string; color: string }> = {
+  promise_overdue: { label: "🤝 PROMESSA VENCIDA", color: "bg-destructive/15 text-destructive border border-destructive/30" },
+  action_overdue: { label: "⏰ AÇÃO ATRASADA", color: "bg-destructive/15 text-destructive border border-destructive/30" },
+  no_contact_48h: { label: "📵 SEM CONTATO 48H", color: "bg-warning/15 text-warning border border-warning/30" },
+  scheduled_today: { label: "📅 AGENDADO HOJE", color: "bg-info/15 text-info border border-info/30" },
+  hot_lead: { label: "🔥 LEAD QUENTE", color: "bg-primary/15 text-primary border border-primary/30" },
+};
+
 /** Generates priority reason tags for a client */
 function getPriorityReasons(client: any): { label: string; color: string }[] {
   const tags: { label: string; color: string }[] = [];
-  if (client.temperature === "hot") tags.push({ label: "🔥 Lead quente", color: "bg-primary/15 text-primary" });
-  if (client.next_action_due && new Date(client.next_action_due) < new Date()) tags.push({ label: "⏰ Ação atrasada", color: "bg-destructive/15 text-destructive" });
+  // Use queue_reason from DB if available
+  const qr = client.queue_reason as string | null;
+  if (qr && qr !== 'standard' && queueReasonConfig[qr]) {
+    tags.push(queueReasonConfig[qr]);
+  }
+  // Additional visual tags
+  if (client.temperature === "hot" && qr !== 'hot_lead') tags.push({ label: "🔥 Quente", color: "bg-primary/15 text-primary" });
+  if (client.next_action_due && new Date(client.next_action_due) < new Date() && qr !== 'action_overdue') tags.push({ label: "⏰ Atrasada", color: "bg-destructive/15 text-destructive" });
   if ((client.deal_value || 0) >= 30000) tags.push({ label: "💰 Alto valor", color: "bg-success/15 text-success" });
   if ((client.churn_risk || 0) > 50) tags.push({ label: "⚠️ Risco alto", color: "bg-warning/15 text-warning" });
-  if (client.client_promise_status === "overdue") tags.push({ label: "🤝 Promessa vencida", color: "bg-destructive/15 text-destructive" });
+  if (client.client_promise_status === "overdue" && qr !== 'promise_overdue') tags.push({ label: "🤝 Promessa vencida", color: "bg-destructive/15 text-destructive" });
   if (client.has_down_payment) tags.push({ label: "💵 Tem entrada", color: "bg-success/15 text-success" });
   if (client.docs_status === "complete") tags.push({ label: "📄 Docs completos", color: "bg-info/15 text-info" });
-  return tags.slice(0, 4);
+  return tags.slice(0, 5);
 }
 
 const AdminSmartQueue = () => {
