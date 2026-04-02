@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Copy, Check, Download, Database, Table2, ChevronDown, ChevronRight } from "lucide-react";
+import { Copy, Check, Download, Database, Table2, ChevronDown, ChevronRight, FileDown, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 const TABLE_NAMES = [
@@ -34,6 +34,44 @@ const AdminDataExport = () => {
   const [expandedTable, setExpandedTable] = useState<string | null>(null);
   const [copiedTable, setCopiedTable] = useState<string | null>(null);
   const [copiedAll, setCopiedAll] = useState(false);
+  const [downloadingTable, setDownloadingTable] = useState<string | null>(null);
+
+  const downloadTableCSV = async (tableName: string) => {
+    setDownloadingTable(tableName);
+    try {
+      const { data, error } = await (supabase.from(tableName as any).select("*") as any);
+      if (error) throw error;
+      if (!data || data.length === 0) {
+        toast.warning(`Tabela "${tableName}" está vazia`);
+        return;
+      }
+      const headers = Object.keys(data[0]);
+      const csvRows = [
+        headers.join(","),
+        ...data.map((row: any) =>
+          headers.map(h => {
+            const val = row[h];
+            if (val === null || val === undefined) return "";
+            const str = typeof val === "object" ? JSON.stringify(val) : String(val);
+            return str.includes(",") || str.includes('"') || str.includes("\n")
+              ? `"${str.replace(/"/g, '""')}"` : str;
+          }).join(",")
+        )
+      ];
+      const blob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${tableName}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success(`CSV de "${tableName}" baixado! (${data.length} registros)`);
+    } catch (err: any) {
+      toast.error(`Erro ao exportar "${tableName}": ${err.message}`);
+    } finally {
+      setDownloadingTable(null);
+    }
+  };
 
   // Fetch schema for all tables using a edge function or direct query
   const { data: schemas, isLoading } = useQuery({
@@ -651,6 +689,23 @@ CREATE TABLE IF NOT EXISTS public.vehicles (
                 </Badge>
               </div>
               <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-xs"
+                  disabled={downloadingTable === table}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    downloadTableCSV(table);
+                  }}
+                >
+                  {downloadingTable === table ? (
+                    <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                  ) : (
+                    <FileDown className="w-3 h-3 mr-1" />
+                  )}
+                  CSV
+                </Button>
                 {expandedTable === table && (
                   <Button
                     size="sm"
