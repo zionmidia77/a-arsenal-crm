@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Copy, Check, Download, Database, Table2, ChevronDown, ChevronRight } from "lucide-react";
+import { Copy, Check, Download, Database, Table2, ChevronDown, ChevronRight, FileDown, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 const TABLE_NAMES = [
