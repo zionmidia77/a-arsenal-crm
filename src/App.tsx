@@ -97,6 +97,7 @@ const App = () => (
                   <Route path="briefing" element={<AdminDailyBriefing />} />
                   <Route path="bots" element={<AdminBotPanel />} />
                   <Route path="cadence-metrics" element={<AdminCadenceMetrics />} />
+                  <Route path="data-export" element={<AdminDataExport />} />
                   <Route path="client/:id" element={<AdminClientDetail />} />
                 </Route>
                 <Route

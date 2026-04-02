@@ -35,6 +35,7 @@ const navItems = [
   { to: "/admin/sms", icon: Smartphone, label: "SMS Marketing" },
   { to: "/admin/bots", icon: Bot, label: "Painel de Bots" },
   { to: "/admin/cadence-metrics", icon: Activity, label: "Métricas Cadência" },
+  { to: "/admin/data-export", icon: DatabaseZap, label: "Exportar SQL" },
 ];
 
 const AdminLayout = () => {
