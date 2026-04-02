@@ -39,34 +39,62 @@ const AdminDataExport = () => {
   const downloadTableCSV = async (tableName: string) => {
     setDownloadingTable(tableName);
     try {
-      const { data, error } = await (supabase.from(tableName as any).select("*") as any);
-      if (error) throw error;
-      if (!data || data.length === 0) {
+      // Paginate to get ALL rows (Supabase default limit is 1000)
+      const allData: any[] = [];
+      const PAGE_SIZE = 1000;
+      let from = 0;
+      let hasMore = true;
+
+      while (hasMore) {
+        const { data, error } = await (supabase
+          .from(tableName as any)
+          .select("*")
+          .range(from, from + PAGE_SIZE - 1) as any);
+        
+        if (error) throw error;
+        if (!data || data.length === 0) {
+          hasMore = false;
+        } else {
+          allData.push(...data);
+          from += PAGE_SIZE;
+          if (data.length < PAGE_SIZE) hasMore = false;
+        }
+      }
+
+      if (allData.length === 0) {
         toast.warning(`Tabela "${tableName}" está vazia`);
         return;
       }
-      const headers = Object.keys(data[0]);
+
+      const headers = Object.keys(allData[0]);
       const csvRows = [
         headers.join(","),
-        ...data.map((row: any) =>
+        ...allData.map((row: any) =>
           headers.map(h => {
             const val = row[h];
             if (val === null || val === undefined) return "";
             const str = typeof val === "object" ? JSON.stringify(val) : String(val);
-            return str.includes(",") || str.includes('"') || str.includes("\n")
-              ? `"${str.replace(/"/g, '""')}"` : str;
+            // Escape for CSV
+            if (str.includes(",") || str.includes('"') || str.includes("\n") || str.includes("\r")) {
+              return `"${str.replace(/"/g, '""')}"`;
+            }
+            return str;
           }).join(",")
         )
       ];
-      const blob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
+      const BOM = "\uFEFF";
+      const blob = new Blob([BOM + csvRows.join("\r\n")], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
       a.download = `${tableName}.csv`;
+      document.body.appendChild(a);
       a.click();
+      document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      toast.success(`CSV de "${tableName}" baixado! (${data.length} registros)`);
+      toast.success(`CSV de "${tableName}" baixado! (${allData.length} registros)`);
     } catch (err: any) {
+      console.error(`Erro CSV ${tableName}:`, err);
       toast.error(`Erro ao exportar "${tableName}": ${err.message}`);
     } finally {
       setDownloadingTable(null);
