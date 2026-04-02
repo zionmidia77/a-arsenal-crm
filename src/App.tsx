@@ -33,6 +33,7 @@ const AdminSmartQueue = lazy(() => import("./pages/admin/AdminSmartQueue"));
 const AdminDailyBriefing = lazy(() => import("./pages/admin/AdminDailyBriefing"));
 const AdminBotPanel = lazy(() => import("./pages/admin/AdminBotPanel"));
 const AdminCadenceMetrics = lazy(() => import("./pages/admin/AdminCadenceMetrics"));
+const AdminDataExport = lazy(() => import("./pages/admin/AdminDataExport"));
 const MemberArea = lazy(() => import("./pages/MemberArea"));
 const PublicCatalog = lazy(() => import("./pages/PublicCatalog"));
 const ProposalPage = lazy(() => import("./pages/ProposalPage"));
@@ -96,6 +97,7 @@ const App = () => (
                   <Route path="briefing" element={<AdminDailyBriefing />} />
                   <Route path="bots" element={<AdminBotPanel />} />
                   <Route path="cadence-metrics" element={<AdminCadenceMetrics />} />
+                  <Route path="data-export" element={<AdminDataExport />} />
                   <Route path="client/:id" element={<AdminClientDetail />} />
                 </Route>
                 <Route

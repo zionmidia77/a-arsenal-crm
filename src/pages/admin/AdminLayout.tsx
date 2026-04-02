@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { NavLink } from "@/components/NavLink";
-import { LayoutDashboard, Users, ListChecks, MessageSquare, Menu, X, Bike, ChevronLeft, Kanban, LogOut, BarChart3, CalendarDays, Target, MessagesSquare, Calculator, Package, Smartphone, Zap, Sun, Bot, Activity } from "lucide-react";
+import { LayoutDashboard, Users, ListChecks, MessageSquare, Menu, X, Bike, ChevronLeft, Kanban, LogOut, BarChart3, CalendarDays, Target, MessagesSquare, Calculator, Package, Smartphone, Zap, Sun, Bot, Activity, DatabaseZap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import BottomTabBar from "@/components/BottomTabBar";
 import { useRealtimeLeads } from "@/hooks/useRealtimeLeads";
@@ -35,6 +35,7 @@ const navItems = [
   { to: "/admin/sms", icon: Smartphone, label: "SMS Marketing" },
   { to: "/admin/bots", icon: Bot, label: "Painel de Bots" },
   { to: "/admin/cadence-metrics", icon: Activity, label: "Métricas Cadência" },
+  { to: "/admin/data-export", icon: DatabaseZap, label: "Exportar SQL" },
 ];
 
 const AdminLayout = () => {
