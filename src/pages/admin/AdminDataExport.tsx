@@ -689,6 +689,23 @@ CREATE TABLE IF NOT EXISTS public.vehicles (
                 </Badge>
               </div>
               <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-xs"
+                  disabled={downloadingTable === table}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    downloadTableCSV(table);
+                  }}
+                >
+                  {downloadingTable === table ? (
+                    <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                  ) : (
+                    <FileDown className="w-3 h-3 mr-1" />
+                  )}
+                  CSV
+                </Button>
                 {expandedTable === table && (
                   <Button
                     size="sm"
